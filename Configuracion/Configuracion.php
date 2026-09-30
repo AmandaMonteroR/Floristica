@@ -1,6 +1,6 @@
 <?php
 // Datos de conexión a MySQL (ajústelos según su instalación local)
-define('DB_HOST', 'localhost');
+define('DB_HOST', '127.0.0.1');
 define('DB_PUERTO', '3306');
 define('DB_NOMBRE', 'bdfloristica');
 define('DB_USUARIO', 'root');
