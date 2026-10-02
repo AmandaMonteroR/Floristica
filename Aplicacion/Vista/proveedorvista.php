@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Proveedores | Floristica</title>
+    <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="css/estilos.css">
 </head>
 <body>
@@ -89,21 +90,21 @@
             </label>
             <div class="campo-completo rejilla-ubicacion">
                 <label class="campo">
-                    <span>Provincia</span>
+                    <span>Provincia *</span>
                     <select name="tbproveedorprovincia">
                         <option value="">Seleccione…</option>
                     </select>
                     <small class="error" data-error="tbproveedorprovincia"></small>
                 </label>
                 <label class="campo">
-                    <span>Cantón</span>
+                    <span>Cantón *</span>
                     <select name="tbproveedorcanton" disabled>
                         <option value="">Seleccione la provincia</option>
                     </select>
                     <small class="error" data-error="tbproveedorcanton"></small>
                 </label>
                 <label class="campo">
-                    <span>Distrito</span>
+                    <span>Distrito *</span>
                     <select name="tbproveedordistrito" disabled>
                         <option value="">Seleccione el cantón</option>
                     </select>

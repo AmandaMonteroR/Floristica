@@ -136,4 +136,28 @@ class proveedorrepositorio
 
         return (int) $sentencia->fetch()['total'] > 0;
     }
+
+    public function existetelefono($telefono, $idexcluir = 0)
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM tbproveedor
+                WHERE tbproveedortelefono = ?
+                AND tbproveedorid <> ?';
+
+        $sentencia = $this->conexion->prepare($sql);
+        $sentencia->execute([$telefono, (int) $idexcluir]);
+
+        return (int) $sentencia->fetch()['total'] > 0;
+    }
+
+    public function existecorreo($correo, $idexcluir = 0)
+    {
+        $sql = 'SELECT COUNT(*) AS total FROM tbproveedor
+                WHERE LOWER(TRIM(tbproveedorcorreo)) = LOWER(TRIM(?))
+                AND tbproveedorid <> ?';
+
+        $sentencia = $this->conexion->prepare($sql);
+        $sentencia->execute([$correo, (int) $idexcluir]);
+
+        return (int) $sentencia->fetch()['total'] > 0;
+    }
 }

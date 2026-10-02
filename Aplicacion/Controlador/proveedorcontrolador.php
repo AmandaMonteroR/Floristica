@@ -274,6 +274,8 @@ class proveedorcontrolador
             $errores['tbproveedortelefono'] = 'El teléfono es obligatorio.';
         } elseif (!preg_match('/^\d{4}-\d{4}$/', $datos['tbproveedortelefono'])) {
             $errores['tbproveedortelefono'] = 'El teléfono debe tener exactamente 8 números.';
+        } elseif ($this->repositorio->existetelefono($datos['tbproveedortelefono'], $idexcluir)) {
+            $errores['tbproveedortelefono'] = 'Ya existe un proveedor con ese teléfono.';
         }
 
         if ($datos['tbproveedorcorreo'] !== '') {
@@ -281,31 +283,27 @@ class proveedorcontrolador
                 $errores['tbproveedorcorreo'] = 'El correo no tiene un formato válido.';
             } elseif (mb_strlen($datos['tbproveedorcorreo']) > 100) {
                 $errores['tbproveedorcorreo'] = 'El correo no puede superar 100 caracteres.';
+            } elseif ($this->repositorio->existecorreo($datos['tbproveedorcorreo'], $idexcluir)) {
+                $errores['tbproveedorcorreo'] = 'Ya existe un proveedor con ese correo.';
             }
         }
 
-        $tieneubicacion = $datos['tbproveedorprovincia'] !== ''
-            || $datos['tbproveedorcanton'] !== ''
-            || $datos['tbproveedordistrito'] !== '';
+        if ($datos['tbproveedorprovincia'] === '') {
+            $errores['tbproveedorprovincia'] = 'La provincia es obligatoria.';
+        } elseif (!$this->ubicaciones->existeprovincia($datos['tbproveedorprovincia'])) {
+            $errores['tbproveedorprovincia'] = 'La provincia seleccionada no es válida.';
+        }
 
-        if ($tieneubicacion) {
-            if ($datos['tbproveedorprovincia'] === '') {
-                $errores['tbproveedorprovincia'] = 'Seleccione la provincia.';
-            } elseif (!$this->ubicaciones->existeprovincia($datos['tbproveedorprovincia'])) {
-                $errores['tbproveedorprovincia'] = 'La provincia seleccionada no es válida.';
-            }
+        if ($datos['tbproveedorcanton'] === '') {
+            $errores['tbproveedorcanton'] = 'El cantón es obligatorio.';
+        } elseif (!$this->ubicaciones->existecanton($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'])) {
+            $errores['tbproveedorcanton'] = 'El cantón no pertenece a la provincia seleccionada.';
+        }
 
-            if ($datos['tbproveedorcanton'] === '') {
-                $errores['tbproveedorcanton'] = 'Seleccione el cantón.';
-            } elseif (!$this->ubicaciones->existecanton($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'])) {
-                $errores['tbproveedorcanton'] = 'El cantón no pertenece a la provincia seleccionada.';
-            }
-
-            if ($datos['tbproveedordistrito'] === '') {
-                $errores['tbproveedordistrito'] = 'Seleccione el distrito.';
-            } elseif (!$this->ubicaciones->existedistrito($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'], $datos['tbproveedordistrito'])) {
-                $errores['tbproveedordistrito'] = 'El distrito no pertenece al cantón seleccionado.';
-            }
+        if ($datos['tbproveedordistrito'] === '') {
+            $errores['tbproveedordistrito'] = 'El distrito es obligatorio.';
+        } elseif (!$this->ubicaciones->existedistrito($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'], $datos['tbproveedordistrito'])) {
+            $errores['tbproveedordistrito'] = 'El distrito no pertenece al cantón seleccionado.';
         }
 
         if (mb_strlen($datos['tbproveedordireccion']) > 200) {
