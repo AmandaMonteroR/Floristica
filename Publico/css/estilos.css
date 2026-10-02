@@ -69,10 +69,21 @@ body {
 }
 
 .marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
     font-size: 1.25rem;
     font-weight: 700;
     color: #ffffff;
     text-decoration: none;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    padding: 4px;
+    background: var(--rosa-claro);
+    border-radius: 50%;
 }
 
 .fondo-menu {

@@ -16,14 +16,20 @@ $opcionesmenu = [
     <button type="button" class="boton-menu" id="botonmenu" aria-label="Abrir menú" aria-expanded="false" aria-controls="menulateral">
         <span></span><span></span><span></span>
     </button>
-    <a class="marca" href="index.php">Floristica</a>
+    <a class="marca" href="index.php">
+        <img class="logo" src="imagenes/logo.png" alt="">
+        <span>Floristica</span>
+    </a>
 </header>
 
 <div class="fondo-menu" id="fondomenu" hidden></div>
 
 <nav class="menu-lateral" id="menulateral" aria-label="Menú principal">
     <div class="menu-lateral-encabezado">
-        <span class="marca">Floristica</span>
+        <span class="marca">
+            <img class="logo" src="imagenes/logo.png" alt="">
+            <span>Floristica</span>
+        </span>
         <button type="button" class="boton-cerrar-menu" id="botoncerrarmenu" aria-label="Cerrar menú">&times;</button>
     </div>
     <ul>
