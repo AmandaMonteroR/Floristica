@@ -87,9 +87,32 @@
                 <input type="email" name="tbproveedorcorreo" maxlength="100">
                 <small class="error" data-error="tbproveedorcorreo"></small>
             </label>
+            <div class="campo-completo rejilla-ubicacion">
+                <label class="campo">
+                    <span>Provincia</span>
+                    <select name="tbproveedorprovincia">
+                        <option value="">Seleccione…</option>
+                    </select>
+                    <small class="error" data-error="tbproveedorprovincia"></small>
+                </label>
+                <label class="campo">
+                    <span>Cantón</span>
+                    <select name="tbproveedorcanton" disabled>
+                        <option value="">Seleccione la provincia</option>
+                    </select>
+                    <small class="error" data-error="tbproveedorcanton"></small>
+                </label>
+                <label class="campo">
+                    <span>Distrito</span>
+                    <select name="tbproveedordistrito" disabled>
+                        <option value="">Seleccione el cantón</option>
+                    </select>
+                    <small class="error" data-error="tbproveedordistrito"></small>
+                </label>
+            </div>
             <label class="campo campo-completo">
-                <span>Dirección</span>
-                <textarea name="tbproveedordireccion" maxlength="200"></textarea>
+                <span>Dirección exacta</span>
+                <textarea name="tbproveedordireccion" maxlength="200" placeholder="200 m norte de la iglesia…"></textarea>
                 <small class="error" data-error="tbproveedordireccion"></small>
             </label>
             <label class="campo campo-completo">

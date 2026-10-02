@@ -5,9 +5,13 @@ const camposformulario = [
     'tbproveedornombrecontacto',
     'tbproveedortelefono',
     'tbproveedorcorreo',
+    'tbproveedorprovincia',
+    'tbproveedorcanton',
+    'tbproveedordistrito',
     'tbproveedordireccion',
     'tbproveedordescripcion',
 ];
+const camposubicacion = ['tbproveedorprovincia', 'tbproveedorcanton', 'tbproveedordistrito'];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
 const busqueda = document.getElementById('busqueda');
@@ -31,11 +35,15 @@ const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirma
 const dialogohistorial = document.getElementById('dialogohistorial');
 const titulohistorial = document.getElementById('titulohistorial');
 const cuerpohistorial = document.getElementById('cuerpohistorial');
+const selectprovincia = formulario.elements.tbproveedorprovincia;
+const selectcanton = formulario.elements.tbproveedorcanton;
+const selectdistrito = formulario.elements.tbproveedordistrito;
 
 let temporizadorbusqueda;
 let temporizadoraviso;
 let datosoriginales = {};
 let iddetalle = null;
+let ubicaciones = [];
 
 function escapar(texto) {
     const div = document.createElement('div');
@@ -148,12 +156,76 @@ function borrarborrador(clave = claveborrador()) {
     }
 }
 
+function llenarselect(select, opciones, textovacio) {
+    select.innerHTML = '';
+    select.add(new Option(textovacio, ''));
+    opciones.forEach((opcion) => {
+        select.add(new Option(opcion, opcion));
+    });
+    select.disabled = opciones.length === 0;
+}
+
+function buscarprovincia(nombreprovincia) {
+    return ubicaciones.find((provincia) => provincia.nombre === nombreprovincia);
+}
+
+function buscarcanton(nombreprovincia, nombrecanton) {
+    const provincia = buscarprovincia(nombreprovincia);
+    return provincia ? provincia.cantones.find((canton) => canton.nombre === nombrecanton) : null;
+}
+
+function actualizarcantones(nombreprovincia, nombrecanton = '') {
+    const provincia = buscarprovincia(nombreprovincia);
+    const cantones = provincia ? provincia.cantones.map((canton) => canton.nombre) : [];
+
+    llenarselect(selectcanton, cantones, provincia ? 'Seleccione…' : 'Seleccione la provincia');
+    selectcanton.value = nombrecanton;
+}
+
+function actualizardistritos(nombreprovincia, nombrecanton, nombredistrito = '') {
+    const canton = buscarcanton(nombreprovincia, nombrecanton);
+    const distritos = canton ? canton.distritos : [];
+
+    llenarselect(selectdistrito, distritos, canton ? 'Seleccione…' : 'Seleccione el cantón');
+    selectdistrito.value = nombredistrito;
+}
+
+function establecerubicacion(provincia = '', canton = '', distrito = '') {
+    selectprovincia.value = provincia;
+    actualizarcantones(selectprovincia.value, canton);
+    actualizardistritos(selectprovincia.value, selectcanton.value, distrito);
+}
+
+async function cargarubicaciones() {
+    const respuesta = await consultar('ubicaciones');
+
+    if (!respuesta.exito) {
+        mostraraviso(respuesta.mensaje || 'No se pudieron cargar las provincias.', 'error');
+        return;
+    }
+
+    ubicaciones = respuesta.datos;
+    llenarselect(selectprovincia, ubicaciones.map((provincia) => provincia.nombre), 'Seleccione…');
+}
+
+function asignarcampos(datos) {
+    camposformulario
+        .filter((campo) => !camposubicacion.includes(campo))
+        .forEach((campo) => {
+            formulario.elements[campo].value = normalizar(campo, datos[campo]);
+        });
+
+    establecerubicacion(
+        datos.tbproveedorprovincia ?? '',
+        datos.tbproveedorcanton ?? '',
+        datos.tbproveedordistrito ?? ''
+    );
+}
+
 function llenarformulario(datos) {
     formulario.reset();
     formulario.elements.tbproveedorid.value = datos.tbproveedorid ?? '';
-    camposformulario.forEach((campo) => {
-        formulario.elements[campo].value = normalizar(campo, datos[campo]);
-    });
+    asignarcampos(datos);
 }
 
 function aplicarborrador() {
@@ -173,9 +245,7 @@ function aplicarborrador() {
         return;
     }
 
-    camposformulario.forEach((campo) => {
-        formulario.elements[campo].value = normalizar(campo, borrador[campo]);
-    });
+    asignarcampos(borrador);
     avisoborrador.hidden = false;
 }
 
@@ -247,7 +317,8 @@ function mostrarerrores(errores) {
     }
 }
 
-function abrirnuevo() {
+async function abrirnuevo() {
+    await ubicacioneslistas;
     datosoriginales = {};
     llenarformulario(datosoriginales);
     limpiarerrores();
@@ -258,6 +329,7 @@ function abrirnuevo() {
 }
 
 async function abrireditar(id) {
+    await ubicacioneslistas;
     const respuesta = await consultar('obtener', { id });
 
     if (!respuesta.exito) {
@@ -291,11 +363,15 @@ async function verdetalle(id) {
 
     const proveedor = respuesta.datos;
     iddetalle = id;
+    const ubicacion = [proveedor.tbproveedordistrito, proveedor.tbproveedorcanton, proveedor.tbproveedorprovincia]
+        .filter((parte) => parte)
+        .join(', ');
     const filas = [
         ['Contacto', proveedor.tbproveedornombrecontacto],
         ['Teléfono', formateartelefono(proveedor.tbproveedortelefono)],
         ['Correo', proveedor.tbproveedorcorreo],
-        ['Dirección', proveedor.tbproveedordireccion],
+        ['Ubicación', ubicacion],
+        ['Dirección exacta', proveedor.tbproveedordireccion],
         ['Productos que ofrece', proveedor.tbproveedordescripcion],
         ['Estado', proveedor.tbproveedorestado === 1 ? 'Activo' : 'Inactivo'],
         ['Fecha de registro', formatearfecha(proveedor.tbproveedorfecharegistro)],
@@ -341,6 +417,17 @@ formulario.addEventListener('input', (evento) => {
     if (evento.target.name === 'tbproveedortelefono') {
         evento.target.value = formateartelefono(evento.target.value);
     }
+    guardarborrador();
+});
+
+selectprovincia.addEventListener('change', () => {
+    actualizarcantones(selectprovincia.value);
+    actualizardistritos(selectprovincia.value, '');
+    guardarborrador();
+});
+
+selectcanton.addEventListener('change', () => {
+    actualizardistritos(selectprovincia.value, selectcanton.value);
     guardarborrador();
 });
 
@@ -468,4 +555,5 @@ async function verhistorial() {
 document.getElementById('botonverhistorial').addEventListener('click', verhistorial);
 document.getElementById('botoncerrarhistorial').addEventListener('click', () => dialogohistorial.close());
 
+const ubicacioneslistas = cargarubicaciones();
 cargarproveedores();

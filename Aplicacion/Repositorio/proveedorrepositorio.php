@@ -24,9 +24,10 @@ class proveedorrepositorio
         $proveedor->setTbproveedorfecharegistro(date('Y-m-d'));
 
         $sql = 'INSERT INTO tbproveedor (tbproveedorid, tbproveedornombreempresa, tbproveedornombrecontacto,
-                tbproveedortelefono, tbproveedorcorreo, tbproveedordireccion, tbproveedordescripcion,
+                tbproveedortelefono, tbproveedorcorreo, tbproveedorprovincia, tbproveedorcanton,
+                tbproveedordistrito, tbproveedordireccion, tbproveedordescripcion,
                 tbproveedorestado, tbproveedorfecharegistro)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute([
@@ -35,6 +36,9 @@ class proveedorrepositorio
             $proveedor->getTbproveedornombrecontacto(),
             $proveedor->getTbproveedortelefono(),
             $proveedor->getTbproveedorcorreo(),
+            $proveedor->getTbproveedorprovincia(),
+            $proveedor->getTbproveedorcanton(),
+            $proveedor->getTbproveedordistrito(),
             $proveedor->getTbproveedordireccion(),
             $proveedor->getTbproveedordescripcion(),
             $proveedor->getTbproveedorestado(),
@@ -47,7 +51,8 @@ class proveedorrepositorio
     public function actualizar(Proveedor $proveedor)
     {
         $sql = 'UPDATE tbproveedor SET tbproveedornombreempresa = ?, tbproveedornombrecontacto = ?,
-                tbproveedortelefono = ?, tbproveedorcorreo = ?, tbproveedordireccion = ?,
+                tbproveedortelefono = ?, tbproveedorcorreo = ?, tbproveedorprovincia = ?,
+                tbproveedorcanton = ?, tbproveedordistrito = ?, tbproveedordireccion = ?,
                 tbproveedordescripcion = ?
                 WHERE tbproveedorid = ?';
 
@@ -57,6 +62,9 @@ class proveedorrepositorio
             $proveedor->getTbproveedornombrecontacto(),
             $proveedor->getTbproveedortelefono(),
             $proveedor->getTbproveedorcorreo(),
+            $proveedor->getTbproveedorprovincia(),
+            $proveedor->getTbproveedorcanton(),
+            $proveedor->getTbproveedordistrito(),
             $proveedor->getTbproveedordireccion(),
             $proveedor->getTbproveedordescripcion(),
             $proveedor->getTbproveedorid(),

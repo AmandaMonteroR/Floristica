@@ -1,16 +1,24 @@
 <?php
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorhistoricorepositorio.php';
+require_once __DIR__ . '/../Repositorio/ubicacionrepositorio.php';
 
 class proveedorcontrolador
 {
     private $repositorio;
     private $historico;
+    private $ubicaciones;
 
     public function __construct()
     {
         $this->repositorio = new proveedorrepositorio();
         $this->historico = new proveedorhistoricorepositorio();
+        $this->ubicaciones = new ubicacionrepositorio();
+    }
+
+    public function ubicaciones()
+    {
+        return $this->respuesta(true, '', $this->ubicaciones->listar());
     }
 
     public function listar($texto = '', $estado = null)
@@ -99,6 +107,9 @@ class proveedorcontrolador
         $proveedor->setTbproveedornombrecontacto($datos['tbproveedornombrecontacto']);
         $proveedor->setTbproveedortelefono($datos['tbproveedortelefono']);
         $proveedor->setTbproveedorcorreo($datos['tbproveedorcorreo']);
+        $proveedor->setTbproveedorprovincia($datos['tbproveedorprovincia']);
+        $proveedor->setTbproveedorcanton($datos['tbproveedorcanton']);
+        $proveedor->setTbproveedordistrito($datos['tbproveedordistrito']);
         $proveedor->setTbproveedordireccion($datos['tbproveedordireccion']);
         $proveedor->setTbproveedordescripcion($datos['tbproveedordescripcion']);
 
@@ -221,6 +232,9 @@ class proveedorcontrolador
             'tbproveedornombrecontacto',
             'tbproveedortelefono',
             'tbproveedorcorreo',
+            'tbproveedorprovincia',
+            'tbproveedorcanton',
+            'tbproveedordistrito',
             'tbproveedordireccion',
             'tbproveedordescripcion',
         ];
@@ -270,8 +284,32 @@ class proveedorcontrolador
             }
         }
 
+        $tieneubicacion = $datos['tbproveedorprovincia'] !== ''
+            || $datos['tbproveedorcanton'] !== ''
+            || $datos['tbproveedordistrito'] !== '';
+
+        if ($tieneubicacion) {
+            if ($datos['tbproveedorprovincia'] === '') {
+                $errores['tbproveedorprovincia'] = 'Seleccione la provincia.';
+            } elseif (!$this->ubicaciones->existeprovincia($datos['tbproveedorprovincia'])) {
+                $errores['tbproveedorprovincia'] = 'La provincia seleccionada no es válida.';
+            }
+
+            if ($datos['tbproveedorcanton'] === '') {
+                $errores['tbproveedorcanton'] = 'Seleccione el cantón.';
+            } elseif (!$this->ubicaciones->existecanton($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'])) {
+                $errores['tbproveedorcanton'] = 'El cantón no pertenece a la provincia seleccionada.';
+            }
+
+            if ($datos['tbproveedordistrito'] === '') {
+                $errores['tbproveedordistrito'] = 'Seleccione el distrito.';
+            } elseif (!$this->ubicaciones->existedistrito($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'], $datos['tbproveedordistrito'])) {
+                $errores['tbproveedordistrito'] = 'El distrito no pertenece al cantón seleccionado.';
+            }
+        }
+
         if (mb_strlen($datos['tbproveedordireccion']) > 200) {
-            $errores['tbproveedordireccion'] = 'La dirección no puede superar 200 caracteres.';
+            $errores['tbproveedordireccion'] = 'La dirección exacta no puede superar 200 caracteres.';
         }
 
         if (mb_strlen($datos['tbproveedordescripcion']) > 255) {
@@ -289,6 +327,9 @@ class proveedorcontrolador
             'tbproveedornombrecontacto' => $proveedor->getTbproveedornombrecontacto(),
             'tbproveedortelefono'       => $proveedor->getTbproveedortelefono(),
             'tbproveedorcorreo'         => $proveedor->getTbproveedorcorreo(),
+            'tbproveedorprovincia'      => $proveedor->getTbproveedorprovincia() ?? '',
+            'tbproveedorcanton'         => $proveedor->getTbproveedorcanton() ?? '',
+            'tbproveedordistrito'       => $proveedor->getTbproveedordistrito() ?? '',
             'tbproveedordireccion'      => $proveedor->getTbproveedordireccion(),
             'tbproveedordescripcion'    => $proveedor->getTbproveedordescripcion(),
             'tbproveedorestado'         => (int) $proveedor->getTbproveedorestado(),

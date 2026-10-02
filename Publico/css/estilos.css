@@ -533,3 +533,20 @@ h1 {
 .texto-suave {
     color: var(--texto-suave);
 }
+
+.rejilla-ubicacion {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem 1rem;
+}
+
+.campo select:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .rejilla-ubicacion {
+        grid-template-columns: 1fr;
+    }
+}

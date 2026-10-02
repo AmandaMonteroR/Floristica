@@ -42,6 +42,9 @@ try {
                 case 'obtener':
                     $respuesta = $controlador->obtener($_GET['id'] ?? 0);
                     break;
+                case 'ubicaciones':
+                    $respuesta = $controlador->ubicaciones();
+                    break;
                 case 'historial':
                     $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;
@@ -68,6 +71,9 @@ try {
 } catch (PDOException $excepcion) {
     http_response_code(500);
     $respuesta = ['exito' => false, 'mensaje' => 'No se pudo completar la operación en la base de datos. Intente de nuevo.', 'datos' => []];
+} catch (RuntimeException $excepcion) {
+    http_response_code(500);
+    $respuesta = ['exito' => false, 'mensaje' => $excepcion->getMessage(), 'datos' => []];
 }
 
 echo json_encode($respuesta, JSON_UNESCAPED_UNICODE);

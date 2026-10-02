@@ -7,6 +7,9 @@ class Proveedor
     private $tbproveedornombrecontacto;
     private $tbproveedortelefono;
     private $tbproveedorcorreo;
+    private $tbproveedorprovincia;
+    private $tbproveedorcanton;
+    private $tbproveedordistrito;
     private $tbproveedordireccion;
     private $tbproveedordescripcion;
     private $tbproveedorestado;
@@ -19,6 +22,9 @@ class Proveedor
         $this->tbproveedornombrecontacto = $datos['tbproveedornombrecontacto'] ?? '';
         $this->tbproveedortelefono       = $datos['tbproveedortelefono'] ?? '';
         $this->tbproveedorcorreo         = $datos['tbproveedorcorreo'] ?? '';
+        $this->tbproveedorprovincia      = $datos['tbproveedorprovincia'] ?? '';
+        $this->tbproveedorcanton         = $datos['tbproveedorcanton'] ?? '';
+        $this->tbproveedordistrito       = $datos['tbproveedordistrito'] ?? '';
         $this->tbproveedordireccion      = $datos['tbproveedordireccion'] ?? '';
         $this->tbproveedordescripcion    = $datos['tbproveedordescripcion'] ?? '';
         $this->tbproveedorestado         = $datos['tbproveedorestado'] ?? 1;
@@ -54,6 +60,24 @@ class Proveedor
 
     public function setTbproveedorcorreo($valor) { 
         $this->tbproveedorcorreo = $valor; }
+
+    public function getTbproveedorprovincia() { 
+        return $this->tbproveedorprovincia; }
+
+    public function setTbproveedorprovincia($valor) { 
+        $this->tbproveedorprovincia = $valor; }
+
+    public function getTbproveedorcanton() { 
+        return $this->tbproveedorcanton; }
+
+    public function setTbproveedorcanton($valor) { 
+        $this->tbproveedorcanton = $valor; }
+
+    public function getTbproveedordistrito() { 
+        return $this->tbproveedordistrito; }
+
+    public function setTbproveedordistrito($valor) { 
+        $this->tbproveedordistrito = $valor; }
 
     public function getTbproveedordireccion() { 
         return $this->tbproveedordireccion; }
