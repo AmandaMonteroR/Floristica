@@ -51,3 +51,10 @@ Para verificar (debe mostrar la lista de tablas):
 ```bash
 mariadb -u root -h 127.0.0.1 bdfloristica -e "SHOW TABLES;"
 ```
+
+```bash
+cd Publico
+php -S localhost:8000
+```
+
+Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
