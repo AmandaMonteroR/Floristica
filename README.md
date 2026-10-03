@@ -49,8 +49,10 @@ sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_passwo
 Para verificar (debe mostrar la lista de tablas):
 
 ```bash
-mariadb -u root -h 127.0.0.1 bdfloristica -e "SHOW TABLES;"
+mysql -u root -h 127.0.0.1 bdfloristica -e "SHOW TABLES;"
 ```
+
+### 5. Ejecutar el proyecto
 
 ```bash
 cd Publico
@@ -58,3 +60,47 @@ php -S localhost:8000
 ```
 
 Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
+
+## Configuración
+
+Los datos de conexión se encuentran en `Configuracion/Configuracion.php`. Por defecto el proyecto usa:
+
+| Parámetro | Valor        |
+|-----------|--------------|
+| Servidor  | 127.0.0.1    |
+| Puerto    | 3306         |
+| Base      | bdfloristica |
+| Usuario   | root         |
+| Clave     | (vacía)      |
+
+Si se usa un usuario o contraseña distintos, se deben modificar en ese archivo.
+
+## Solución de problemas
+
+- **"No se pudo completar la operación en la base de datos"**: MariaDB no está corriendo (repetir el paso 2), root no tiene acceso sin contraseña (repetir el paso 4) o la base de datos está desactualizada (ver los siguientes puntos).
+- **`mariadb: command not found`**: falta instalar MariaDB (repetir el paso 1).
+- **`Can't connect to local server through socket`**: el servicio está apagado. Ejecutar `sudo systemctl start mariadb`.
+- **`Address already in use` al ejecutar `php -S`**: el puerto 8000 está ocupado. Usar otro, por ejemplo `php -S localhost:8080`.
+- **`Unknown column 'tbproveedorprovincia'` o error al guardar un proveedor**: la base de datos se creó con una versión anterior del script y le faltan las columnas de ubicación. Se pueden agregar sin perder datos:
+
+```bash
+mysql -u root -h 127.0.0.1 bdfloristica -e "ALTER TABLE tbproveedor ADD COLUMN tbproveedorprovincia VARCHAR(50) AFTER tbproveedorcorreo, ADD COLUMN tbproveedorcanton VARCHAR(50) AFTER tbproveedorprovincia, ADD COLUMN tbproveedordistrito VARCHAR(60) AFTER tbproveedorcanton;"
+```
+
+- **Recrear la base de datos desde cero** (borra todos los datos registrados), desde la carpeta raíz del proyecto:
+
+```bash
+mysql -u root -h 127.0.0.1 -e "DROP DATABASE IF EXISTS bdfloristica;"
+mysql -u root -h 127.0.0.1 < BaseDatos/ScriptsSQL/bdfloristica.sql
+```
+
+## Estructura del proyecto
+
+```
+Floristica/
+├── Aplicacion/       # Controladores, modelos, repositorios y vistas
+├── BaseDatos/        # Script SQL, datos iniciales y respaldos
+├── Configuracion/    # Conexión y parámetros de la base de datos
+├── Documentacion/
+└── Publico/          # Punto de entrada (index.php), CSS, JS e imágenes
+```
