@@ -7,27 +7,14 @@ CREATE TABLE tbproveedor (
     tbproveedornombrecontacto VARCHAR(100),
     tbproveedortelefono VARCHAR(20),
     tbproveedorcorreo VARCHAR(100),
+    tbproveedorprovincia VARCHAR(50),
+    tbproveedorcanton VARCHAR(50),
+    tbproveedordistrito VARCHAR(60),
     tbproveedordireccion VARCHAR(200),
     tbproveedordescripcion VARCHAR(255),
     tbproveedorestado TINYINT(1),
     tbproveedorfecharegistro DATE,
     PRIMARY KEY (tbproveedorid)
-);
-
-CREATE TABLE tbproveedororden (
-    tbproveedorordenid INT,
-    tbproveedorid INT,
-    tbproveedorordenfecha DATE,
-    tbproveedorordenestado TINYINT(1),
-    PRIMARY KEY (tbproveedorordenid)
-);
-
-CREATE TABLE tbproveedorordendetalle (
-    tbproveedorordendetalleid INT,
-    tbproveedorordenid INT,
-    tbproveedorordendetalleinsumoid INT,
-    tbproveedorordendetallecantidad INT,
-    PRIMARY KEY (tbproveedorordendetalleid)
 );
 
 CREATE TABLE tbproveedornombreempresahistorico (
@@ -60,6 +47,15 @@ CREATE TABLE tbproveedorcorreohistorico (
     tbproveedorcorreohistoricovalor VARCHAR(100),
     tbproveedorcorreohistoricofecha DATETIME,
     PRIMARY KEY (tbproveedorcorreohistoricoid)
+);
+
+-- Guarda provincia, cantón, distrito y dirección juntos, separados por " / "
+CREATE TABLE tbproveedorubicacionhistorico (
+    tbproveedorubicacionhistoricoid INT,
+    tbproveedorid INT,
+    tbproveedorubicacionhistoricovalor VARCHAR(370),
+    tbproveedorubicacionhistoricofecha DATETIME,
+    PRIMARY KEY (tbproveedorubicacionhistoricoid)
 );
 
 CREATE TABLE tbproveedorestadohistorico (
