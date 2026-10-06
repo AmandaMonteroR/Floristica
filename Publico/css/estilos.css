@@ -561,3 +561,8 @@ h1 {
         grid-template-columns: 1fr;
     }
 }
+
+/* En el historial, los valores largos (como la ubicación) pasan a la siguiente línea */
+#dialogohistorial .tabla td {
+    white-space: normal;
+}
