@@ -417,6 +417,9 @@ formulario.addEventListener('input', (evento) => {
     if (evento.target.name === 'tbproveedortelefono') {
         evento.target.value = formateartelefono(evento.target.value);
     }
+    if (evento.target.name === 'tbproveedornombrecontacto') {
+        evento.target.value = evento.target.value.replace(/[^\p{L}\s'.-]/gu, '');
+    }
     guardarborrador();
 });
 
