@@ -4,8 +4,8 @@ require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 class proveedorhistoricorepositorio
 {
     private $conexion;
-    private $campos = ['nombreempresa', 'nombrecontacto', 'telefono', 'correo', 'estado'];
-
+    private $campos = ['nombreempresa', 'nombrecontacto', 'telefono', 'correo', 'ubicacion', 'estado'];
+    
     public function __construct()
     {
         $this->conexion = Basedatos::conectar();

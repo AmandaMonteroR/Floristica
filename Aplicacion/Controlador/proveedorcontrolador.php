@@ -64,6 +64,7 @@ class proveedorcontrolador
                 $this->historico->registrar('correo', $id, $proveedor->getTbproveedorcorreo());
             }
 
+            $this->historico->registrar('ubicacion', $id, $this->textoubicacion($proveedor));
             $this->historico->registrar('estado', $id, 1);
 
             return $id;
@@ -103,6 +104,7 @@ class proveedorcontrolador
             }
         }
 
+        $ubicacionanterior = $this->textoubicacion($proveedor);
         $proveedor->setTbproveedornombreempresa($datos['tbproveedornombreempresa']);
         $proveedor->setTbproveedornombrecontacto($datos['tbproveedornombrecontacto']);
         $proveedor->setTbproveedortelefono($datos['tbproveedortelefono']);
@@ -112,6 +114,12 @@ class proveedorcontrolador
         $proveedor->setTbproveedordistrito($datos['tbproveedordistrito']);
         $proveedor->setTbproveedordireccion($datos['tbproveedordireccion']);
         $proveedor->setTbproveedordescripcion($datos['tbproveedordescripcion']);
+
+
+        $ubicacionnueva = $this->textoubicacion($proveedor);
+        if ($ubicacionnueva !== $ubicacionanterior) {
+            $cambios['ubicacion'] = $ubicacionnueva;
+        }
 
         $this->entransaccion(function () use ($proveedor, $cambios, $id) {
             $this->repositorio->actualizar($proveedor);
@@ -179,6 +187,7 @@ class proveedorcontrolador
             'nombrecontacto' => 'Nombre del contacto',
             'telefono'       => 'Teléfono',
             'correo'         => 'Correo',
+            'ubicacion'      => 'Ubicación',
             'estado'         => 'Estado',
         ];
 
@@ -260,7 +269,10 @@ class proveedorcontrolador
             $errores['tbproveedornombreempresa'] = 'El nombre de la empresa es obligatorio.';
         } elseif (mb_strlen($datos['tbproveedornombreempresa']) > 100) {
             $errores['tbproveedornombreempresa'] = 'El nombre de la empresa no puede superar 100 caracteres.';
-        } elseif ($this->repositorio->existenombreempresa($datos['tbproveedornombreempresa'], $idexcluir)) {
+        } elseif (!preg_match('/\p{L}/u', $datos['tbproveedornombreempresa'])) {
+            $errores['tbproveedornombreempresa'] = 'El nombre de la empresa debe contener al menos una letra.';
+        } elseif ($this->repositorio->existenombreempresa(
+            $datos['tbproveedornombreempresa'], $idexcluir)) {
             $errores['tbproveedornombreempresa'] = 'Ya existe un proveedor con ese nombre de empresa.';
         }
 
@@ -315,6 +327,21 @@ class proveedorcontrolador
         }
 
         return $errores;
+    }
+
+    private function textoubicacion(Proveedor $proveedor)
+    {
+        $partes = [
+            (string) $proveedor->getTbproveedorprovincia(),
+            (string) $proveedor->getTbproveedorcanton(),
+            (string) $proveedor->getTbproveedordistrito(),
+        ];
+
+        if ((string) $proveedor->getTbproveedordireccion() !== '') {
+            $partes[] = (string) $proveedor->getTbproveedordireccion();
+        }
+
+        return implode(' / ', $partes);
     }
 
     private function convertirarreglo(Proveedor $proveedor)

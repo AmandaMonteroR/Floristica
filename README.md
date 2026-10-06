@@ -86,6 +86,11 @@ Si se usa un usuario o contraseña distintos, se deben modificar en ese archivo.
 ```bash
 mysql -u root -h 127.0.0.1 bdfloristica -e "ALTER TABLE tbproveedor ADD COLUMN tbproveedorprovincia VARCHAR(50) AFTER tbproveedorcorreo, ADD COLUMN tbproveedorcanton VARCHAR(50) AFTER tbproveedorprovincia, ADD COLUMN tbproveedordistrito VARCHAR(60) AFTER tbproveedorcanton;"
 ```
+- **`Table 'bdfloristica.tbproveedorubicacionhistorico' doesn't exist`**: la base se creó antes de que se agregara el histórico de ubicación. Se puede crear la tabla sin perder datos:
+
+```bash
+mysql -u root -h 127.0.0.1 bdfloristica -e "CREATE TABLE tbproveedorubicacionhistorico (tbproveedorubicacionhistoricoid INT, tbproveedorid INT, tbproveedorubicacionhistoricovalor VARCHAR(370), tbproveedorubicacionhistoricofecha DATETIME, PRIMARY KEY (tbproveedorubicacionhistoricoid));"
+```
 
 - **Recrear la base de datos desde cero** (borra todos los datos registrados), desde la carpeta raíz del proyecto:
 
@@ -104,3 +109,30 @@ Floristica/
 ├── Documentacion/
 └── Publico/          # Punto de entrada (index.php), CSS, JS e imágenes
 ```
+
+
+## Reglas del módulo Proveedores
+
+Todas las reglas se aplican en PHP (`Aplicacion/Controlador/proveedorcontrolador.php`); la base de datos solo almacena la información.
+
+- **Obligatorios**: nombre de la empresa, nombre del contacto, teléfono, provincia, cantón y distrito.
+- **Nombre de la empresa**: máximo 100 caracteres, al menos una letra (se permiten números, como en "Flores 2000") y no puede repetirse.
+- **Nombre del contacto**: máximo 100 caracteres; solo letras (con tildes y ñ), espacios, puntos, apóstrofos y guiones.
+- **Teléfono**: exactamente 8 dígitos, se guarda con formato `0000-0000` y no puede repetirse.
+- **Correo**: opcional; si se ingresa, debe tener formato válido y no puede repetirse.
+- **Ubicación**: provincia, cantón y distrito deben corresponder entre sí según `BaseDatos/DatosIniciales/ubicaciones.txt`.
+
+### Históricos
+
+Cada vez que se crea un proveedor o cambia uno de estos datos, se registra el nuevo valor con fecha y hora:
+
+| Dato | Tabla |
+|------|-------|
+| Nombre de la empresa | `tbproveedornombreempresahistorico` |
+| Nombre del contacto | `tbproveedornombrecontactohistorico` |
+| Teléfono | `tbproveedortelefonohistorico` |
+| Correo | `tbproveedorcorreohistorico` |
+| Ubicación (provincia / cantón / distrito / dirección) | `tbproveedorubicacionhistorico` |
+| Estado (activo / inactivo) | `tbproveedorestadohistorico` |
+
+La descripción es texto libre y no lleva histórico.
