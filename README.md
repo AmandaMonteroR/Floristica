@@ -61,6 +61,13 @@ php -S localhost:8000
 
 Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
 
+
+Opcional: para cargar proveedores de prueba (desde la carpeta raíz del proyecto):
+
+```bash
+php BaseDatos/DatosIniciales/cargardatosprueba.php
+```
+
 ## Configuración
 
 Los datos de conexión se encuentran en `Configuracion/Configuracion.php`. Por defecto el proyecto usa:
@@ -86,6 +93,7 @@ Si se usa un usuario o contraseña distintos, se deben modificar en ese archivo.
 ```bash
 mysql -u root -h 127.0.0.1 bdfloristica -e "ALTER TABLE tbproveedor ADD COLUMN tbproveedorprovincia VARCHAR(50) AFTER tbproveedorcorreo, ADD COLUMN tbproveedorcanton VARCHAR(50) AFTER tbproveedorprovincia, ADD COLUMN tbproveedordistrito VARCHAR(60) AFTER tbproveedorcanton;"
 ```
+
 - **`Table 'bdfloristica.tbproveedorubicacionhistorico' doesn't exist`**: la base se creó antes de que se agregara el histórico de ubicación. Se puede crear la tabla sin perder datos:
 
 ```bash
@@ -117,7 +125,7 @@ Todas las reglas se aplican en PHP (`Aplicacion/Controlador/proveedorcontrolador
 
 - **Obligatorios**: nombre de la empresa, nombre del contacto, teléfono, provincia, cantón y distrito.
 - **Nombre de la empresa**: máximo 100 caracteres, al menos una letra (se permiten números, como en "Flores 2000") y no puede repetirse.
-- **Nombre del contacto**: máximo 100 caracteres; solo letras (con tildes y ñ), espacios, puntos, apóstrofos y guiones.
+- **Nombre del contacto**: máximo 100 caracteres; solo letras (con tildes y ñ) y espacios, sin números ni símbolos.
 - **Teléfono**: exactamente 8 dígitos, se guarda con formato `0000-0000` y no puede repetirse.
 - **Correo**: opcional; si se ingresa, debe tener formato válido y no puede repetirse.
 - **Ubicación**: provincia, cantón y distrito deben corresponder entre sí según `BaseDatos/DatosIniciales/ubicaciones.txt`.
