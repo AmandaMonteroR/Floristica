@@ -280,6 +280,8 @@ class proveedorcontrolador
             $errores['tbproveedornombrecontacto'] = 'El nombre del contacto es obligatorio.';
         } elseif (mb_strlen($datos['tbproveedornombrecontacto']) > 100) {
             $errores['tbproveedornombrecontacto'] = 'El nombre del contacto no puede superar 100 caracteres.';
+        } elseif (!preg_match("/^[\p{L}\s'.-]+$/u", $datos['tbproveedornombrecontacto'])) {
+            $errores['tbproveedornombrecontacto'] = 'El nombre del contacto solo puede contener letras.';
         }
 
         if ($datos['tbproveedortelefono'] === '') {
