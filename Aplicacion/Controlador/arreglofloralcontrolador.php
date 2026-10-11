@@ -1,0 +1,388 @@
+<?php
+require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
+
+class arreglofloralcontrolador
+{
+    private $repositorio;
+    private $inventario;
+    private $carpetafotos;
+    private $tiposfoto = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+    private $tamanomaximo = 2097152;
+
+    public function __construct()
+    {
+        $this->repositorio = new arreglofloralrepositorio();
+        $this->inventario = new inventariorepositorio();
+        $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/arreglos/';
+    }
+
+    public function productos()
+    {
+        $lista = [];
+        foreach ($this->inventario->listar('', '', 1) as $producto) {
+            $lista[] = [
+                'tbinventarioid'           => $producto->getTbinventarioid(),
+                'tbinventarionombre'       => $producto->getTbinventarionombre(),
+                'tbinventariocategoria'    => $producto->getTbinventariocategoria(),
+                'tbinventariopreciounidad' => (float) $producto->getTbinventariopreciounidad(),
+            ];
+        }
+
+        return $this->respuesta(true, '', $lista);
+    }
+
+    public function listar($texto = '', $estado = null)
+    {
+        $lista = [];
+        foreach ($this->repositorio->listar($texto, $estado) as $arreglo) {
+            $lista[] = $this->convertirarreglo($arreglo);
+        }
+
+        return $this->respuesta(true, '', $lista);
+    }
+
+    public function obtener($id)
+    {
+        $arreglo = $this->repositorio->obtenerporid((int) $id);
+
+        if (!$arreglo) {
+            return $this->respuesta(false, 'El arreglo floral no existe.');
+        }
+
+        $datos = $this->convertirarreglo($arreglo);
+        $datos['detalles'] = [];
+
+        foreach ($this->repositorio->listardetalles($arreglo->getTbarreglofloralid()) as $detalle) {
+            $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
+            $datos['detalles'][] = [
+                'tbinventarioid'                 => (int) $detalle->getTbinventarioid(),
+                'tbinventarionombre'             => $producto ? $producto->getTbinventarionombre() : '',
+                'tbinventariocategoria'          => $producto ? $producto->getTbinventariocategoria() : '',
+                'tbinventariopreciounidad'       => $producto ? (float) $producto->getTbinventariopreciounidad() : 0,
+                'tbarreglofloraldetallecantidad' => (int) $detalle->getTbarreglofloraldetallecantidad(),
+            ];
+        }
+
+        return $this->respuesta(true, '', $datos);
+    }
+
+    public function crear($datos, $archivos)
+    {
+        $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
+        $datos = $this->limpiar($datos);
+        $foto = $archivos['tbarreglofloralfoto'] ?? null;
+        $errores = $this->validar($datos, $detalles, $foto, true);
+
+        if ($errores) {
+            return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
+        }
+
+        $datos['tbarreglofloralfoto'] = $this->guardarfoto($foto);
+        $arreglo = new Arreglofloral($datos);
+
+        try {
+            $id = $this->entransaccion(function () use ($arreglo, $detalles) {
+                $id = $this->repositorio->insertar($arreglo);
+                $this->guardardetalles($id, $detalles);
+
+                return $id;
+            });
+        } catch (Throwable $excepcion) {
+            $this->eliminarfoto($datos['tbarreglofloralfoto']);
+            throw $excepcion;
+        }
+
+        return $this->respuesta(true, 'Arreglo floral registrado correctamente.', ['tbarreglofloralid' => $id]);
+    }
+
+    public function actualizar($datos, $archivos)
+    {
+        $id = (int) ($datos['tbarreglofloralid'] ?? 0);
+        $arreglo = $this->repositorio->obtenerporid($id);
+
+        if (!$arreglo) {
+            return $this->respuesta(false, 'El arreglo floral no existe.');
+        }
+
+        $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
+        $datos = $this->limpiar($datos);
+        $foto = $archivos['tbarreglofloralfoto'] ?? null;
+        $errores = $this->validar($datos, $detalles, $foto, false, $id);
+
+        if ($errores) {
+            return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
+        }
+
+        $fotoanterior = $arreglo->getTbarreglofloralfoto();
+        $fotonueva = $this->haysubida($foto) ? $this->guardarfoto($foto) : null;
+
+        $arreglo->setTbarreglofloralnombre($datos['tbarreglofloralnombre']);
+        $arreglo->setTbarreglofloraldescripcion($datos['tbarreglofloraldescripcion']);
+        $arreglo->setTbarreglofloralprecio($datos['tbarreglofloralprecio']);
+
+        if ($fotonueva !== null) {
+            $arreglo->setTbarreglofloralfoto($fotonueva);
+        }
+
+        try {
+            $this->entransaccion(function () use ($arreglo, $detalles, $id) {
+                $this->repositorio->actualizar($arreglo);
+                $this->repositorio->eliminardetalles($id);
+                $this->guardardetalles($id, $detalles);
+            });
+        } catch (Throwable $excepcion) {
+            if ($fotonueva !== null) {
+                $this->eliminarfoto($fotonueva);
+            }
+            throw $excepcion;
+        }
+
+        if ($fotonueva !== null) {
+            $this->eliminarfoto($fotoanterior);
+        }
+
+        return $this->respuesta(true, 'Arreglo floral actualizado correctamente.');
+    }
+
+    public function inactivar($id)
+    {
+        $id = (int) $id;
+        $arreglo = $this->repositorio->obtenerporid($id);
+
+        if (!$arreglo) {
+            return $this->respuesta(false, 'El arreglo floral no existe.');
+        }
+
+        if (!$arreglo->estaActivo()) {
+            return $this->respuesta(false, 'El arreglo floral ya está inactivo.');
+        }
+
+        $this->repositorio->inactivar($id);
+
+        return $this->respuesta(true, 'Arreglo floral inactivado correctamente.');
+    }
+
+    public function reactivar($id)
+    {
+        $id = (int) $id;
+        $arreglo = $this->repositorio->obtenerporid($id);
+
+        if (!$arreglo) {
+            return $this->respuesta(false, 'El arreglo floral no existe.');
+        }
+
+        if ($arreglo->estaActivo()) {
+            return $this->respuesta(false, 'El arreglo floral ya está activo.');
+        }
+
+        $this->repositorio->reactivar($id);
+
+        return $this->respuesta(true, 'Arreglo floral reactivado correctamente.');
+    }
+
+    private function guardardetalles($idarreglo, $detalles)
+    {
+        foreach ($detalles as $detalle) {
+            $this->repositorio->insertardetalle(new Arreglofloraldetalle([
+                'tbarreglofloralid'              => $idarreglo,
+                'tbinventarioid'                 => (int) $detalle['tbinventarioid'],
+                'tbarreglofloraldetallecantidad' => (int) $detalle['tbarreglofloraldetallecantidad'],
+            ]));
+        }
+    }
+
+    private function costo($idarreglo)
+    {
+        $costo = 0;
+        foreach ($this->repositorio->listardetalles($idarreglo) as $detalle) {
+            $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
+            if ($producto) {
+                $costo += (int) $detalle->getTbarreglofloraldetallecantidad() * (float) $producto->getTbinventariopreciounidad();
+            }
+        }
+
+        return round($costo, 2);
+    }
+
+    private function haysubida($foto)
+    {
+        return is_array($foto) && ($foto['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+    }
+
+    private function guardarfoto($foto)
+    {
+        if (!is_dir($this->carpetafotos)) {
+            mkdir($this->carpetafotos, 0775, true);
+        }
+
+        $tipo = getimagesize($foto['tmp_name'])['mime'];
+        $nombre = 'arreglo_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $this->tiposfoto[$tipo];
+
+        if (!move_uploaded_file($foto['tmp_name'], $this->carpetafotos . $nombre)) {
+            throw new RuntimeException('No se pudo guardar la foto del arreglo.');
+        }
+
+        return 'imagenes/arreglos/' . $nombre;
+    }
+
+    private function eliminarfoto($ruta)
+    {
+        $archivo = __DIR__ . '/../../Publico/' . $ruta;
+
+        if ($ruta !== '' && strpos($ruta, 'imagenes/arreglos/') === 0 && is_file($archivo)) {
+            unlink($archivo);
+        }
+    }
+
+    private function entransaccion($operacion)
+    {
+        $conexion = Basedatos::conectar();
+        $conexion->beginTransaction();
+
+        try {
+            $resultado = $operacion();
+            $conexion->commit();
+            return $resultado;
+        } catch (Throwable $excepcion) {
+            $conexion->rollBack();
+            throw $excepcion;
+        }
+    }
+
+    private function limpiar($datos)
+    {
+        $campos = [
+            'tbarreglofloralnombre',
+            'tbarreglofloraldescripcion',
+            'tbarreglofloralprecio',
+        ];
+
+        $limpios = [];
+        foreach ($campos as $campo) {
+            $limpios[$campo] = trim((string) ($datos[$campo] ?? ''));
+        }
+
+        $limpios['tbarreglofloralprecio'] = str_replace(',', '.', $limpios['tbarreglofloralprecio']);
+
+        return $limpios;
+    }
+
+    private function limpiardetalles($detalles)
+    {
+        if (!is_array($detalles)) {
+            return [];
+        }
+
+        $limpios = [];
+        foreach ($detalles as $detalle) {
+            if (!is_array($detalle)) {
+                continue;
+            }
+
+            $limpios[] = [
+                'tbinventarioid'                 => trim((string) ($detalle['tbinventarioid'] ?? '')),
+                'tbarreglofloraldetallecantidad' => trim((string) ($detalle['tbarreglofloraldetallecantidad'] ?? '')),
+            ];
+        }
+
+        return $limpios;
+    }
+
+    private function validar($datos, $detalles, $foto, $fotoobligatoria, $idexcluir = 0)
+    {
+        $errores = [];
+
+        if ($datos['tbarreglofloralnombre'] === '') {
+            $errores['tbarreglofloralnombre'] = 'El nombre del arreglo es obligatorio.';
+        } elseif (mb_strlen($datos['tbarreglofloralnombre']) > 100) {
+            $errores['tbarreglofloralnombre'] = 'El nombre del arreglo no puede superar 100 caracteres.';
+        } elseif (!preg_match('/\p{L}/u', $datos['tbarreglofloralnombre'])) {
+            $errores['tbarreglofloralnombre'] = 'El nombre del arreglo debe contener al menos una letra.';
+        } elseif ($this->repositorio->existenombre($datos['tbarreglofloralnombre'], $idexcluir)) {
+            $errores['tbarreglofloralnombre'] = 'Ya existe un arreglo floral con ese nombre.';
+        }
+
+        if (mb_strlen($datos['tbarreglofloraldescripcion']) > 255) {
+            $errores['tbarreglofloraldescripcion'] = 'La descripción no puede superar 255 caracteres.';
+        }
+
+        if ($datos['tbarreglofloralprecio'] === '') {
+            $errores['tbarreglofloralprecio'] = 'El precio es obligatorio.';
+        } elseif (!preg_match('/^\d{1,8}(\.\d{1,2})?$/', $datos['tbarreglofloralprecio'])
+            || (float) $datos['tbarreglofloralprecio'] <= 0) {
+            $errores['tbarreglofloralprecio'] = 'El precio debe ser un monto mayor que 0, con máximo 2 decimales.';
+        }
+
+        if (!$this->haysubida($foto)) {
+            if ($fotoobligatoria) {
+                $errores['tbarreglofloralfoto'] = 'La foto del arreglo es obligatoria.';
+            }
+        } elseif ($foto['error'] !== UPLOAD_ERR_OK) {
+            $errores['tbarreglofloralfoto'] = 'No se pudo subir la foto. Verifique que pese menos de 2 MB.';
+        } elseif ($foto['size'] > $this->tamanomaximo) {
+            $errores['tbarreglofloralfoto'] = 'La foto no puede pesar más de 2 MB.';
+        } else {
+            $imagen = @getimagesize($foto['tmp_name']);
+            if (!$imagen || !isset($this->tiposfoto[$imagen['mime']])) {
+                $errores['tbarreglofloralfoto'] = 'La foto debe ser una imagen JPG, PNG o WEBP.';
+            }
+        }
+
+        if (count($detalles) === 0) {
+            $errores['detalles'] = 'Agregue al menos un producto del inventario.';
+            return $errores;
+        }
+
+        $usados = [];
+        foreach ($detalles as $indice => $detalle) {
+            $linea = 'Línea ' . ($indice + 1) . ': ';
+            $producto = ctype_digit($detalle['tbinventarioid'])
+                ? $this->inventario->obtenerporid((int) $detalle['tbinventarioid'])
+                : null;
+
+            if ($detalle['tbinventarioid'] === '') {
+                $errores['detalles'] = $linea . 'seleccione el producto.';
+            } elseif (!$producto) {
+                $errores['detalles'] = $linea . 'el producto no existe.';
+            } elseif (!$producto->estaActivo()) {
+                $errores['detalles'] = $linea . 'el producto está inactivo.';
+            } elseif (in_array($detalle['tbinventarioid'], $usados, true)) {
+                $errores['detalles'] = $linea . 'el producto ya está en otra línea.';
+            } elseif (!ctype_digit($detalle['tbarreglofloraldetallecantidad'])
+                || (int) $detalle['tbarreglofloraldetallecantidad'] < 1) {
+                $errores['detalles'] = $linea . 'la cantidad debe ser un número entero mayor que 0.';
+            }
+
+            if (isset($errores['detalles'])) {
+                break;
+            }
+
+            $usados[] = $detalle['tbinventarioid'];
+        }
+
+        return $errores;
+    }
+
+    private function convertirarreglo(Arreglofloral $arreglo)
+    {
+        return [
+            'tbarreglofloralid'          => $arreglo->getTbarreglofloralid(),
+            'tbarreglofloralnombre'      => $arreglo->getTbarreglofloralnombre(),
+            'tbarreglofloraldescripcion' => $arreglo->getTbarreglofloraldescripcion(),
+            'tbarreglofloralfoto'        => $arreglo->getTbarreglofloralfoto(),
+            'tbarreglofloralprecio'      => (float) $arreglo->getTbarreglofloralprecio(),
+            'tbarreglofloralestado'      => (int) $arreglo->getTbarreglofloralestado(),
+            'costo'                      => $this->costo($arreglo->getTbarreglofloralid()),
+        ];
+    }
+
+    private function respuesta($exito, $mensaje, $datos = [])
+    {
+        return [
+            'exito'   => $exito,
+            'mensaje' => $mensaje,
+            'datos'   => $datos,
+        ];
+    }
+}
