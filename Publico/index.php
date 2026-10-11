@@ -1,16 +1,22 @@
 <?php
 require_once __DIR__ . '/../Configuracion/Configuracion.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/proveedorcontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/inventariocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/pedidocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/arreglofloralcontrolador.php';
 
 $modulo = $_GET['modulo'] ?? 'proveedor';
 $accion = $_GET['accion'] ?? '';
 
 if ($accion === '') {
     $vistas = [
-        'proveedor' => 'proveedorvista.php',
+        'proveedor'  => 'proveedorvista.php',
+        'inventario' => 'inventariovista.php',
+        'pedido'     => 'pedidovista.php',
+        'catalogo'   => 'arreglofloralvista.php',
     ];
 
-    if (!isset($vistas[$modulo])) {
+    if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
         http_response_code(404);
         echo 'Página no encontrada.';
         exit;
@@ -22,7 +28,7 @@ if ($accion === '') {
 
 header('Content-Type: application/json; charset=utf-8');
 
-$accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar'];
+$accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -53,6 +59,99 @@ try {
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST);
+                    break;
+                case 'inactivar':
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
+                    break;
+                case 'reactivar':
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        case 'inventario':
+            $controlador = new inventariocontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['categoria'] ?? '', $_GET['estado'] ?? null);
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'proveedores':
+                    $respuesta = $controlador->proveedores();
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST);
+                    break;
+                case 'inactivar':
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
+                    break;
+                case 'reactivar':
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        case 'pedido':
+            $controlador = new pedidocontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['proveedor'] ?? 0, $_GET['estado'] ?? '');
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'proveedores':
+                    $respuesta = $controlador->proveedores();
+                    break;
+                case 'productos':
+                    $respuesta = $controlador->productos($_GET['proveedor'] ?? 0);
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST);
+                    break;
+                case 'confirmar':
+                    $respuesta = $controlador->confirmar($_POST);
+                    break;
+                case 'recibir':
+                    $respuesta = $controlador->recibir($_POST['id'] ?? 0);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        case 'catalogo':
+            $controlador = new arreglofloralcontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['estado'] ?? null);
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'productos':
+                    $respuesta = $controlador->productos();
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST, $_FILES);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST, $_FILES);
                     break;
                 case 'inactivar':
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0);

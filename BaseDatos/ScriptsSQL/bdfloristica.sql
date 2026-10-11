@@ -1,3 +1,4 @@
+DROP DATABASE IF EXISTS bdfloristica;
 CREATE DATABASE IF NOT EXISTS bdfloristica;
 USE bdfloristica;
 
@@ -65,3 +66,108 @@ CREATE TABLE tbproveedorestadohistorico (
     tbproveedorestadohistoricofecha DATETIME,
     PRIMARY KEY (tbproveedorestadohistoricoid)
 );
+
+
+CREATE TABLE tbinventario (
+    tbinventarioid INT,
+    tbproveedorid INT,
+    tbinventarionombre VARCHAR(100),
+    tbinventariocategoria VARCHAR(20),
+    tbinventariopreciopaquete DECIMAL(10,2),
+    tbinventariounidadespaquete INT,
+    tbinventariopreciounidad DECIMAL(10,2),
+    tbinventariostock INT,
+    tbinventariostockminimo INT,
+    tbinventarioestado TINYINT(1),
+    PRIMARY KEY (tbinventarioid)
+);
+
+CREATE TABLE tbinventariocategoriaflor (
+    tbinventariocategoriaflorid INT,
+    tbinventarioid INT,
+    tbinventariocategoriaflortipo VARCHAR(50),
+    tbinventariocategoriaflorcolor VARCHAR(30),
+    tbinventariocategoriaflorlargotallo INT,
+    tbinventariocategoriaflordiasduracion INT,
+    PRIMARY KEY (tbinventariocategoriaflorid)
+);
+
+CREATE TABLE tbinventariocategoriabase (
+    tbinventariocategoriabaseid INT,
+    tbinventarioid INT,
+    tbinventariocategoriabasetipo VARCHAR(30),
+    tbinventariocategoriabasematerial VARCHAR(30),
+    tbinventariocategoriabasecolor VARCHAR(30),
+    tbinventariocategoriabaseforma VARCHAR(30),
+    tbinventariocategoriabasemedida VARCHAR(30),
+    PRIMARY KEY (tbinventariocategoriabaseid)
+);
+
+CREATE TABLE tbinventariocategoriaadorno (
+    tbinventariocategoriaadornoid INT,
+    tbinventarioid INT,
+    tbinventariocategoriaadornotipo VARCHAR(30),
+    tbinventariocategoriaadornomaterial VARCHAR(50),
+    tbinventariocategoriaadornocolor VARCHAR(30),
+    tbinventariocategoriaadornomedida VARCHAR(30),
+    tbinventariocategoriaadornodiseno VARCHAR(50),
+    PRIMARY KEY (tbinventariocategoriaadornoid)
+);
+
+CREATE TABLE tbinventariocategoriaextra (
+    tbinventariocategoriaextraid INT,
+    tbinventarioid INT,
+    tbinventariocategoriaextratipo VARCHAR(30),
+    tbinventariocategoriaextramarca VARCHAR(50),
+    tbinventariocategoriaextratamano VARCHAR(30),
+    tbinventariocategoriaextracolor VARCHAR(30),
+    tbinventariocategoriaextracontenido VARCHAR(30),
+    tbinventariocategoriaextrafechavencimiento DATE,
+    PRIMARY KEY (tbinventariocategoriaextraid)
+);
+
+CREATE TABLE tbpedido (
+    tbpedidoid INT,
+    tbproveedorid INT,
+    tbpedidofecha DATE,
+    tbpedidoestado VARCHAR(20),
+    PRIMARY KEY (tbpedidoid)
+);
+
+CREATE TABLE tbpedidodetalle (
+    tbpedidodetalleid INT,
+    tbpedidoid INT,
+    tbinventarioid INT,
+    tbpedidodetallecantidad INT,
+    tbpedidodetalleprecio DECIMAL(10,2),
+    PRIMARY KEY (tbpedidodetalleid)
+);
+
+CREATE TABLE tbconfirmacioncompra (
+    tbconfirmacioncompraid INT,
+    tbpedidoid INT,
+    tbconfirmacioncomprafecha DATE,
+    tbconfirmacioncompratipopago VARCHAR(10),
+    tbconfirmacioncompramonto DECIMAL(10,2),
+    tbconfirmacioncompraplazodias INT,
+    PRIMARY KEY (tbconfirmacioncompraid)
+);
+
+CREATE TABLE tbarreglofloral (
+    tbarreglofloralid INT,
+    tbarreglofloralnombre VARCHAR(100),
+    tbarreglofloraldescripcion VARCHAR(255),
+    tbarreglofloralfoto VARCHAR(200),
+    tbarreglofloralprecio DECIMAL(10,2),
+    tbarreglofloralestado TINYINT(1),
+    PRIMARY KEY (tbarreglofloralid)
+);
+
+CREATE TABLE tbarreglofloraldetalle (
+    tbarreglofloraldetalleid INT,
+    tbarreglofloralid INT,
+    tbinventarioid INT,
+    tbarreglofloraldetallecantidad INT,
+    PRIMARY KEY (tbarreglofloraldetalleid)
+);
+
