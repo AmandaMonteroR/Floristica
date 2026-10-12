@@ -78,11 +78,24 @@
                 <input type="text" name="tbproveedornombrecontacto" maxlength="100">
                 <small class="error" data-error="tbproveedornombrecontacto"></small>
             </label>
-            <label class="campo">
+            <div class="campo">
                 <span>Teléfono *</span>
-                <input type="tel" name="tbproveedortelefono" inputmode="numeric" maxlength="9" placeholder="8888-8888" autocomplete="off">
+                <div class="grupo-telefono">
+                    <select name="tbproveedorcodigopais" aria-label="Código del país" hidden>
+                        <option value="">País…</option>
+                        <?php foreach (require __DIR__ . '/../../Configuracion/paises.php' as $codigo => $pais): ?>
+                            <option value="<?= $codigo ?>">+<?= $codigo ?> <?= e($pais) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="tel" name="tbproveedortelefono" inputmode="numeric" maxlength="9" placeholder="8888-8888" autocomplete="off" aria-label="Número de teléfono">
+                </div>
+                <label class="casilla">
+                    <input type="checkbox" name="tbproveedortelefonointernacional" value="1">
+                    <span>Número internacional</span>
+                </label>
+                <small class="error error-codigopais" data-error="tbproveedorcodigopais"></small>
                 <small class="error" data-error="tbproveedortelefono"></small>
-            </label>
+            </div>
             <label class="campo">
                 <span>Correo</span>
                 <input type="email" name="tbproveedorcorreo" maxlength="100">

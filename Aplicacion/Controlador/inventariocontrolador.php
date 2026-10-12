@@ -197,14 +197,21 @@ class inventariocontrolador
 
         $limpios = [];
         foreach ($campos as $campo) {
-            $limpios[$campo] = trim((string) ($datos[$campo] ?? ''));
+            $limpios[$campo] = $this->limpiartexto($datos[$campo] ?? '');
         }
 
         $limpios['tbinventariopreciopaquete'] = str_replace(',', '.', $limpios['tbinventariopreciopaquete']);
 
         if (in_array($limpios['tbinventariocategoria'], $this->categorias, true)) {
             foreach ($this->atributos->campos($limpios['tbinventariocategoria']) as $campo) {
-                $limpios[$campo] = trim((string) ($datos[$campo] ?? ''));
+                $limpios[$campo] = $this->limpiartexto($datos[$campo] ?? '');
+            }
+        }
+
+        // Las medidas se guardan con el formato "20 x 30"
+        foreach (['tbinventariocategoriabasemedida', 'tbinventariocategoriaadornomedida'] as $campo) {
+            if (isset($limpios[$campo])) {
+                $limpios[$campo] = preg_replace('/\s*[xX×]\s*/u', ' x ', $limpios[$campo]);
             }
         }
 
@@ -218,6 +225,11 @@ class inventariocontrolador
         }
 
         return $limpios;
+    }
+
+    private function limpiartexto($valor)
+    {
+        return trim(preg_replace('/\s+/u', ' ', (string) $valor));
     }
 
     private function validar($datos, $idexcluir = 0)
@@ -241,6 +253,8 @@ class inventariocontrolador
             $errores['tbinventarionombre'] = 'El nombre del producto no puede superar 100 caracteres.';
         } elseif (!preg_match('/\p{L}/u', $datos['tbinventarionombre'])) {
             $errores['tbinventarionombre'] = 'El nombre del producto debe contener al menos una letra.';
+        } elseif (!preg_match("/^[\p{L}\d\s.,'&()-]+$/u", $datos['tbinventarionombre'])) {
+            $errores['tbinventarionombre'] = 'El nombre del producto solo puede contener letras, números y los signos . , - \' & ( ).';
         } elseif (!isset($errores['tbproveedorid'])
             && $this->repositorio->existenombre($datos['tbinventarionombre'], $datos['tbproveedorid'], $idexcluir)) {
             $errores['tbinventarionombre'] = 'Este proveedor ya tiene un producto con ese nombre.';
@@ -259,23 +273,17 @@ class inventariocontrolador
             $errores['tbinventariopreciopaquete'] = 'El precio del paquete debe ser un monto mayor que 0, con máximo 2 decimales.';
         }
 
-        if ($datos['tbinventariounidadespaquete'] === '') {
-            $errores['tbinventariounidadespaquete'] = 'Las unidades por paquete son obligatorias.';
-        } elseif (!ctype_digit($datos['tbinventariounidadespaquete']) || (int) $datos['tbinventariounidadespaquete'] < 1) {
-            $errores['tbinventariounidadespaquete'] = 'Las unidades por paquete deben ser un número entero mayor que 0.';
-        }
+        $this->validarentero($errores, $datos, 'tbinventariounidadespaquete', 1, 10000,
+            'Las unidades por paquete son obligatorias.',
+            'Las unidades por paquete deben ser un número entero entre 1 y 10000.');
 
-        if ($datos['tbinventariostock'] === '') {
-            $errores['tbinventariostock'] = 'El stock es obligatorio.';
-        } elseif (!ctype_digit($datos['tbinventariostock'])) {
-            $errores['tbinventariostock'] = 'El stock debe ser un número entero de 0 o más.';
-        }
+        $this->validarentero($errores, $datos, 'tbinventariostock', 0, 999999,
+            'El stock es obligatorio.',
+            'El stock debe ser un número entero entre 0 y 999999.');
 
-        if ($datos['tbinventariostockminimo'] === '') {
-            $errores['tbinventariostockminimo'] = 'El stock mínimo es obligatorio.';
-        } elseif (!ctype_digit($datos['tbinventariostockminimo'])) {
-            $errores['tbinventariostockminimo'] = 'El stock mínimo debe ser un número entero de 0 o más.';
-        }
+        $this->validarentero($errores, $datos, 'tbinventariostockminimo', 0, 999999,
+            'El stock mínimo es obligatorio.',
+            'El stock mínimo debe ser un número entero entre 0 y 999999.');
 
         switch ($datos['tbinventariocategoria']) {
             case 'Flor':
@@ -295,41 +303,75 @@ class inventariocontrolador
         return $errores;
     }
 
+    private function validarentero(&$errores, $datos, $campo, $minimo, $maximo, $mensajeobligatorio, $mensajerango)
+    {
+        $valor = $datos[$campo];
+
+        if ($valor === '') {
+            $errores[$campo] = $mensajeobligatorio;
+        } elseif (!ctype_digit($valor) || strlen($valor) > 7 || (int) $valor < $minimo || (int) $valor > $maximo) {
+            $errores[$campo] = $mensajerango;
+        }
+    }
+
+    private function validarletras(&$errores, $datos, $campo, $nombre, $maximo, $obligatorio)
+    {
+        $valor = $datos[$campo];
+
+        if ($valor === '') {
+            if ($obligatorio) {
+                $errores[$campo] = $nombre . ' es obligatorio.';
+            }
+        } elseif (mb_strlen($valor) > $maximo) {
+            $errores[$campo] = $nombre . ' no puede superar ' . $maximo . ' caracteres.';
+        } elseif (!preg_match('/^[\p{L}\s]+$/u', $valor)) {
+            $errores[$campo] = $nombre . ' solo puede contener letras.';
+        }
+    }
+
+    private function validartexto(&$errores, $datos, $campo, $nombre, $maximo)
+    {
+        $valor = $datos[$campo];
+
+        if ($valor === '') {
+            return;
+        }
+
+        if (mb_strlen($valor) > $maximo) {
+            $errores[$campo] = $nombre . ' no puede superar ' . $maximo . ' caracteres.';
+        } elseif (!preg_match("/^[\p{L}\d\s.,'&-]+$/u", $valor)) {
+            $errores[$campo] = $nombre . ' solo puede contener letras, números y los signos . , - \' &.';
+        }
+    }
+
+    private function validarmedida(&$errores, $datos, $campo)
+    {
+        $valor = $datos[$campo];
+
+        if ($valor === '') {
+            return;
+        }
+
+        if (mb_strlen($valor) > 30
+            || !preg_match('/^\d{1,3}(\.\d{1,2})?( x \d{1,3}(\.\d{1,2})?){0,2}$/', $valor)) {
+            $errores[$campo] = 'La medida debe indicarse en centímetros, por ejemplo: 20 o 20 x 30.';
+        }
+    }
+
     private function validarflor($datos)
     {
         $errores = [];
 
-        if ($datos['tbinventariocategoriaflortipo'] === '') {
-            $errores['tbinventariocategoriaflortipo'] = 'El tipo de flor es obligatorio.';
-        } elseif (mb_strlen($datos['tbinventariocategoriaflortipo']) > 50) {
-            $errores['tbinventariocategoriaflortipo'] = 'El tipo de flor no puede superar 50 caracteres.';
-        } elseif (!preg_match('/^[\p{L}\s]+$/u', $datos['tbinventariocategoriaflortipo'])) {
-            $errores['tbinventariocategoriaflortipo'] = 'El tipo de flor solo puede contener letras.';
-        }
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaflortipo', 'El tipo de flor', 50, true);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaflorcolor', 'El color', 30, true);
 
-        if ($datos['tbinventariocategoriaflorcolor'] === '') {
-            $errores['tbinventariocategoriaflorcolor'] = 'El color es obligatorio.';
-        } elseif (mb_strlen($datos['tbinventariocategoriaflorcolor']) > 30) {
-            $errores['tbinventariocategoriaflorcolor'] = 'El color no puede superar 30 caracteres.';
-        } elseif (!preg_match('/^[\p{L}\s]+$/u', $datos['tbinventariocategoriaflorcolor'])) {
-            $errores['tbinventariocategoriaflorcolor'] = 'El color solo puede contener letras.';
-        }
+        $this->validarentero($errores, $datos, 'tbinventariocategoriaflorlargotallo', 1, 300,
+            'El largo del tallo es obligatorio.',
+            'El largo del tallo debe ser un número entero entre 1 y 300 cm.');
 
-        if ($datos['tbinventariocategoriaflorlargotallo'] === '') {
-            $errores['tbinventariocategoriaflorlargotallo'] = 'El largo del tallo es obligatorio.';
-        } elseif (!ctype_digit($datos['tbinventariocategoriaflorlargotallo'])
-            || (int) $datos['tbinventariocategoriaflorlargotallo'] < 1
-            || (int) $datos['tbinventariocategoriaflorlargotallo'] > 300) {
-            $errores['tbinventariocategoriaflorlargotallo'] = 'El largo del tallo debe ser un número entero entre 1 y 300 cm.';
-        }
-
-        if ($datos['tbinventariocategoriaflordiasduracion'] === '') {
-            $errores['tbinventariocategoriaflordiasduracion'] = 'Los días de duración son obligatorios.';
-        } elseif (!ctype_digit($datos['tbinventariocategoriaflordiasduracion'])
-            || (int) $datos['tbinventariocategoriaflordiasduracion'] < 1
-            || (int) $datos['tbinventariocategoriaflordiasduracion'] > 60) {
-            $errores['tbinventariocategoriaflordiasduracion'] = 'Los días de duración deben ser un número entero entre 1 y 60.';
-        }
+        $this->validarentero($errores, $datos, 'tbinventariocategoriaflordiasduracion', 1, 60,
+            'Los días de duración son obligatorios.',
+            'Los días de duración deben ser un número entero entre 1 y 60.');
 
         return $errores;
     }
@@ -350,19 +392,9 @@ class inventariocontrolador
             $errores['tbinventariocategoriabasematerial'] = 'El material seleccionado no es válido.';
         }
 
-        if ($datos['tbinventariocategoriabasecolor'] === '') {
-            $errores['tbinventariocategoriabasecolor'] = 'El color es obligatorio.';
-        } elseif (mb_strlen($datos['tbinventariocategoriabasecolor']) > 30) {
-            $errores['tbinventariocategoriabasecolor'] = 'El color no puede superar 30 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriabaseforma']) > 30) {
-            $errores['tbinventariocategoriabaseforma'] = 'La forma no puede superar 30 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriabasemedida']) > 30) {
-            $errores['tbinventariocategoriabasemedida'] = 'La medida no puede superar 30 caracteres.';
-        }
+        $this->validarletras($errores, $datos, 'tbinventariocategoriabasecolor', 'El color', 30, true);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriabaseforma', 'La forma', 30, false);
+        $this->validarmedida($errores, $datos, 'tbinventariocategoriabasemedida');
 
         return $errores;
     }
@@ -377,22 +409,14 @@ class inventariocontrolador
             $errores['tbinventariocategoriaadornotipo'] = 'El tipo de adorno seleccionado no es válido.';
         }
 
-        if (mb_strlen($datos['tbinventariocategoriaadornomaterial']) > 50) {
-            $errores['tbinventariocategoriaadornomaterial'] = 'El material no puede superar 50 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriaadornocolor']) > 30) {
-            $errores['tbinventariocategoriaadornocolor'] = 'El color no puede superar 30 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriaadornomedida']) > 30) {
-            $errores['tbinventariocategoriaadornomedida'] = 'La medida no puede superar 30 caracteres.';
-        }
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaadornomaterial', 'El material', 50, false);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaadornocolor', 'El color', 30, false);
+        $this->validarmedida($errores, $datos, 'tbinventariocategoriaadornomedida');
 
         if ($datos['tbinventariocategoriaadornotipo'] === 'Tarjeta' && $datos['tbinventariocategoriaadornodiseno'] === '') {
             $errores['tbinventariocategoriaadornodiseno'] = 'En las tarjetas, el diseño u ocasión es obligatorio.';
-        } elseif (mb_strlen($datos['tbinventariocategoriaadornodiseno']) > 50) {
-            $errores['tbinventariocategoriaadornodiseno'] = 'El diseño no puede superar 50 caracteres.';
+        } else {
+            $this->validartexto($errores, $datos, 'tbinventariocategoriaadornodiseno', 'El diseño', 50);
         }
 
         return $errores;
@@ -408,29 +432,21 @@ class inventariocontrolador
             $errores['tbinventariocategoriaextratipo'] = 'El tipo de extra seleccionado no es válido.';
         }
 
-        if (mb_strlen($datos['tbinventariocategoriaextramarca']) > 50) {
-            $errores['tbinventariocategoriaextramarca'] = 'La marca no puede superar 50 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriaextratamano']) > 30) {
-            $errores['tbinventariocategoriaextratamano'] = 'El tamaño no puede superar 30 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriaextracolor']) > 30) {
-            $errores['tbinventariocategoriaextracolor'] = 'El color no puede superar 30 caracteres.';
-        }
-
-        if (mb_strlen($datos['tbinventariocategoriaextracontenido']) > 30) {
-            $errores['tbinventariocategoriaextracontenido'] = 'El contenido no puede superar 30 caracteres.';
-        }
+        $this->validartexto($errores, $datos, 'tbinventariocategoriaextramarca', 'La marca', 50);
+        $this->validartexto($errores, $datos, 'tbinventariocategoriaextratamano', 'El tamaño', 30);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaextracolor', 'El color', 30, false);
+        $this->validartexto($errores, $datos, 'tbinventariocategoriaextracontenido', 'El contenido', 30);
 
         if (in_array($datos['tbinventariocategoriaextratipo'], $this->extrasconvencimiento, true)) {
-            $fecha = DateTime::createFromFormat('Y-m-d', (string) $datos['tbinventariocategoriaextrafechavencimiento']);
+            $valor = $datos['tbinventariocategoriaextrafechavencimiento'];
+            $fecha = DateTime::createFromFormat('Y-m-d', (string) $valor);
 
-            if ($datos['tbinventariocategoriaextrafechavencimiento'] === null) {
+            if ($valor === null) {
                 $errores['tbinventariocategoriaextrafechavencimiento'] = 'La fecha de vencimiento es obligatoria en chocolates y maquillaje.';
-            } elseif (!$fecha || $fecha->format('Y-m-d') !== $datos['tbinventariocategoriaextrafechavencimiento']) {
+            } elseif (!$fecha || $fecha->format('Y-m-d') !== $valor) {
                 $errores['tbinventariocategoriaextrafechavencimiento'] = 'La fecha de vencimiento no es válida.';
+            } elseif ($valor < date('Y-m-d')) {
+                $errores['tbinventariocategoriaextrafechavencimiento'] = 'La fecha de vencimiento no puede ser anterior a hoy.';
             }
         }
 

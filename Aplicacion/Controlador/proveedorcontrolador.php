@@ -8,12 +8,14 @@ class proveedorcontrolador
     private $repositorio;
     private $historico;
     private $ubicaciones;
+    private $paises;
 
     public function __construct()
     {
         $this->repositorio = new proveedorrepositorio();
         $this->historico = new proveedorhistoricorepositorio();
         $this->ubicaciones = new ubicacionrepositorio();
+        $this->paises = require __DIR__ . '/../../Configuracion/paises.php';
     }
 
     public function ubicaciones()
@@ -254,7 +256,16 @@ class proveedorcontrolador
         }
 
         $digitos = preg_replace('/\D/', '', $limpios['tbproveedortelefono']);
-        if (strlen($digitos) === 8) {
+        $limpios['telefonointernacional'] = ($datos['tbproveedortelefonointernacional'] ?? '') === '1';
+        $limpios['codigopais'] = trim((string) ($datos['tbproveedorcodigopais'] ?? ''));
+        $limpios['numerointernacional'] = $digitos;
+
+        if ($limpios['telefonointernacional']) {
+            // Los números internacionales se guardan como "+57 3001234567"
+            $limpios['tbproveedortelefono'] = $limpios['codigopais'] !== '' && $digitos !== ''
+                ? '+' . $limpios['codigopais'] . ' ' . $digitos
+                : $digitos;
+        } elseif (strlen($digitos) === 8) {
             $limpios['tbproveedortelefono'] = substr($digitos, 0, 4) . '-' . substr($digitos, 4);
         }
 
@@ -284,7 +295,22 @@ class proveedorcontrolador
             $errores['tbproveedornombrecontacto'] = 'El nombre del contacto solo puede contener letras.';
         }
 
-        if ($datos['tbproveedortelefono'] === '') {
+        if ($datos['telefonointernacional']) {
+            if ($datos['codigopais'] === '') {
+                $errores['tbproveedorcodigopais'] = 'Seleccione el código del país.';
+            } elseif (!isset($this->paises[$datos['codigopais']])) {
+                $errores['tbproveedorcodigopais'] = 'El código de país seleccionado no es válido.';
+            }
+
+            if ($datos['numerointernacional'] === '') {
+                $errores['tbproveedortelefono'] = 'El teléfono es obligatorio.';
+            } elseif (strlen($datos['numerointernacional']) < 6 || strlen($datos['numerointernacional']) > 12) {
+                $errores['tbproveedortelefono'] = 'El número internacional debe tener entre 6 y 12 dígitos, sin el código del país.';
+            } elseif (!isset($errores['tbproveedorcodigopais'])
+                && $this->repositorio->existetelefono($datos['tbproveedortelefono'], $idexcluir)) {
+                $errores['tbproveedortelefono'] = 'Ya existe un proveedor con ese teléfono.';
+            }
+        } elseif ($datos['tbproveedortelefono'] === '') {
             $errores['tbproveedortelefono'] = 'El teléfono es obligatorio.';
         } elseif (!preg_match('/^\d{4}-\d{4}$/', $datos['tbproveedortelefono'])) {
             $errores['tbproveedortelefono'] = 'El teléfono debe tener exactamente 8 números.';
