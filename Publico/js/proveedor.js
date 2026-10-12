@@ -3,6 +3,8 @@ const clavebase = 'floristica.borrador.proveedor.';
 const camposformulario = [
     'tbproveedornombreempresa',
     'tbproveedornombrecontacto',
+    'tbproveedortelefonointernacional',
+    'tbproveedorcodigopais',
     'tbproveedortelefono',
     'tbproveedorcorreo',
     'tbproveedorprovincia',
@@ -38,6 +40,9 @@ const cuerpohistorial = document.getElementById('cuerpohistorial');
 const selectprovincia = formulario.elements.tbproveedorprovincia;
 const selectcanton = formulario.elements.tbproveedorcanton;
 const selectdistrito = formulario.elements.tbproveedordistrito;
+const casillainternacional = formulario.elements.tbproveedortelefonointernacional;
+const selectcodigopais = formulario.elements.tbproveedorcodigopais;
+const campotelefono = formulario.elements.tbproveedortelefono;
 
 let temporizadorbusqueda;
 let temporizadoraviso;
@@ -64,8 +69,62 @@ function formateartelefono(valor) {
     return digitos.length > 4 ? `${digitos.slice(0, 4)}-${digitos.slice(4)}` : digitos;
 }
 
-function normalizar(campo, valor) {
-    return campo === 'tbproveedortelefono' ? formateartelefono(valor) : String(valor ?? '');
+function formatearnumero(valor, internacional) {
+    return internacional
+        ? String(valor ?? '').replace(/\D/g, '').slice(0, 12)
+        : formateartelefono(valor);
+}
+
+// Para mostrar en la tabla, el detalle y el historial
+function mostrartelefono(valor) {
+    const texto = String(valor ?? '');
+    return texto.startsWith('+') ? texto : formateartelefono(texto);
+}
+
+// Convierte "+57 3001234567" en los tres campos del formulario
+function separartelefono(datos) {
+    const coincidencia = String(datos.tbproveedortelefono ?? '').match(/^\+(\d{1,3}) (\d+)$/);
+
+    if (!coincidencia) {
+        return { ...datos, tbproveedortelefonointernacional: '', tbproveedorcodigopais: '' };
+    }
+
+    return {
+        ...datos,
+        tbproveedortelefonointernacional: '1',
+        tbproveedorcodigopais: coincidencia[1],
+        tbproveedortelefono: coincidencia[2],
+    };
+}
+
+function normalizar(campo, valor, datos = {}) {
+    if (campo === 'tbproveedortelefono') {
+        return formatearnumero(valor, datos.tbproveedortelefonointernacional === '1');
+    }
+    return String(valor ?? '');
+}
+
+function valorcampo(campo) {
+    const elemento = formulario.elements[campo];
+    if (elemento.type === 'checkbox') {
+        return elemento.checked ? '1' : '';
+    }
+    return elemento.value;
+}
+
+function actualizartipotelefono() {
+    const internacional = casillainternacional.checked;
+
+    selectcodigopais.hidden = !internacional;
+    campotelefono.placeholder = internacional ? '3001234567' : '8888-8888';
+    campotelefono.maxLength = internacional ? 12 : 9;
+    campotelefono.value = formatearnumero(campotelefono.value, internacional);
+
+    if (!internacional) {
+        const error = formulario.querySelector('[data-error="tbproveedorcodigopais"]');
+        error.textContent = '';
+        selectcodigopais.removeAttribute('aria-invalid');
+    }
 }
 
 async function peticion(accion, opciones = {}, parametros = {}) {
@@ -130,7 +189,7 @@ function claveborrador() {
 function guardarborrador() {
     const datos = {};
     camposformulario.forEach((campo) => {
-        datos[campo] = formulario.elements[campo].value;
+        datos[campo] = valorcampo(campo);
     });
     try {
         localStorage.setItem(claveborrador(), JSON.stringify(datos));
@@ -209,11 +268,15 @@ async function cargarubicaciones() {
 }
 
 function asignarcampos(datos) {
+    casillainternacional.checked = datos.tbproveedortelefonointernacional === '1';
+
     camposformulario
-        .filter((campo) => !camposubicacion.includes(campo))
+        .filter((campo) => !camposubicacion.includes(campo) && campo !== 'tbproveedortelefonointernacional')
         .forEach((campo) => {
-            formulario.elements[campo].value = normalizar(campo, datos[campo]);
+            formulario.elements[campo].value = normalizar(campo, datos[campo], datos);
         });
+
+    actualizartipotelefono();
 
     establecerubicacion(
         datos.tbproveedorprovincia ?? '',
@@ -237,7 +300,7 @@ function aplicarborrador() {
     }
 
     const haycambios = camposformulario.some(
-        (campo) => normalizar(campo, borrador[campo]) !== normalizar(campo, datosoriginales[campo])
+        (campo) => normalizar(campo, borrador[campo], borrador) !== normalizar(campo, datosoriginales[campo], datosoriginales)
     );
 
     if (!haycambios) {
@@ -279,7 +342,7 @@ async function cargarproveedores() {
             <tr class="${activo ? '' : 'fila-inactiva'}">
                 <td>${escapar(proveedor.tbproveedornombreempresa)}</td>
                 <td>${escapar(proveedor.tbproveedornombrecontacto)}</td>
-                <td>${escapar(formateartelefono(proveedor.tbproveedortelefono))}</td>
+                <td>${escapar(mostrartelefono(proveedor.tbproveedortelefono))}</td>
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
                     <button type="button" class="enlace" data-accion="ver" data-id="${proveedor.tbproveedorid}">Ver</button>
@@ -337,7 +400,7 @@ async function abrireditar(id) {
         return;
     }
 
-    datosoriginales = respuesta.datos;
+    datosoriginales = separartelefono(respuesta.datos);
     llenarformulario(datosoriginales);
     limpiarerrores();
     aplicarborrador();
@@ -368,7 +431,7 @@ async function verdetalle(id) {
         .join(', ');
     const filas = [
         ['Contacto', proveedor.tbproveedornombrecontacto],
-        ['Teléfono', formateartelefono(proveedor.tbproveedortelefono)],
+        ['Teléfono', mostrartelefono(proveedor.tbproveedortelefono)],
         ['Correo', proveedor.tbproveedorcorreo],
         ['Ubicación', ubicacion],
         ['Dirección exacta', proveedor.tbproveedordireccion],
@@ -415,7 +478,10 @@ async function cambiarestado(accion, id, nombre) {
 
 formulario.addEventListener('input', (evento) => {
     if (evento.target.name === 'tbproveedortelefono') {
-        evento.target.value = formateartelefono(evento.target.value);
+        evento.target.value = formatearnumero(evento.target.value, casillainternacional.checked);
+    }
+    if (evento.target.name === 'tbproveedortelefonointernacional') {
+        actualizartipotelefono();
     }
     if (evento.target.name === 'tbproveedornombrecontacto') {
         evento.target.value = evento.target.value.replace(/[^\p{L}\s'.-]/gu, '');
@@ -428,6 +494,8 @@ selectprovincia.addEventListener('change', () => {
     actualizardistritos(selectprovincia.value, '');
     guardarborrador();
 });
+
+selectcodigopais.addEventListener('change', guardarborrador);
 
 selectcanton.addEventListener('change', () => {
     actualizardistritos(selectprovincia.value, selectcanton.value);
@@ -527,7 +595,7 @@ function mostrarvalorhistorial(campo, valor) {
     if (valor === '') {
         return '<span class="texto-suave">Sin registrar</span>';
     }
-    return escapar(campo === 'telefono' ? formateartelefono(valor) : valor);
+    return escapar(campo === 'telefono' ? mostrartelefono(valor) : valor);
 }
 
 async function verhistorial() {

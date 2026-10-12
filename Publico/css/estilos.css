@@ -566,3 +566,141 @@ h1 {
 #dialogohistorial .tabla td {
     white-space: normal;
 }
+
+
+/* Inventario */
+.estado-bajo {
+    background: var(--peligro-fondo);
+    color: var(--peligro);
+}
+
+.precio-unidad {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    color: var(--texto-suave);
+}
+
+.precio-unidad strong {
+    color: var(--texto);
+}
+
+.seccion-categoria {
+    margin: 0.5rem 0 0;
+    padding: 0.75rem 1rem 0.25rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.seccion-categoria legend {
+    padding: 0 0.4rem;
+    font-weight: 700;
+    color: var(--principal-oscuro);
+}
+
+
+/* En el inventario, los nombres largos pasan a la siguiente línea para que se vean las acciones */
+.tabla-inventario th,
+.tabla-inventario td {
+    padding: 0.75rem 0.6rem;
+}
+
+.tabla-inventario td:nth-child(1),
+.tabla-inventario td:nth-child(3) {
+    white-space: normal;
+    min-width: 110px;
+}
+
+
+/* Inventario: círculo de color según el nivel de stock */
+.stock {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.1rem;
+    height: 2.1rem;
+    padding: 0 0.5rem;
+    font-weight: 700;
+    border: 2px solid;
+    border-radius: 999px;
+}
+
+.stock-bajo {
+    background: var(--peligro-fondo);
+    border-color: var(--peligro);
+    color: var(--peligro);
+}
+
+.stock-medio {
+    background: #fdf3d7;
+    border-color: #c99a06;
+    color: #7a5a00;
+}
+
+.stock-bien {
+    background: var(--verde-fondo);
+    border-color: var(--verde);
+    color: var(--verde);
+}
+
+.leyenda-stock {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+}
+
+.leyenda-stock > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.punto {
+    width: 0.8rem;
+    height: 0.8rem;
+    border: 2px solid;
+    border-radius: 50%;
+}
+
+/* Proveedores: teléfono nacional o internacional */
+.grupo-telefono {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Evita que el nombre largo de un país ensanche el formulario */
+.rejilla > .campo {
+    min-width: 0;
+}
+
+.grupo-telefono select {
+    flex: none;
+    width: 45%;
+    min-width: 0;
+}
+
+.grupo-telefono input {
+    flex: 1;
+    min-width: 0;
+}
+
+.casilla {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.15rem;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.casilla input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--principal);
+}
+
+.error-codigopais:empty {
+    display: none;
+}
