@@ -171,3 +171,24 @@ CREATE TABLE tbarreglofloraldetalle (
     PRIMARY KEY (tbarreglofloraldetalleid)
 );
 
+
+CREATE TABLE tbempleado (
+    tbempleadoid INT,
+    tbempleadonombre VARCHAR(100),
+    tbempleadotelefono VARCHAR(20),
+    tbempleadorol VARCHAR(20),
+    tbempleadoestado TINYINT(1),
+    PRIMARY KEY (tbempleadoid)
+);
+
+CREATE TABLE tbencargo (
+    tbencargoid INT,
+    tbarreglofloralid INT,
+    tbempleadoid INT,
+    tbencargocantidad INT,
+    tbencargofechaentrega DATE,
+    tbencargonota VARCHAR(255),
+    tbencargoestado VARCHAR(20),
+    tbencargofecharegistro DATE,
+    PRIMARY KEY (tbencargoid)
+);

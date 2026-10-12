@@ -8,6 +8,7 @@ $opcionesmenu = [
     'cotizacion' => 'Cotizaciones',
     'pedido'     => 'Pedidos',
     'proveedor'  => 'Proveedores',
+    'empleado'   => 'Empleados',
     'reporte'    => 'Reportes',
     'usuario'    => 'Usuarios',
 ];
