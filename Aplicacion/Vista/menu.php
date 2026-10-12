@@ -1,21 +1,79 @@
 <?php
 $moduloactual = $_GET['modulo'] ?? 'proveedor';
-// Los encargos son parte del catálogo
-if ($moduloactual === 'encargo') {
-    $moduloactual = 'catalogo';
-}
+
+// Estructura del menú: una opción tiene 'modulo' (enlace) o 'hijos' (submenú)
 $opcionesmenu = [
-    'inicio'     => 'Inicio',
-    'cliente'    => 'Clientes',
-    'inventario' => 'Inventario',
-    'catalogo'   => 'Catálogo',
-    'cotizacion' => 'Cotizaciones',
-    'pedido'     => 'Pedidos',
-    'proveedor'  => 'Proveedores',
-    'empleado'   => 'Empleados',
-    'reporte'    => 'Reportes',
-    'usuario'    => 'Usuarios',
+    ['texto' => 'Inicio', 'modulo' => 'inicio'],
+    ['texto' => 'Usuarios', 'hijos' => [
+        ['texto' => 'Clientes', 'hijos' => [
+            ['texto' => 'Agregar nuevo cliente', 'modulo' => 'cliente', 'nuevo' => true],
+            ['texto' => 'Lista de clientes', 'modulo' => 'cliente'],
+        ]],
+        ['texto' => 'Empleados', 'hijos' => [
+            ['texto' => 'Agregar nuevo empleado', 'modulo' => 'empleado', 'nuevo' => true],
+            ['texto' => 'Lista de empleados', 'modulo' => 'empleado'],
+        ]],
+    ]],
+    ['texto' => 'Ventas', 'hijos' => [
+        ['texto' => 'Cotizaciones', 'modulo' => 'cotizacion'],
+        ['texto' => 'Catálogo de arreglos', 'modulo' => 'catalogo'],
+        ['texto' => 'Encargos', 'modulo' => 'encargo'],
+    ]],
+    ['texto' => 'Compras', 'hijos' => [
+        ['texto' => 'Proveedores', 'hijos' => [
+            ['texto' => 'Agregar nuevo proveedor', 'modulo' => 'proveedor', 'nuevo' => true],
+            ['texto' => 'Lista de proveedores', 'modulo' => 'proveedor'],
+        ]],
+        ['texto' => 'Pedidos', 'modulo' => 'pedido'],
+    ]],
+    ['texto' => 'Inventario', 'hijos' => [
+        ['texto' => 'Agregar nuevo producto', 'modulo' => 'inventario', 'nuevo' => true],
+        ['texto' => 'Lista de productos', 'modulo' => 'inventario'],
+    ]],
+    ['texto' => 'Reportes', 'modulo' => 'reporte'],
 ];
+
+// Indica si una opción (o alguno de sus hijos) corresponde a la página actual
+function menucontieneactual($opcion, $moduloactual)
+{
+    if (isset($opcion['modulo'])) {
+        return $opcion['modulo'] === $moduloactual;
+    }
+
+    foreach ($opcion['hijos'] as $hijo) {
+        if (menucontieneactual($hijo, $moduloactual)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function dibujarmenu($opciones, $moduloactual, $nivel = 1)
+{
+    echo '<ul class="menu-nivel menu-nivel-' . $nivel . '">';
+
+    foreach ($opciones as $indice => $opcion) {
+        $actual = menucontieneactual($opcion, $moduloactual);
+
+        if (isset($opcion['hijos'])) {
+            $id = 'submenu-' . $nivel . '-' . $indice . '-' . md5($opcion['texto']);
+            echo '<li class="menu-grupo' . ($actual ? ' contiene-actual' : '') . '">';
+            echo '<button type="button" class="menu-grupo-boton" aria-expanded="false" aria-controls="' . $id . '">'
+                . e($opcion['texto']) . '<span class="flecha" aria-hidden="true"></span></button>';
+            echo '<div class="submenu" id="' . $id . '">';
+            dibujarmenu($opcion['hijos'], $moduloactual, $nivel + 1);
+            echo '</div>';
+            echo '</li>';
+        } else {
+            $url = 'index.php?modulo=' . $opcion['modulo'] . (!empty($opcion['nuevo']) ? '&nuevo=1' : '');
+            $clase = $actual && empty($opcion['nuevo']) ? ' class="activo" aria-current="page"' : '';
+            echo '<li><a href="' . e($url) . '"' . $clase . '>' . e($opcion['texto']) . '</a></li>';
+        }
+    }
+
+    echo '</ul>';
+}
 ?>
 <header class="barra-superior">
     <button type="button" class="boton-menu" id="botonmenu" aria-label="Abrir menú" aria-expanded="false" aria-controls="menulateral">
@@ -37,11 +95,5 @@ $opcionesmenu = [
         </span>
         <button type="button" class="boton-cerrar-menu" id="botoncerrarmenu" aria-label="Cerrar menú">&times;</button>
     </div>
-    <ul>
-        <?php foreach ($opcionesmenu as $clave => $nombre): ?>
-            <li>
-                <a href="index.php?modulo=<?= $clave ?>" class="<?= $clave === $moduloactual ? 'activo' : '' ?>"><?= $nombre ?></a>
-            </li>
-        <?php endforeach; ?>
-    </ul>
+    <?php dibujarmenu($opcionesmenu, $moduloactual); ?>
 </nav>
