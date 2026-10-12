@@ -983,3 +983,15 @@ h1 {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* Empleados */
+.estado-duena {
+    background: var(--ciruela);
+    color: #ffffff;
+}
+
+.estado-empleado {
+    background: var(--rosa-claro);
+    color: var(--principal-oscuro);
+}

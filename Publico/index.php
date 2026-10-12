@@ -4,6 +4,7 @@ require_once __DIR__ . '/../Aplicacion/Controlador/proveedorcontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/inventariocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/pedidocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/arreglofloralcontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/empleadocontrolador.php';
 
 $modulo = $_GET['modulo'] ?? 'proveedor';
 $accion = $_GET['accion'] ?? '';
@@ -14,6 +15,7 @@ if ($accion === '') {
         'inventario' => 'inventariovista.php',
         'pedido'     => 'pedidovista.php',
         'catalogo'   => 'arreglofloralvista.php',
+        'empleado'   => 'empleadovista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -152,6 +154,33 @@ try {
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST, $_FILES);
+                    break;
+                case 'inactivar':
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
+                    break;
+                case 'reactivar':
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        case 'empleado':
+            $controlador = new empleadocontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['estado'] ?? null);
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST);
                     break;
                 case 'inactivar':
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
