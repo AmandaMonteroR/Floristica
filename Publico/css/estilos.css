@@ -1086,3 +1086,123 @@ h1 {
     min-width: 0;
     text-align: center;
 }
+
+
+/* Menú con submenús */
+.menu-lateral .menu-nivel {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.menu-lateral .menu-nivel-1 {
+    margin-top: 1rem;
+}
+
+.menu-grupo {
+    position: relative;
+}
+
+.menu-grupo-boton {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.25rem;
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    color: #f6dce7;
+    background: none;
+    border: none;
+    border-radius: var(--radio);
+    cursor: pointer;
+}
+
+.menu-grupo-boton:hover,
+.menu-grupo.abierto > .menu-grupo-boton {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.menu-grupo.contiene-actual > .menu-grupo-boton {
+    color: #ffffff;
+    box-shadow: inset 3px 0 0 var(--principal);
+}
+
+.menu-grupo-boton:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Flecha que gira al abrir */
+.flecha {
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-left: 0.75rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
+}
+
+.menu-grupo.abierto > .menu-grupo-boton .flecha {
+    transform: rotate(-135deg);
+}
+
+.submenu {
+    display: none;
+}
+
+.menu-grupo.abierto > .submenu {
+    display: block;
+}
+
+/* En celular o sin mouse: los submenús se despliegan hacia abajo */
+.submenu > .menu-nivel {
+    padding-left: 0.75rem;
+    margin-left: 1rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Con mouse en pantalla grande: los submenús salen hacia la derecha */
+@media (hover: hover) and (min-width: 768px) {
+    .menu-lateral {
+        overflow: visible;
+    }
+
+    .menu-grupo-boton .flecha,
+    .menu-grupo.abierto > .menu-grupo-boton .flecha {
+        transform: rotate(-45deg);
+    }
+
+    .submenu {
+        position: absolute;
+        top: -0.5rem;
+        left: 100%;
+        z-index: 30;
+        width: 260px;
+        /* El relleno hace de "puente" para que el mouse no pierda el submenú */
+        padding-left: 1.25rem;
+    }
+
+    .submenu > .menu-nivel {
+        padding: 0.5rem;
+        margin: 0;
+        background: #4d1631;
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(20, 5, 12, 0.45);
+    }
+
+    .submenu a,
+    .submenu .menu-grupo-boton {
+        margin-bottom: 0.1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flecha {
+        transition: none;
+    }
+}

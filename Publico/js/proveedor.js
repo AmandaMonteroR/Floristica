@@ -628,3 +628,7 @@ document.getElementById('botoncerrarhistorial').addEventListener('click', () => 
 
 const ubicacioneslistas = cargarubicaciones();
 cargarproveedores();
+
+
+// Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
+abrirformulariosipide(abrirnuevo);

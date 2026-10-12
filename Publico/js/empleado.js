@@ -395,3 +395,7 @@ document.getElementById('botoncancelar').addEventListener('click', () => dialogo
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 cargarempleados();
+
+
+// Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
+abrirformulariosipide(abrirnuevo);

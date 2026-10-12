@@ -577,3 +577,7 @@ formulario.elements.tbinventariocategoriaextrafechavencimiento.min = new Date().
 
 const proveedoreslistos = cargarproveedores();
 cargarinventario();
+
+
+// Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
+abrirformulariosipide(abrirnuevo);
