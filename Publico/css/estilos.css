@@ -816,3 +816,170 @@ h1 {
     outline: 2px solid var(--principal);
     outline-offset: 2px;
 }
+
+
+/* Catálogo de arreglos florales */
+.galeria {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.25rem;
+}
+
+.vacio-galeria {
+    grid-column: 1 / -1;
+    padding: 2rem 1rem;
+    margin: 0;
+    text-align: center;
+    color: var(--texto-suave);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.tarjeta-arreglo {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 12px;
+}
+
+.tarjeta-arreglo img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    background: var(--rosa-claro);
+}
+
+.tarjeta-inactiva img {
+    filter: grayscale(1);
+    opacity: 0.6;
+}
+
+.tarjeta-cuerpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem 0.6rem;
+}
+
+.tarjeta-titulo {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.tarjeta-titulo h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    overflow-wrap: anywhere;
+}
+
+.tarjeta-precio {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--principal-oscuro);
+}
+
+.tarjeta-costo {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+}
+
+.tarjeta-acciones {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.texto-peligro {
+    color: var(--peligro);
+}
+
+.formulario-arreglo {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.campo-foto {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.vista-foto {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    font-weight: 400;
+    text-align: center;
+    color: var(--texto-suave);
+    background: var(--rosa-claro);
+    border: 2px dashed var(--borde);
+    border-radius: var(--radio);
+    cursor: pointer;
+}
+
+.vista-foto:hover {
+    border-color: var(--principal);
+}
+
+.vista-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.campo-foto:focus-within .vista-foto {
+    outline: 2px solid var(--principal);
+    outline-offset: 2px;
+}
+
+.resumen-costo {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    font-size: 0.9rem;
+    color: var(--texto-suave);
+}
+
+.resumen-costo strong {
+    color: var(--texto);
+}
+
+.resumen-costo strong.texto-peligro {
+    color: var(--peligro);
+}
+
+.detalle-arreglo {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.foto-detalle {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radio);
+}
+
+@media (max-width: 600px) {
+    .formulario-arreglo,
+    .detalle-arreglo {
+        grid-template-columns: 1fr;
+    }
+}

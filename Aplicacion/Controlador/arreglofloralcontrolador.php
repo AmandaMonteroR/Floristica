@@ -350,8 +350,9 @@ class arreglofloralcontrolador
             } elseif (in_array($detalle['tbinventarioid'], $usados, true)) {
                 $errores['detalles'] = $linea . 'el producto ya está en otra línea.';
             } elseif (!ctype_digit($detalle['tbarreglofloraldetallecantidad'])
-                || (int) $detalle['tbarreglofloraldetallecantidad'] < 1) {
-                $errores['detalles'] = $linea . 'la cantidad debe ser un número entero mayor que 0.';
+                || (int) $detalle['tbarreglofloraldetallecantidad'] < 1
+                || (int) $detalle['tbarreglofloraldetallecantidad'] > 999) {
+                $errores['detalles'] = $linea . 'la cantidad debe ser un número entero entre 1 y 999 unidades.';
             }
 
             if (isset($errores['detalles'])) {
