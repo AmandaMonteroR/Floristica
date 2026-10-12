@@ -286,7 +286,7 @@
     <h2 id="titulodetalle"></h2>
     <dl id="listadetalle" class="detalle"></dl>
     <h3 class="subtitulo-seccion">Movimientos del stock</h3>
-    <p class="nota">Los 20 más recientes. Las entradas suman y las salidas restan.</p>
+    <p class="nota">Los 20 más recientes, del más viejo al más nuevo. Las entradas suman y las salidas restan.</p>
     <div class="tabla-contenedor">
         <table class="tabla tabla-historial">
             <thead>

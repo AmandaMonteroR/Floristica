@@ -122,8 +122,8 @@ class pedidorepositorio
             $parametros[] = $estado;
         }
 
-        $sql .= ' ORDER BY tbpedidofecha DESC, tbpedidoid DESC';
-
+        $sql .= ' ORDER BY tbpedidoid';
+        
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute($parametros);
 

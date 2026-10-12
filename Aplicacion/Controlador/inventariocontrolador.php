@@ -179,8 +179,7 @@ class inventariocontrolador
     private function convertirmovimientos($idinventario)
     {
         $lista = [];
-        foreach ($this->movimientos->listar($idinventario) as $fila) {
-            switch ($fila['tbinventariomovimientotipo']) {
+        foreach (array_reverse($this->movimientos->listar($idinventario)) as $fila) {            switch ($fila['tbinventariomovimientotipo']) {
                 case 'Inicial':
                     $motivo = 'Stock inicial al registrar el producto';
                     break;

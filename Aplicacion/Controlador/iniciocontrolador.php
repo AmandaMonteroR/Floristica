@@ -13,6 +13,10 @@ class iniciocontrolador
             return in_array($encargo['tbencargoestado'], ['Pendiente', 'En proceso'], true);
         }));
 
+        usort($abiertos, function ($a, $b) {
+            return [$a['tbencargofechaentrega'], $a['tbencargoid']] <=> [$b['tbencargofechaentrega'], $b['tbencargoid']];
+        });
+
         $sinasignar = array_values(array_filter($abiertos, function ($encargo) {
             return $encargo['tbempleadoid'] === null;
         }));

@@ -95,8 +95,8 @@ class encargorepositorio
             $parametros[] = (int) $idempleado;
         }
 
-        // Primero los abiertos, ordenados por fecha de entrega
-        $sql .= " ORDER BY tbencargoestado IN ('Pendiente', 'En proceso') DESC, tbencargofechaentrega, tbencargoid";
+        // Por número de encargo, de menor a mayor
+        $sql .= ' ORDER BY tbencargoid';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute($parametros);
