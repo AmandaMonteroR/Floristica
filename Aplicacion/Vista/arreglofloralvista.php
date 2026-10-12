@@ -19,6 +19,11 @@
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
     </header>
 
+    <nav class="pestanas" aria-label="Secciones del catálogo">
+        <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Arreglos</a>
+        <a href="index.php?modulo=encargo">Encargos</a>
+    </nav>
+
     <section class="filtros">
         <label class="campo campo-busqueda">
             <span>Buscar</span>

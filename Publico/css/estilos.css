@@ -995,3 +995,94 @@ h1 {
     background: var(--rosa-claro);
     color: var(--principal-oscuro);
 }
+
+
+/* Pestañas del catálogo: Arreglos / Encargos */
+.pestanas {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--borde);
+}
+
+.pestanas a {
+    padding: 0.6rem 1.1rem;
+    margin-bottom: -2px;
+    font-weight: 600;
+    color: var(--texto-suave);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+}
+
+.pestanas a:hover {
+    color: var(--principal-oscuro);
+}
+
+.pestanas a.activa {
+    color: var(--principal-oscuro);
+    border-bottom-color: var(--principal);
+}
+
+.pestanas a:focus-visible {
+    outline: 2px solid var(--principal);
+    outline-offset: 2px;
+}
+
+/* Encargos */
+.tabla-encargos th,
+.tabla-encargos td {
+    padding: 0.75rem 0.6rem;
+}
+
+.tabla-encargos td:nth-child(2),
+.tabla-encargos td:nth-child(5),
+.tabla-encargos .columna-acciones {
+    white-space: normal;
+}
+
+.tabla-encargos .columna-acciones {
+    min-width: 170px;
+}
+
+.celda-arreglo {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 150px;
+}
+
+.celda-arreglo img {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: var(--rosa-claro);
+}
+
+.aviso-stock {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--peligro);
+}
+
+.dialogo-angosto {
+    width: min(480px, calc(100% - 2rem));
+}
+
+.acciones-separadas {
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.acciones-grupo {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.campo .contador input {
+    width: 4rem;
+    min-width: 0;
+    text-align: center;
+}

@@ -1,5 +1,9 @@
 <?php
 $moduloactual = $_GET['modulo'] ?? 'proveedor';
+// Los encargos son parte del catálogo
+if ($moduloactual === 'encargo') {
+    $moduloactual = 'catalogo';
+}
 $opcionesmenu = [
     'inicio'     => 'Inicio',
     'cliente'    => 'Clientes',

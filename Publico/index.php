@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Aplicacion/Controlador/inventariocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/pedidocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/arreglofloralcontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/empleadocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/encargocontrolador.php';
 
 $modulo = $_GET['modulo'] ?? 'proveedor';
 $accion = $_GET['accion'] ?? '';
@@ -16,6 +17,7 @@ if ($accion === '') {
         'pedido'     => 'pedidovista.php',
         'catalogo'   => 'arreglofloralvista.php',
         'empleado'   => 'empleadovista.php',
+        'encargo'    => 'encargovista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -30,7 +32,8 @@ if ($accion === '') {
 
 header('Content-Type: application/json; charset=utf-8');
 
-$accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir'];
+$accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
+    'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -187,6 +190,48 @@ try {
                     break;
                 case 'reactivar':
                     $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        case 'encargo':
+            $controlador = new encargocontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['estado'] ?? '', $_GET['empleado'] ?? '');
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'arreglos':
+                    $respuesta = $controlador->arreglos();
+                    break;
+                case 'empleados':
+                    $respuesta = $controlador->empleados();
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST);
+                    break;
+                case 'asignar':
+                    $respuesta = $controlador->asignar($_POST);
+                    break;
+                case 'asignarme':
+                    $respuesta = $controlador->asignarme($_POST['id'] ?? 0);
+                    break;
+                case 'iniciar':
+                    $respuesta = $controlador->iniciar($_POST['id'] ?? 0);
+                    break;
+                case 'terminar':
+                    $respuesta = $controlador->terminar($_POST['id'] ?? 0);
+                    break;
+                case 'cancelar':
+                    $respuesta = $controlador->cancelar($_POST['id'] ?? 0);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

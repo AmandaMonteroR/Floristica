@@ -87,6 +87,15 @@ class inventariorepositorio
         return $sentencia->execute([(int) $unidades, $id]);
     }
 
+    public function restarstock($id, $unidades)
+    {
+        $sentencia = $this->conexion->prepare('UPDATE tbinventario SET tbinventariostock = tbinventariostock - ?
+                WHERE tbinventarioid = ? AND tbinventariostock >= ?');
+        $sentencia->execute([(int) $unidades, $id, (int) $unidades]);
+
+        return $sentencia->rowCount() === 1;
+    }
+
     public function obtenerporid($id)
     {
         $sentencia = $this->conexion->prepare('SELECT * FROM tbinventario WHERE tbinventarioid = ?');
