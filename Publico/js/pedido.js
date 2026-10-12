@@ -783,3 +783,4 @@ campofecha.max = hoy();
 
 const proveedoreslistos = cargarproveedores();
 cargarpedidos();
+abrirformulariosipide(abrirnuevo);

@@ -43,13 +43,14 @@
                     <th>Nombre</th>
                     <th>Teléfono</th>
                     <th>Rol</th>
+                    <th>Usuario</th>
                     <th>Encargos abiertos</th>
                     <th>Estado</th>
                     <th class="columna-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody id="cuerpotabla">
-                <tr><td colspan="6" class="vacio">Cargando empleados…</td></tr>
+                <tr><td colspan="7" class="vacio">Cargando empleados…</td></tr>
             </tbody>
         </table>
     </div>
@@ -86,9 +87,26 @@
                     <option value="Empleado">Empleado</option>
                     <option value="Dueña">Dueña</option>
                 </select>
-                <small class="error" data-error="tbempleadorol"></small>
+                      <small class="error" data-error="tbempleadorol"></small>
             </label>
         </div>
+
+        <fieldset class="seccion-categoria">
+            <legend>Acceso al sistema</legend>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>Usuario *</span>
+                    <input type="text" name="tbempleadousuario" maxlength="30" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="ana.vargas">
+                    <small class="error" data-error="tbempleadousuario"></small>
+                </label>
+                <label class="campo">
+                    <span id="etiquetaclave">Contraseña *</span>
+                    <input type="password" name="tbempleadoclave" maxlength="72" autocomplete="new-password">
+                    <small class="nota-campo" id="notaclave">Mínimo 8 caracteres, con al menos una letra y un número.</small>
+                    <small class="error" data-error="tbempleadoclave"></small>
+                </label>
+            </div>
+        </fieldset>
 
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>

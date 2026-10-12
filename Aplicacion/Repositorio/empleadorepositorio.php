@@ -17,13 +17,14 @@ class empleadorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    public function insertar(Empleado $empleado)
+        public function insertar(Empleado $empleado)
     {
         $empleado->setTbempleadoid($this->siguienteid());
         $empleado->setTbempleadoestado(1);
 
-        $sql = 'INSERT INTO tbempleado (tbempleadoid, tbempleadonombre, tbempleadotelefono, tbempleadorol, tbempleadoestado)
-                VALUES (?, ?, ?, ?, ?)';
+        $sql = 'INSERT INTO tbempleado (tbempleadoid, tbempleadonombre, tbempleadotelefono, tbempleadorol, tbempleadoestado,
+                tbempleadousuario, tbempleadoclave)
+                VALUES (?, ?, ?, ?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute([
@@ -32,6 +33,8 @@ class empleadorepositorio
             $empleado->getTbempleadotelefono(),
             $empleado->getTbempleadorol(),
             $empleado->getTbempleadoestado(),
+            $empleado->getTbempleadousuario(),
+            $empleado->getTbempleadoclave(),
         ]);
 
         return $empleado->getTbempleadoid();
@@ -39,7 +42,8 @@ class empleadorepositorio
 
     public function actualizar(Empleado $empleado)
     {
-        $sql = 'UPDATE tbempleado SET tbempleadonombre = ?, tbempleadotelefono = ?, tbempleadorol = ?
+        $sql = 'UPDATE tbempleado SET tbempleadonombre = ?, tbempleadotelefono = ?, tbempleadorol = ?,
+                tbempleadousuario = ?, tbempleadoclave = ?
                 WHERE tbempleadoid = ?';
 
         $sentencia = $this->conexion->prepare($sql);
@@ -47,10 +51,39 @@ class empleadorepositorio
             $empleado->getTbempleadonombre(),
             $empleado->getTbempleadotelefono(),
             $empleado->getTbempleadorol(),
+            $empleado->getTbempleadousuario(),
+            $empleado->getTbempleadoclave(),
             $empleado->getTbempleadoid(),
         ]);
     }
 
+    public function obtenerporusuario($usuario)
+    {
+        $sentencia = $this->conexion->prepare('SELECT * FROM tbempleado WHERE tbempleadousuario = ?');
+        $sentencia->execute([$usuario]);
+        $fila = $sentencia->fetch();
+
+        return $fila ? new Empleado($fila) : null;
+    }
+
+    public function existeusuario($usuario, $idexcluir = 0)
+    {
+        $sentencia = $this->conexion->prepare('SELECT COUNT(*) AS total FROM tbempleado WHERE tbempleadousuario = ? AND tbempleadoid <> ?');
+        $sentencia->execute([$usuario, (int) $idexcluir]);
+
+        return (int) $sentencia->fetch()['total'] > 0;
+    }
+
+    // Indica si ya existe una dueña activa que pueda iniciar sesión
+    public function hayduenaconcuenta()
+    {
+        $sentencia = $this->conexion->query("SELECT COUNT(*) AS total FROM tbempleado
+                WHERE tbempleadorol = 'Dueña' AND tbempleadoestado = 1
+                AND tbempleadousuario IS NOT NULL AND tbempleadoclave IS NOT NULL");
+
+        return (int) $sentencia->fetch()['total'] > 0;
+    }
+   
     private function cambiarestado($id, $estado)
     {
         $sentencia = $this->conexion->prepare('UPDATE tbempleado SET tbempleadoestado = ? WHERE tbempleadoid = ?');

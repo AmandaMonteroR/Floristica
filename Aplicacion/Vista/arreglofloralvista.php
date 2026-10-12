@@ -16,8 +16,9 @@
             <h1>Catálogo</h1>
             <p class="subtitulo">Arreglos florales que ofrece la floristería, armados con productos del inventario.</p>
         </div>
-        <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
-    </header>
+        <?php if (Seguridad::esduena()): ?>
+            <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
+        <?php endif; ?>    </header>
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
         <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Arreglos</a>

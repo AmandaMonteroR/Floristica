@@ -33,6 +33,9 @@ const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmaci
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 const camposformulario = ['tbarreglofloralnombre', 'tbarreglofloraldescripcion', 'tbarreglofloralprecio'];
 
+// usuarioactual viene de menu.php. Un empleado solo puede ver el catálogo.
+const esduena = usuarioactual.rol === 'Dueña';
+
 let temporizadorbusqueda;
 let temporizadoraviso;
 let lineas = [];
@@ -394,6 +397,10 @@ async function cargararreglos() {
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
             : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
+        const botonesduena = esduena
+            ? `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
+                        ${botonestado}`
+            : '';
 
         return `
             <article class="tarjeta-arreglo ${activo ? '' : 'tarjeta-inactiva'}" data-nombre="${escapar(arreglo.tbarreglofloralnombre)}">
@@ -404,11 +411,10 @@ async function cargararreglos() {
                         <span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span>
                     </div>
                     <p class="tarjeta-precio">${formatearmonto(arreglo.tbarreglofloralprecio)}</p>
-                    <p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costo)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>
+                    ${esduena ? `<p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costo)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>` : ''}
                     <div class="tarjeta-acciones">
                         <button type="button" class="enlace" data-accion="ver" data-id="${id}">Ver</button>
-                        <button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
-                        ${botonestado}
+                        ${botonesduena}
                     </div>
                 </div>
             </article>`;
@@ -447,6 +453,11 @@ function mostrarerrores(errores) {
 /* ---------- Abrir formulario y detalle ---------- */
 
 async function abrirnuevo() {
+    // Solo la dueña crea arreglos (el servidor también lo bloquea)
+    if (!esduena) {
+        return;
+    }
+
     await cargarproductos();
     datosservidor = {};
     llenarformulario(datosservidor);
@@ -458,6 +469,10 @@ async function abrirnuevo() {
 }
 
 async function abrireditar(id) {
+    if (!esduena) {
+        return;
+    }
+
     await cargarproductos();
     const respuesta = await consultar('obtener', { id });
 
@@ -487,10 +502,15 @@ async function verdetalle(id) {
     const filas = [
         ['Descripción', arreglo.tbarreglofloraldescripcion],
         ['Precio de venta', formatearmonto(arreglo.tbarreglofloralprecio)],
-        ['Costo de productos', formatearmonto(arreglo.costo)],
-        ['Ganancia', formatearmonto(arreglo.tbarreglofloralprecio - arreglo.costo)],
-        ['Estado', arreglo.tbarreglofloralestado === 1 ? 'Activo' : 'Inactivo'],
     ];
+
+    // El costo y la ganancia solo los ve la dueña
+    if (esduena) {
+        filas.push(['Costo de productos', formatearmonto(arreglo.costo)]);
+        filas.push(['Ganancia', formatearmonto(arreglo.tbarreglofloralprecio - arreglo.costo)]);
+    }
+
+    filas.push(['Estado', arreglo.tbarreglofloralestado === 1 ? 'Activo' : 'Inactivo']);
 
     fotodetalle.src = arreglo.tbarreglofloralfoto;
     fotodetalle.alt = arreglo.tbarreglofloralnombre;
@@ -504,8 +524,8 @@ async function verdetalle(id) {
             <td>${escapar(detalle.tbinventarionombre)}</td>
             <td>${escapar(detalle.tbinventariocategoria)}</td>
             <td>${detalle.tbarreglofloraldetallecantidad}</td>
-            <td>${formatearmonto(detalle.tbinventariopreciounidad)}</td>
-            <td>${formatearmonto(detalle.tbarreglofloraldetallecantidad * detalle.tbinventariopreciounidad)}</td>
+            <td>${esduena ? formatearmonto(detalle.tbinventariopreciounidad) : '—'}</td>
+            <td>${esduena ? formatearmonto(detalle.tbarreglofloraldetallecantidad * detalle.tbinventariopreciounidad) : '—'}</td>
         </tr>`).join('');
 
     dialogodetalle.showModal();
@@ -705,7 +725,10 @@ busqueda.addEventListener('input', () => {
 });
 
 filtroestado.addEventListener('change', cargararreglos);
-document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
+const botonnuevo = document.getElementById('botonnuevo');
+if (botonnuevo) {
+    botonnuevo.addEventListener('click', abrirnuevo);
+}
 document.getElementById('botonagregarlinea').addEventListener('click', agregarlinea);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());

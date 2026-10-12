@@ -1,6 +1,6 @@
 const rutabase = 'index.php?modulo=empleado';
 const clavebase = 'floristica.borrador.empleado.';
-const camposformulario = ['tbempleadonombre', 'tbempleadotelefono', 'tbempleadorol'];
+const camposformulario = ['tbempleadonombre', 'tbempleadotelefono', 'tbempleadorol', 'tbempleadousuario'];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
 const busqueda = document.getElementById('busqueda');
@@ -12,6 +12,8 @@ const tituloformulario = document.getElementById('tituloformulario');
 const avisoformulario = document.getElementById('avisoformulario');
 const avisoborrador = document.getElementById('avisoborrador');
 const botonguardar = document.getElementById('botonguardar');
+const etiquetaclave = document.getElementById('etiquetaclave');
+const notaclave = document.getElementById('notaclave');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
 const iconoconfirmacion = document.getElementById('iconoconfirmacion');
 const tituloconfirmacion = document.getElementById('tituloconfirmacion');
@@ -138,6 +140,13 @@ function llenarformulario(datos) {
     formulario.reset();
     formulario.elements.tbempleadoid.value = datos.tbempleadoid ?? '';
     asignarcampos(datos);
+
+    // Al editar a alguien que ya tiene cuenta, la contraseña es opcional
+    const tienecuenta = Boolean(datos.tienecuenta);
+    etiquetaclave.textContent = tienecuenta ? 'Nueva contraseña' : 'Contraseña *';
+    notaclave.textContent = tienecuenta
+        ? 'Déjela vacía para conservar la actual.'
+        : 'Mínimo 8 caracteres, con al menos una letra y un número.';
 }
 
 function aplicarborrador() {
@@ -177,7 +186,7 @@ async function cargarempleados() {
     });
 
     if (!respuesta.exito) {
-        cuerpotabla.innerHTML = `<tr><td colspan="6" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
+        cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
         return;
     }
 
@@ -186,7 +195,7 @@ async function cargarempleados() {
         const mensaje = sinfiltros
             ? 'Aún no hay empleados registrados. Empiece registrando a la dueña con "Nuevo empleado".'
             : 'No hay empleados que coincidan con la búsqueda.';
-        cuerpotabla.innerHTML = `<tr><td colspan="6" class="vacio">${mensaje}</td></tr>`;
+        cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${mensaje}</td></tr>`;
         return;
     }
 
@@ -205,6 +214,7 @@ async function cargarempleados() {
                 <td>${escapar(empleado.tbempleadonombre)}</td>
                 <td>${escapar(formateartelefono(empleado.tbempleadotelefono))}</td>
                 <td>${rol}</td>
+                <td>${empleado.tienecuenta ? escapar(empleado.tbempleadousuario) : '<span class="texto-peligro">Sin acceso</span>'}</td>
                 <td>${empleado.encargosabiertos}</td>
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
@@ -311,13 +321,19 @@ formulario.addEventListener('input', (evento) => {
     if (campo.name === 'tbempleadonombre') {
         campo.value = campo.value.replace(/[^\p{L}\s'.-]/gu, '');
     }
+    if (campo.name === 'tbempleadousuario') {
+        campo.value = campo.value.toLowerCase().replace(/[^a-z0-9._]/g, '');
+    }
 
     const error = formulario.querySelector(`[data-error="${campo.name}"]`);
     if (error) {
         error.textContent = '';
     }
     campo.removeAttribute('aria-invalid');
-    guardarborrador();
+
+    if (campo.name !== 'tbempleadoclave') {
+        guardarborrador();
+    }
 });
 
 formulario.addEventListener('submit', async (evento) => {

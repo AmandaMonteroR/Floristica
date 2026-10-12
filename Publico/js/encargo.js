@@ -30,6 +30,9 @@ const mensajeconfirmacion = document.getElementById('mensajeconfirmacion');
 const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmacion');
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 
+// usuarioactual viene de menu.php
+const esduena = usuarioactual.rol === 'Dueña';
+
 let temporizadoraviso;
 let datosoriginales = {};
 let datosservidor = {};
@@ -145,14 +148,19 @@ async function cargarlistas() {
     llenarempleados(formulario.elements.tbempleadoid, 'Sin asignar por ahora');
     llenarempleados(formularioasignar.elements.tbempleadoid, 'Seleccione…');
 
+    // Un empleado solo puede dejar el encargo libre o asignárselo a sí mismo
+    if (!esduena) {
+        Array.from(formulario.elements.tbempleadoid.options).forEach((opcion) => {
+            if (opcion.value !== '' && opcion.value !== String(usuarioactual.id)) {
+                opcion.remove();
+            }
+        });
+    }
+
     filtroempleado.innerHTML = '<option value="">Todos</option><option value="sinasignar">Sin asignar</option>';
     empleados.forEach((empleado) => {
         filtroempleado.add(new Option(nombreempleado(empleado), empleado.tbempleadoid));
     });
-}
-
-function duena() {
-    return empleados.find((empleado) => empleado.tbempleadorol === 'Dueña');
 }
 
 /* ---------- Borrador ---------- */
@@ -257,13 +265,25 @@ function boton(accion, id, texto, peligro = false) {
 
 function accionesencargo(encargo) {
     const id = encargo.tbencargoid;
-    const asignadoaduena = encargo.tbempleadorol === 'Dueña';
+    const esmio = encargo.tbempleadoid === usuarioactual.id;
     const acciones = [boton('ver', id, 'Ver')];
+
+    // Empleado: tomar encargos libres y mover solo los suyos
+    if (!esduena) {
+        if (encargo.tbencargoestado === 'Pendiente' && !encargo.tbempleadoid) {
+            acciones.push(boton('asignarme', id, 'Asignármelo'));
+        } else if (encargo.tbencargoestado === 'Pendiente' && esmio) {
+            acciones.push(boton('iniciar', id, 'Iniciar'));
+        } else if (encargo.tbencargoestado === 'En proceso' && esmio) {
+            acciones.push(boton('terminar', id, 'Terminar'));
+        }
+        return acciones.join(' ');
+    }
 
     if (encargo.tbencargoestado === 'Pendiente') {
         acciones.push(boton('editar', id, 'Editar'));
         acciones.push(boton('asignar', id, encargo.tbempleadoid ? 'Reasignar' : 'Asignar'));
-        if (!asignadoaduena) {
+        if (!esmio) {
             acciones.push(boton('asignarme', id, 'Asignármelo'));
         }
         if (encargo.tbempleadoid) {
@@ -401,7 +421,6 @@ function abrirasignar(id) {
     resumenasignar.textContent = encargo
         ? `Encargo N.º ${id}: ${encargo.tbencargocantidad} × ${encargo.tbarreglofloralnombre}, entrega ${formatearfecha(encargo.tbencargofechaentrega)}.`
         : '';
-    document.getElementById('botonasignarme').hidden = !duena();
     limpiarerrores(formularioasignar);
     dialogoasignar.showModal();
 }
@@ -640,3 +659,4 @@ formulario.elements.tbencargofechaentrega.min = hoy();
 
 const listaslistas = cargarlistas();
 cargarencargos();
+abrirformulariosipide(abrirnuevo);

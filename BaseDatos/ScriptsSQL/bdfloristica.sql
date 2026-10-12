@@ -178,6 +178,8 @@ CREATE TABLE tbempleado (
     tbempleadotelefono VARCHAR(20),
     tbempleadorol VARCHAR(20),
     tbempleadoestado TINYINT(1),
+    tbempleadousuario VARCHAR(30),
+    tbempleadoclave VARCHAR(255),
     PRIMARY KEY (tbempleadoid)
 );
 

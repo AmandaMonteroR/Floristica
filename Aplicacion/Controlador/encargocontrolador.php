@@ -70,9 +70,15 @@ class encargocontrolador
         return $this->respuesta(true, '', $datos);
     }
 
-    public function crear($datos)
+    public function crear($datos, $usuario)
     {
         $datos = $this->limpiar($datos);
+
+        if ($usuario['rol'] !== 'Dueña' && !in_array($datos['tbempleadoid'], ['', (string) $usuario['id']], true)) {
+            return $this->respuesta(false, 'Revise los datos ingresados.',
+                ['errores' => ['tbempleadoid' => 'Solo puede asignarse el encargo a usted misma.']]);
+        }
+
         $errores = $this->validar($datos, true);
 
         if ($errores) {
@@ -138,18 +144,25 @@ class encargocontrolador
         return $this->respuesta(true, 'Encargo asignado a ' . $empleado->getTbempleadonombre() . '.');
     }
 
-    public function asignarme($id)
+    public function asignarme($id, $usuario)
     {
-        $duena = $this->empleados->obtenerduena();
+        $encargo = $this->repositorio->obtenerporid((int) $id);
 
-        if (!$duena) {
-            return $this->respuesta(false, 'No hay una dueña registrada. Regístrela en Empleados con el rol "Dueña".');
+        if ($encargo && $usuario['rol'] !== 'Dueña' && $encargo->getTbempleadoid()
+            && (int) $encargo->getTbempleadoid() !== (int) $usuario['id']) {
+            return $this->respuesta(false, 'Este encargo ya está asignado a otra persona.');
         }
 
-        return $this->asignar(['tbencargoid' => $id, 'tbempleadoid' => $duena->getTbempleadoid()]);
+        return $this->asignar(['tbencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']]);
     }
 
-    public function iniciar($id)
+    // Un empleado solo puede mover sus propios encargos
+    private function esdeotro(Encargo $encargo, $usuario)
+    {
+        return $usuario['rol'] !== 'Dueña' && (int) $encargo->getTbempleadoid() !== (int) $usuario['id'];
+    }
+
+    public function iniciar($id, $usuario)
     {
         $id = (int) $id;
         $encargo = $this->repositorio->obtenerporid($id);
@@ -166,18 +179,26 @@ class encargocontrolador
             return $this->respuesta(false, 'Asigne el encargo a alguien antes de iniciarlo.');
         }
 
+        if ($this->esdeotro($encargo, $usuario)) {
+            return $this->respuesta(false, 'Solo puede iniciar los encargos asignados a usted.');
+        }
+
         $this->repositorio->cambiarestado($id, 'En proceso');
 
         return $this->respuesta(true, 'El encargo pasó a "En proceso".');
     }
-
-    public function terminar($id)
+    
+    public function terminar($id, $usuario)
     {
         $id = (int) $id;
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
             return $this->respuesta(false, 'El encargo no existe.');
+        }
+
+        if ($this->esdeotro($encargo, $usuario)) {
+            return $this->respuesta(false, 'Solo puede terminar los encargos asignados a usted.');
         }
 
         if ($encargo->getTbencargoestado() !== 'En proceso') {

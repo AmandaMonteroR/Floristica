@@ -6,18 +6,90 @@ require_once __DIR__ . '/../Aplicacion/Controlador/pedidocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/arreglofloralcontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/empleadocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/encargocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/sesioncontrolador.php';
+require_once __DIR__ . '/../Configuracion/Seguridad.php';
 
-$modulo = $_GET['modulo'] ?? 'proveedor';
+Seguridad::iniciar();
+
+$modulo = $_GET['modulo'] ?? '';
 $accion = $_GET['accion'] ?? '';
+
+function responderjson($respuesta, $codigo = 200)
+{
+    http_response_code($codigo);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($respuesta, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ---------- Iniciar y cerrar sesión (no requieren estar conectado) ----------
+if ($modulo === 'sesion') {
+    if ($accion === 'cerrar') {
+        Seguridad::cerrar();
+        header('Location: index.php');
+        exit;
+    }
+
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        responderjson(['exito' => false, 'mensaje' => 'Método no permitido.', 'datos' => []], 405);
+    }
+
+    $sesion = new sesioncontrolador();
+
+    try {
+        switch ($accion) {
+            case 'ingresar':
+                responderjson($sesion->ingresar($_POST));
+                break;
+            case 'registrarduena':
+                responderjson($sesion->registrarduena($_POST));
+                break;
+            default:
+                responderjson(['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []], 404);
+        }
+    } catch (PDOException $excepcion) {
+        responderjson(['exito' => false, 'mensaje' => 'No se pudo conectar con la base de datos. Intente de nuevo.', 'datos' => []], 500);
+    }
+}
+
+// ---------- Sin sesión: se muestra el login ----------
+$usuarioactual = Seguridad::usuario();
+
+if ($usuarioactual === null) {
+    if ($accion !== '') {
+        responderjson(['exito' => false, 'mensaje' => 'Su sesión terminó. Vuelva a ingresar.', 'datos' => ['sesion' => false]], 401);
+    }
+
+    $primeravez = (new sesioncontrolador())->primeravez();
+    require __DIR__ . '/../Aplicacion/Vista/loginvista.php';
+    exit;
+}
+
+// Si no se pide un módulo, se muestra la página de inicio
+if ($modulo === '') {
+    $modulo = 'inicio';
+}
+
+// ---------- Permisos por rol ----------
+if (!Seguridad::permitido($modulo, $accion)) {
+    if ($accion === '') {
+        http_response_code(403);
+        require __DIR__ . '/../Aplicacion/Vista/sinpermisovista.php';
+        exit;
+    }
+
+    responderjson(['exito' => false, 'mensaje' => 'No tiene permiso para realizar esta acción.', 'datos' => []], 403);
+}
 
 if ($accion === '') {
     $vistas = [
+        'inicio'     => 'iniciovista.php',
         'proveedor'  => 'proveedorvista.php',
         'inventario' => 'inventariovista.php',
         'pedido'     => 'pedidovista.php',
         'catalogo'   => 'arreglofloralvista.php',
-        'empleado'   => 'empleadovista.php',
         'encargo'    => 'encargovista.php',
+        'empleado'   => 'empleadovista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -183,10 +255,10 @@ try {
                     $respuesta = $controlador->crear($_POST);
                     break;
                 case 'actualizar':
-                    $respuesta = $controlador->actualizar($_POST);
+                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
                     break;
                 case 'inactivar':
-                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'reactivar':
                     $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
@@ -213,7 +285,7 @@ try {
                     $respuesta = $controlador->empleados();
                     break;
                 case 'crear':
-                    $respuesta = $controlador->crear($_POST);
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST);
@@ -222,13 +294,13 @@ try {
                     $respuesta = $controlador->asignar($_POST);
                     break;
                 case 'asignarme':
-                    $respuesta = $controlador->asignarme($_POST['id'] ?? 0);
+                    $respuesta = $controlador->asignarme($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'iniciar':
-                    $respuesta = $controlador->iniciar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->iniciar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'terminar':
-                    $respuesta = $controlador->terminar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->terminar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'cancelar':
                     $respuesta = $controlador->cancelar($_POST['id'] ?? 0);
@@ -247,6 +319,21 @@ try {
 } catch (RuntimeException $excepcion) {
     http_response_code(500);
     $respuesta = ['exito' => false, 'mensaje' => $excepcion->getMessage(), 'datos' => []];
+}
+
+// Las empleadas no reciben los costos ni las ganancias de los arreglos
+if ($modulo === 'catalogo' && !Seguridad::esduena() && !empty($respuesta['datos'])) {
+    $quitarcostos = function ($arreglo) {
+        unset($arreglo['costo']);
+        foreach ($arreglo['detalles'] ?? [] as $indice => $detalle) {
+            unset($arreglo['detalles'][$indice]['tbinventariopreciounidad']);
+        }
+        return $arreglo;
+    };
+
+    $respuesta['datos'] = isset($respuesta['datos']['tbarreglofloralid'])
+        ? $quitarcostos($respuesta['datos'])
+        : array_map($quitarcostos, $respuesta['datos']);
 }
 
 echo json_encode($respuesta, JSON_UNESCAPED_UNICODE);

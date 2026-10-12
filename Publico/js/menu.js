@@ -1,3 +1,12 @@
+// Si la sesión terminó (por ejemplo, la dueña inactivó la cuenta), vuelve al login
+const fetchoriginal = window.fetch.bind(window);
+window.fetch = async (...argumentos) => {
+    const respuesta = await fetchoriginal(...argumentos);
+    if (respuesta.status === 401) {
+        window.location.href = 'index.php';
+    }
+    return respuesta;
+};
 const botonmenu = document.getElementById('botonmenu');
 const botoncerrarmenu = document.getElementById('botoncerrarmenu');
 const menulateral = document.getElementById('menulateral');

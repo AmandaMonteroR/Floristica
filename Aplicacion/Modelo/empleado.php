@@ -7,6 +7,8 @@ class Empleado
     private $tbempleadotelefono;
     private $tbempleadorol;
     private $tbempleadoestado;
+    private $tbempleadousuario;
+    private $tbempleadoclave;
 
     public function __construct($datos = [])
     {
@@ -15,6 +17,8 @@ class Empleado
         $this->tbempleadotelefono = $datos['tbempleadotelefono'] ?? '';
         $this->tbempleadorol      = $datos['tbempleadorol'] ?? 'Empleado';
         $this->tbempleadoestado   = $datos['tbempleadoestado'] ?? 1;
+        $this->tbempleadousuario  = $datos['tbempleadousuario'] ?? '';
+        $this->tbempleadoclave    = $datos['tbempleadoclave'] ?? '';
     }
 
     public function getTbempleadoid() {
@@ -46,6 +50,23 @@ class Empleado
 
     public function setTbempleadoestado($valor) {
         $this->tbempleadoestado = $valor; }
+
+        public function getTbempleadousuario() {
+        return $this->tbempleadousuario; }
+
+    public function setTbempleadousuario($valor) {
+        $this->tbempleadousuario = $valor; }
+
+    public function getTbempleadoclave() {
+        return $this->tbempleadoclave; }
+
+    public function setTbempleadoclave($valor) {
+        $this->tbempleadoclave = $valor; }
+
+    public function tieneCuenta()
+    {
+        return (string) $this->tbempleadousuario !== '' && (string) $this->tbempleadoclave !== '';
+    }    
 
     public function estaActivo()
     {

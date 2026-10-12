@@ -1,5 +1,5 @@
 <?php
-$moduloactual = $_GET['modulo'] ?? 'proveedor';
+$moduloactual = $modulo;
 
 // Estructura del menú: una opción tiene 'modulo' (enlace) o 'hijos' (submenú)
 $opcionesmenu = [
@@ -32,6 +32,27 @@ $opcionesmenu = [
     ]],
     ['texto' => 'Reportes', 'modulo' => 'reporte'],
 ];
+
+// Quita las opciones que el rol del usuario no puede abrir (y los grupos que quedan vacíos)
+function filtrarmenu($opciones)
+{
+    $permitidas = [];
+
+    foreach ($opciones as $opcion) {
+        if (isset($opcion['hijos'])) {
+            $opcion['hijos'] = filtrarmenu($opcion['hijos']);
+            if ($opcion['hijos']) {
+                $permitidas[] = $opcion;
+            }
+        } elseif (Seguridad::permitido($opcion['modulo'])) {
+            $permitidas[] = $opcion;
+        }
+    }
+
+    return $permitidas;
+}
+
+$opcionesmenu = filtrarmenu($opcionesmenu);
 
 // Indica si una opción (o alguno de sus hijos) corresponde a la página actual
 function menucontieneactual($opcion, $moduloactual)
@@ -83,7 +104,19 @@ function dibujarmenu($opciones, $moduloactual, $nivel = 1)
         <img class="logo" src="imagenes/logo.png" alt="">
         <span>Floristica</span>
     </a>
+    <div class="usuario-sesion">
+        <span class="usuario-datos">
+            <strong><?= e($usuarioactual['nombre']) ?></strong>
+            <small><?= e($usuarioactual['rol']) ?></small>
+        </span>
+        <a class="boton-salir" href="index.php?modulo=sesion&amp;accion=cerrar">Cerrar sesión</a>
+    </div>
 </header>
+
+<script>
+    // Datos del usuario para ajustar la pantalla. Los permisos reales los revisa el servidor.
+    const usuarioactual = <?= json_encode(['id' => $usuarioactual['id'], 'rol' => $usuarioactual['rol']], JSON_UNESCAPED_UNICODE) ?>;
+</script>
 
 <div class="fondo-menu" id="fondomenu" hidden></div>
 

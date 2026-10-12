@@ -1206,3 +1206,251 @@ h1 {
         transition: none;
     }
 }
+
+
+/* Usuario conectado en la barra superior */
+.usuario-sesion {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    margin-left: auto;
+}
+
+.usuario-datos {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    text-align: right;
+    color: #ffffff;
+}
+
+.usuario-datos small {
+    color: #f6dce7;
+}
+
+.boton-salir {
+    padding: 0.45rem 0.9rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+}
+
+.boton-salir:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.boton-salir:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+    .usuario-datos {
+        display: none;
+    }
+
+    .barra-superior .marca span {
+        display: none;
+    }
+}
+
+/* Pantalla de login */
+.pagina-login {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 1.5rem 1rem;
+    background: linear-gradient(160deg, var(--ciruela), var(--principal));
+}
+
+.tarjeta-login {
+    width: min(420px, 100%);
+    padding: 2rem 1.75rem;
+    background: var(--superficie);
+    border-top: 5px solid var(--principal);
+    border-radius: 14px;
+    box-shadow: 0 20px 50px rgba(20, 5, 12, 0.35);
+}
+
+.tarjeta-login h1 {
+    margin: 0.75rem 0 0.25rem;
+    font-size: 1.6rem;
+}
+
+.tarjeta-login .campo {
+    margin-bottom: 0.4rem;
+}
+
+.marca-login {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--principal-oscuro);
+}
+
+.logo-login {
+    width: 44px;
+    height: 44px;
+    padding: 4px;
+    background: var(--rosa-claro);
+    border-radius: 50%;
+}
+
+.nota-campo {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--texto-suave);
+}
+
+.boton-ancho {
+    width: 100%;
+    margin-top: 0.75rem;
+}
+
+/* Página sin permiso */
+.sin-permiso {
+    max-width: 480px;
+    margin: 3rem auto;
+    padding: 2rem;
+    text-align: center;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+}
+
+.sin-permiso h1 {
+    font-size: 1.4rem;
+}
+
+.sin-permiso p {
+    color: var(--texto-suave);
+}
+
+.sin-permiso .boton {
+    display: inline-block;
+    margin-top: 0.5rem;
+    text-decoration: none;
+}
+
+/* Página de inicio */
+.resumen-inicio {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.tarjeta-resumen {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 1.1rem 1.25rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+    color: var(--texto-suave);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.tarjeta-resumen .numero {
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--principal-oscuro);
+}
+
+.tarjeta-resumen:hover {
+    border-color: var(--principal);
+}
+
+.tarjeta-resumen:focus-visible {
+    outline: 2px solid var(--principal);
+    outline-offset: 2px;
+}
+
+.tarjeta-alerta {
+    background: var(--peligro-fondo);
+    border-color: var(--peligro);
+}
+
+.tarjeta-alerta .numero {
+    color: var(--peligro);
+}
+
+.accesos-inicio {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.accesos-inicio .boton {
+    text-decoration: none;
+}
+
+.paneles-inicio {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.panel-inicio {
+    padding: 1.25rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 14px;
+}
+
+.panel-inicio h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.1rem;
+    color: var(--ciruela);
+}
+
+.lista-inicio {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.lista-inicio li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--borde);
+}
+
+.lista-inicio li:last-child {
+    border-bottom: none;
+}
+
+.lista-inicio li > span:first-child {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.lista-inicio .estado,
+.lista-inicio .stock {
+    flex-shrink: 0;
+}
+
+.enlace-panel {
+    display: inline-block;
+    margin-top: 0.75rem;
+    color: var(--principal-oscuro);
+    font-weight: 600;
+}
+
+/* Mensaje en vivo de la contraseña */
+.correcto {
+    font-size: 0.82rem;
+    font-weight: 400;
+    color: var(--verde);
+}
