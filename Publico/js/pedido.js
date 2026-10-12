@@ -213,7 +213,13 @@ function dibujarlineas() {
     cuerpolineas.innerHTML = lineas.map((linea, indice) => `
         <tr data-indice="${indice}">
             <td><select data-campo="tbinventarioid" aria-label="Producto de la línea ${indice + 1}">${opcionesproducto(linea)}</select></td>
-            <td><input type="text" data-campo="tbpedidodetallecantidad" inputmode="numeric" maxlength="4" autocomplete="off" value="${escapar(linea.tbpedidodetallecantidad)}" aria-label="Paquetes de la línea ${indice + 1}"></td>
+            <td>
+                <div class="contador">
+                    <button type="button" class="boton-contador" data-paso="-1" aria-label="Quitar un paquete en la línea ${indice + 1}">−</button>
+                    <input type="text" data-campo="tbpedidodetallecantidad" inputmode="numeric" maxlength="4" autocomplete="off" value="${escapar(linea.tbpedidodetallecantidad)}" aria-label="Paquetes de la línea ${indice + 1}">
+                    <button type="button" class="boton-contador" data-paso="1" aria-label="Agregar un paquete en la línea ${indice + 1}">+</button>
+                </div>
+            </td>
             <td><input type="text" data-campo="tbpedidodetalleprecio" inputmode="decimal" maxlength="11" autocomplete="off" value="${escapar(linea.tbpedidodetalleprecio)}" aria-label="Precio de la línea ${indice + 1}"></td>
             <td class="subtotal-linea">${formatearmonto(subtotal(linea))}</td>
             <td><button type="button" class="enlace enlace-peligro" data-quitar="${indice}" aria-label="Quitar línea ${indice + 1}">Quitar</button></td>
@@ -614,6 +620,26 @@ cuerpolineas.addEventListener('change', (evento) => {
     }
 
     dibujarlineas();
+    guardarborrador();
+});
+
+// Botones − y + de la cantidad de paquetes
+cuerpolineas.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-paso]');
+    if (!boton) {
+        return;
+    }
+
+    const fila = boton.closest('tr[data-indice]');
+    const linea = lineas[Number(fila.dataset.indice)];
+    const actual = parseInt(linea.tbpedidodetallecantidad, 10) || 0;
+    const nueva = Math.min(9999, Math.max(1, actual + Number(boton.dataset.paso)));
+
+    linea.tbpedidodetallecantidad = String(nueva);
+    fila.querySelector('[data-campo="tbpedidodetallecantidad"]').value = linea.tbpedidodetallecantidad;
+    fila.querySelector('.subtotal-linea').textContent = formatearmonto(subtotal(linea));
+    formulario.querySelector('[data-error="detalles"]').textContent = '';
+    actualizartotal();
     guardarborrador();
 });
 

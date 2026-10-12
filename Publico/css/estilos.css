@@ -777,3 +777,42 @@ h1 {
     overflow: hidden;
     clip: rect(0 0 0 0);
 }
+
+
+/* Pedidos: botones − y + para la cantidad de paquetes */
+.contador {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.tabla-lineas .contador input {
+    width: 3.5rem;
+    min-width: 3.5rem;
+    text-align: center;
+}
+
+.boton-contador {
+    flex: none;
+    width: 2.2rem;
+    height: 2.2rem;
+    font: inherit;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--principal-oscuro);
+    background: var(--rosa-claro);
+    border: 1px solid var(--borde);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.boton-contador:hover {
+    background: var(--principal);
+    color: #ffffff;
+}
+
+.boton-contador:focus-visible {
+    outline: 2px solid var(--principal);
+    outline-offset: 2px;
+}
