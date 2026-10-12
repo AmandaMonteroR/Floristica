@@ -1,58 +1,55 @@
 # Florística
 
-Sistema web para la gestión de proveedores de una floristería, desarrollado en PHP con base de datos MySQL/MariaDB.
+Sistema web para la gestión de una floristería: proveedores, inventario, pedidos de compra, catálogo de arreglos florales, encargos y empleados, con inicio de sesión por roles. Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
 
 ## Requisitos
 
 - Linux basado en Debian (probado en Ubuntu y Kali Linux)
 - PHP 8 o superior, con las extensiones `pdo_mysql` y `mbstring`
-- MariaDB o MySQL
+- MySQL o MariaDB (sirve el que trae XAMPP)
 
 ## Instalación
 
-### 1. Instalar los paquetes necesarios
+Todos los comandos se ejecutan desde la carpeta raíz del proyecto (`Floristica`).
+
+### 1. Instalar PHP
 
 ```bash
 sudo apt update
-sudo apt install php php-mysql php-mbstring mariadb-server
+sudo apt install php php-mysql php-mbstring
 ```
 
-### 2. Iniciar el servidor de base de datos
+### 2. Base de datos: elegir una opción
+
+**Opción A: XAMPP (si ya lo tiene instalado)**
 
 ```bash
+sudo /opt/lampp/lampp startmysql
+```
+
+En los comandos de este README, use `/opt/lampp/bin/mysql -u root` donde dice `mysql -u root -h 127.0.0.1`.
+
+**Opción B: MariaDB del sistema**
+
+```bash
+sudo apt install mariadb-server
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
-```
-
-### 3. Crear la base de datos
-
-Desde la carpeta raíz del proyecto (`Floristica`):
-
-```bash
-sudo mariadb < BaseDatos/ScriptsSQL/bdfloristica.sql
-```
-
-### 4. Permitir el acceso de root sin contraseña
-
-El proyecto se conecta con el usuario `root` sin contraseña. Por defecto, MariaDB solo permite entrar como root usando `sudo`, así que hay que habilitar el acceso desde PHP:
-
-```bash
 sudo mariadb -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD(''); FLUSH PRIVILEGES;"
 ```
 
-Si se usa MySQL en lugar de MariaDB:
+No use XAMPP y el MySQL/MariaDB del sistema al mismo tiempo: los dos usan el puerto 3306.
+
+### 3. Crear la base de datos y cargar los datos de prueba
 
 ```bash
-sudo mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY ''; FLUSH PRIVILEGES;"
+mysql -u root -h 127.0.0.1 --default-character-set=utf8mb4 < BaseDatos/ScriptsSQL/bdfloristica.sql
+mysql -u root -h 127.0.0.1 --default-character-set=utf8mb4 < BaseDatos/DatosIniciales/datosprueba.sql
 ```
 
-Para verificar (debe mostrar la lista de tablas):
+El script `bdfloristica.sql` borra la base y la crea de nuevo, así que también sirve para reiniciarla.
 
-```bash
-mysql -u root -h 127.0.0.1 bdfloristica -e "SHOW TABLES;"
-```
-
-### 5. Ejecutar el proyecto
+### 4. Ejecutar el proyecto
 
 ```bash
 cd Publico
@@ -61,16 +58,25 @@ php -S localhost:8000
 
 Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
 
+## Usuarios de prueba
 
-Opcional: para cargar proveedores de prueba (desde la carpeta raíz del proyecto):
+Los crea `datosprueba.sql`:
 
-```bash
-php BaseDatos/DatosIniciales/cargardatosprueba.php
-```
+| Usuario | Contraseña | Nombre | Rol |
+|---------|------------|--------|-----|
+| `duena` | `duena1234` | Patricia Mora Solano | Dueña |
+| `empleado1` | `empleado1` | Lorena Bermúdez Badilla | Empleado |
+| `empleado2` | `empleado2` | Carlos Jiménez Rojas | Empleado |
+| `empleado3` | `empleado3` | Valeria Castro Núñez | Empleado |
+| `empleado4` | `empleado4` | Andrea Solís Vega | Empleado (inactiva: no puede entrar) |
+
+Si la base se crea sin datos de prueba, la primera vez que se abre el sistema aparece un formulario para crear la cuenta de la dueña.
+
+Los datos de prueba también traen 8 proveedores, 24 productos de inventario, 7 arreglos con foto (en `Publico/imagenes/muestras/`), 4 pedidos y 9 encargos en distintos estados.
 
 ## Configuración
 
-Los datos de conexión se encuentran en `Configuracion/Configuracion.php`. Por defecto el proyecto usa:
+Los datos de conexión están en `Configuracion/Configuracion.php`:
 
 | Parámetro | Valor        |
 |-----------|--------------|
@@ -79,60 +85,130 @@ Los datos de conexión se encuentran en `Configuracion/Configuracion.php`. Por d
 | Base      | bdfloristica |
 | Usuario   | root         |
 | Clave     | (vacía)      |
+| Zona horaria | America/Costa_Rica |
 
-Si se usa un usuario o contraseña distintos, se deben modificar en ese archivo.
-
-## Solución de problemas
-
-- **"No se pudo completar la operación en la base de datos"**: MariaDB no está corriendo (repetir el paso 2), root no tiene acceso sin contraseña (repetir el paso 4) o la base de datos está desactualizada (ver los siguientes puntos).
-- **`mariadb: command not found`**: falta instalar MariaDB (repetir el paso 1).
-- **`Can't connect to local server through socket`**: el servicio está apagado. Ejecutar `sudo systemctl start mariadb`.
-- **`Address already in use` al ejecutar `php -S`**: el puerto 8000 está ocupado. Usar otro, por ejemplo `php -S localhost:8080`.
-- **`Unknown column 'tbproveedorprovincia'` o error al guardar un proveedor**: la base de datos se creó con una versión anterior del script y le faltan las columnas de ubicación. Se pueden agregar sin perder datos:
-
-```bash
-mysql -u root -h 127.0.0.1 bdfloristica -e "ALTER TABLE tbproveedor ADD COLUMN tbproveedorprovincia VARCHAR(50) AFTER tbproveedorcorreo, ADD COLUMN tbproveedorcanton VARCHAR(50) AFTER tbproveedorprovincia, ADD COLUMN tbproveedordistrito VARCHAR(60) AFTER tbproveedorcanton;"
-```
-
-- **`Table 'bdfloristica.tbproveedorubicacionhistorico' doesn't exist`**: la base se creó antes de que se agregara el histórico de ubicación. Se puede crear la tabla sin perder datos:
-
-```bash
-mysql -u root -h 127.0.0.1 bdfloristica -e "CREATE TABLE tbproveedorubicacionhistorico (tbproveedorubicacionhistoricoid INT, tbproveedorid INT, tbproveedorubicacionhistoricovalor VARCHAR(370), tbproveedorubicacionhistoricofecha DATETIME, PRIMARY KEY (tbproveedorubicacionhistoricoid));"
-```
-
-- **Recrear la base de datos desde cero** (borra todos los datos registrados), desde la carpeta raíz del proyecto:
-
-```bash
-mysql -u root -h 127.0.0.1 -e "DROP DATABASE IF EXISTS bdfloristica;"
-mysql -u root -h 127.0.0.1 < BaseDatos/ScriptsSQL/bdfloristica.sql
-```
+Si se usa otro usuario o contraseña, se deben cambiar en ese archivo.
 
 ## Estructura del proyecto
 
 ```
 Floristica/
-├── Aplicacion/       # Controladores, modelos, repositorios y vistas
-├── BaseDatos/        # Script SQL, datos iniciales y respaldos
-├── Configuracion/    # Conexión y parámetros de la base de datos
+├── Aplicacion/
+│   ├── Controlador/  # Reglas y validaciones de cada módulo
+│   ├── Modelo/       # Clases con getters y setters de cada tabla
+│   ├── Repositorio/  # Consultas a la base de datos (PDO)
+│   └── Vista/        # Páginas en PHP y el menú
+├── BaseDatos/
+│   ├── ScriptsSQL/     # bdfloristica.sql (estructura)
+│   └── DatosIniciales/ # datosprueba.sql y ubicaciones de Costa Rica
+├── Configuracion/    # Conexión, países y seguridad (sesión y permisos)
 ├── Documentacion/
-└── Publico/          # Punto de entrada (index.php), CSS, JS e imágenes
+└── Publico/          # index.php (punto de entrada), css, js e imágenes
 ```
 
+`Publico/index.php` recibe todo: `?modulo=X` muestra la página del módulo y `?modulo=X&accion=Y` responde en JSON. Las acciones que modifican datos solo aceptan POST.
 
-## Reglas del módulo Proveedores
+## Inicio de sesión y roles
 
-Todas las reglas se aplican en PHP (`Aplicacion/Controlador/proveedorcontrolador.php`); la base de datos solo almacena la información.
+- Las contraseñas se guardan cifradas con `password_hash`.
+- Después de 5 intentos fallidos, el ingreso se bloquea 60 segundos.
+- Los permisos se revisan en el servidor en cada petición. Ocultar un botón en la pantalla no es la única protección.
+- Si la dueña inactiva a un empleado, este pierde el acceso de inmediato.
 
-- **Obligatorios**: nombre de la empresa, nombre del contacto, teléfono, provincia, cantón y distrito.
-- **Nombre de la empresa**: máximo 100 caracteres, al menos una letra (se permiten números, como en "Flores 2000") y no puede repetirse.
-- **Nombre del contacto**: máximo 100 caracteres; solo letras (con tildes y ñ) y espacios, sin números ni símbolos.
-- **Teléfono**: exactamente 8 dígitos, se guarda con formato `0000-0000` y no puede repetirse.
-- **Correo**: opcional; si se ingresa, debe tener formato válido y no puede repetirse.
-- **Ubicación**: provincia, cantón y distrito deben corresponder entre sí según `BaseDatos/DatosIniciales/ubicaciones.txt`.
+| Puede… | Dueña | Empleado |
+|--------|:-----:|:--------:|
+| Ver el inicio | ✓ | ✓ |
+| Ver el catálogo (sin costos ni ganancias) | ✓ | ✓ |
+| Crear, editar o inactivar arreglos | ✓ | |
+| Registrar encargos | ✓ | ✓ (sin asignar o para sí mismo) |
+| Asignar o reasignar encargos a cualquiera | ✓ | |
+| Asignarse un encargo libre | ✓ | ✓ |
+| Iniciar y terminar encargos | ✓ (todos) | ✓ (solo los suyos) |
+| Cancelar o editar encargos | ✓ | |
+| Proveedores, inventario, pedidos y empleados | ✓ | |
 
-### Históricos
+## Módulos
 
-Cada vez que se crea un proveedor o cambia uno de estos datos, se registra el nuevo valor con fecha y hora:
+### Inicio
+
+Resumen según el rol:
+
+- **Dueña:** encargos abiertos y atrasados, productos con stock bajo y pedidos sin recibir.
+- **Empleado:** sus encargos y los que puede tomar.
+
+### Proveedores
+
+- **Obligatorios:** nombre de la empresa, nombre del contacto, teléfono, provincia, cantón y distrito.
+- **Nombre de la empresa:** máximo 100 caracteres, al menos una letra y no puede repetirse.
+- **Nombre del contacto:** máximo 100 caracteres, solo letras y espacios.
+- **Teléfono:**
+  - Nacional: exactamente 8 dígitos, con formato `0000-0000`.
+  - Internacional: código de país más 6 a 12 dígitos.
+  - No puede repetirse.
+- **Correo:** opcional; si se ingresa, debe ser válido y no repetirse.
+- **Ubicación:** provincia, cantón y distrito deben corresponder entre sí, según `BaseDatos/DatosIniciales/ubicaciones.txt`.
+
+### Inventario
+
+- **Categorías:**
+  - **Flor:** tipo, color, largo del tallo y días de duración.
+  - **Base:** caja o base; plástico o madera; color, forma y medida.
+  - **Adorno:** cinta, papel o tarjeta; en las tarjetas el diseño es obligatorio.
+  - **Extra:** peluche, chocolate, maquillaje o juguete. Chocolates y maquillaje piden fecha de vencimiento, y no puede ser anterior a hoy.
+- **Medidas:** en centímetros, con formato `20` o `20 x 30`.
+- **Nombre:** no puede repetirse para el mismo proveedor.
+- **Precio:** el del paquete es mayor que 0, con máximo 2 decimales. El precio por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
+- **Nivel de stock**, con un círculo de color:
+  - Rojo: igual o por debajo del mínimo.
+  - Amarillo: hasta 1,5 veces el mínimo.
+  - Verde: suficiente.
+
+### Pedidos (compras a proveedores)
+
+- **Proveedor:** solo se puede pedir a proveedores activos, y solo productos de ese proveedor.
+- **Fecha:** no puede ser posterior a hoy.
+- **Cantidades:** se piden en paquetes, de 1 a 9999.
+- **Estados:** Pendiente → Confirmado → Recibido.
+  - Solo un pedido pendiente se puede editar o confirmar.
+- **Confirmar:** se elige el pago, de contado o a crédito. A crédito el plazo es de 1 a 365 días.
+- **Recibir:** suma al stock las unidades de cada paquete.
+
+### Catálogo de arreglos
+
+- **Foto:** obligatoria; JPG, PNG o WEBP de máximo 2 MB.
+- **Nombre:** no puede repetirse.
+- **Precio:** mayor que 0.
+- **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades.
+- **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo la dueña los ve.
+
+### Encargos
+
+- **Qué es:** un arreglo del catálogo que hay que preparar, con cantidad (1 a 99), fecha de entrega (no anterior a hoy) y nota opcional.
+- **Estados:** Pendiente → En proceso → Terminado; también puede pasar a Cancelado.
+  - Para iniciarlo, debe estar asignado a alguien.
+  - **Terminar:** descuenta del inventario los productos del arreglo multiplicados por la cantidad. Si no alcanza el stock, no deja terminarlo y dice qué falta.
+- **Listado:** los encargos atrasados se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
+
+### Empleados
+
+- **Nombre:** solo letras.
+- **Teléfono:** 8 dígitos, no se repite.
+- **Usuario:** de 4 a 30 caracteres (letras sin tildes, números, punto o guion bajo); no se repite.
+- **Contraseña:** de 8 a 72 caracteres, con al menos una letra y un número. Al editar, se puede dejar vacía para conservar la anterior.
+- **Dueña:** solo puede haber una dueña activa. La dueña no puede inactivarse a sí misma ni quitarse el rol.
+
+## Borradores y confirmaciones
+
+- Si se cierra un formulario sin guardar, los datos quedan en el navegador. Al abrirlo de nuevo aparece "Se recuperaron datos que no se habían guardado", con la opción **Descartar**.
+- Editar, inactivar, cancelar o terminar algo siempre pide confirmación.
+
+## Históricos
+
+Todo se registra en PHP. La base de datos solo guarda la información.
+
+### Proveedores
+
+Al crear un proveedor, y cada vez que cambia uno de estos datos, se guarda el nuevo valor con fecha y hora:
 
 | Dato | Tabla |
 |------|-------|
@@ -143,4 +219,30 @@ Cada vez que se crea un proveedor o cambia uno de estos datos, se registra el nu
 | Ubicación (provincia / cantón / distrito / dirección) | `tbproveedorubicacionhistorico` |
 | Estado (activo / inactivo) | `tbproveedorestadohistorico` |
 
-La descripción es texto libre y no lleva histórico.
+### Encargos
+
+Se ven en **Ver** de cada encargo, con fecha, hora y quién hizo el cambio:
+
+| Dato | Tabla |
+|------|-------|
+| Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbencargoestadohistorico` |
+| Empleado asignado | `tbencargoempleadohistorico` |
+
+### Movimientos de inventario
+
+Cada cambio de stock queda en `tbinventariomovimiento`: el motivo, la cantidad (positiva si entra, negativa si sale), cómo quedó el stock y quién lo hizo. Se ven en **Ver** de cada producto.
+
+| Tipo | Cuándo |
+|------|--------|
+| Inicial | Al registrar el producto |
+| Entrada | Al recibir un pedido |
+| Salida | Al terminar un encargo |
+| Ajuste | Al corregir el stock a mano editando el producto |
+
+## Solución de problemas
+
+- **`Can't connect to local MySQL server through socket`:** el servidor de base de datos está apagado. Con XAMPP: `sudo /opt/lampp/lampp startmysql`. Con MariaDB: `sudo systemctl start mariadb`.
+- **`Address already in use` al ejecutar `php -S`:** el puerto 8000 está ocupado. Use otro, por ejemplo `php -S localhost:8080`.
+- **"No se pudo completar la operación en la base de datos" o "Table … doesn't exist":** la base se creó con una versión anterior del script. Vuelva a ejecutar el paso 3, que borra la base y la crea de nuevo.
+- **Una página se queda en "Cargando…":** recargue con **Ctrl + Shift + R** para que el navegador no use archivos viejos. Si sigue igual, abra la consola (F12) para ver el error.
+- **Las fotos de los arreglos no aparecen:** revise que existan los archivos en `Publico/imagenes/muestras/`. Las fotos que se suben desde el sistema se guardan en `Publico/imagenes/arreglos/`, carpeta que no se sube a GitHub.
