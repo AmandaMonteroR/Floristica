@@ -313,6 +313,8 @@ class pedidocontrolador
             $errores['tbpedidofecha'] = 'La fecha del pedido es obligatoria.';
         } elseif (!$fecha || $fecha->format('Y-m-d') !== $datos['tbpedidofecha']) {
             $errores['tbpedidofecha'] = 'La fecha del pedido no es válida.';
+        } elseif ($datos['tbpedidofecha'] > date('Y-m-d')) {
+            $errores['tbpedidofecha'] = 'La fecha del pedido no puede ser posterior a hoy.';
         }
 
         if (count($detalles) === 0) {
@@ -337,8 +339,10 @@ class pedidocontrolador
                 $errores['detalles'] = $linea . 'el producto no pertenece al proveedor seleccionado.';
             } elseif (in_array($detalle['tbinventarioid'], $usados, true)) {
                 $errores['detalles'] = $linea . 'el producto ya está en otra línea.';
-            } elseif (!ctype_digit($detalle['tbpedidodetallecantidad']) || (int) $detalle['tbpedidodetallecantidad'] < 1) {
-                $errores['detalles'] = $linea . 'la cantidad debe ser un número entero mayor que 0.';
+            } elseif (!ctype_digit($detalle['tbpedidodetallecantidad'])
+                || (int) $detalle['tbpedidodetallecantidad'] < 1
+                || (int) $detalle['tbpedidodetallecantidad'] > 9999) {
+                $errores['detalles'] = $linea . 'la cantidad de paquetes debe ser un número entero entre 1 y 9999.';
             } elseif (!preg_match('/^\d{1,8}(\.\d{1,2})?$/', $detalle['tbpedidodetalleprecio'])
                 || (float) $detalle['tbpedidodetalleprecio'] <= 0) {
                 $errores['detalles'] = $linea . 'el precio debe ser un monto mayor que 0, con máximo 2 decimales.';

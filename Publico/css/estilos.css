@@ -704,3 +704,76 @@ h1 {
 .error-codigopais:empty {
     display: none;
 }
+
+
+/* Pedidos */
+.estado-pendiente {
+    background: #fdf3d7;
+    color: #7a5a00;
+}
+
+.estado-confirmado {
+    background: var(--rosa-claro);
+    color: var(--principal-oscuro);
+}
+
+.estado-recibido {
+    background: var(--verde-fondo);
+    color: var(--verde);
+}
+
+.subtitulo-seccion {
+    margin: 1rem 0 0.5rem;
+    font-size: 1.05rem;
+    color: var(--principal-oscuro);
+}
+
+.tabla-lineas th,
+.tabla-lineas td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.tabla-lineas select,
+.tabla-lineas input {
+    width: 100%;
+    min-width: 90px;
+    font: inherit;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--superficie);
+    color: var(--texto);
+}
+
+.tabla-lineas td:first-child select {
+    min-width: 220px;
+}
+
+.tabla-lineas select:focus,
+.tabla-lineas input:focus {
+    outline: 2px solid var(--principal);
+    outline-offset: 1px;
+}
+
+.pie-lineas {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.total-pedido {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.solo-lector {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
