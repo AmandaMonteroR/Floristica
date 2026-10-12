@@ -1473,3 +1473,9 @@ h1 {
     font-weight: 700;
     color: var(--peligro);
 }
+
+
+/* En las ventanas de historial, la fecha no se parte en dos líneas */
+#dialogohistorial .tabla td:first-child {
+    white-space: nowrap;
+}

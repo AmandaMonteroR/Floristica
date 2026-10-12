@@ -229,3 +229,78 @@ CREATE TABLE tbinventariomovimiento (
     PRIMARY KEY (tbinventariomovimientoid)
 );
 
+
+-- ---------- Históricos de inventario ----------
+CREATE TABLE tbinventariopreciohistorico (
+    tbinventariopreciohistoricoid INT,
+    tbinventarioid INT,
+    tbinventariopreciohistoricovalor VARCHAR(40),
+    tbempleadoid INT,
+    tbinventariopreciohistoricofecha DATETIME,
+    PRIMARY KEY (tbinventariopreciohistoricoid)
+);
+
+CREATE TABLE tbinventariostockminimohistorico (
+    tbinventariostockminimohistoricoid INT,
+    tbinventarioid INT,
+    tbinventariostockminimohistoricovalor INT,
+    tbempleadoid INT,
+    tbinventariostockminimohistoricofecha DATETIME,
+    PRIMARY KEY (tbinventariostockminimohistoricoid)
+);
+
+-- El valor es el id del proveedor
+CREATE TABLE tbinventarioproveedorhistorico (
+    tbinventarioproveedorhistoricoid INT,
+    tbinventarioid INT,
+    tbinventarioproveedorhistoricovalor INT,
+    tbempleadoid INT,
+    tbinventarioproveedorhistoricofecha DATETIME,
+    PRIMARY KEY (tbinventarioproveedorhistoricoid)
+);
+
+CREATE TABLE tbinventarioestadohistorico (
+    tbinventarioestadohistoricoid INT,
+    tbinventarioid INT,
+    tbinventarioestadohistoricovalor TINYINT(1),
+    tbempleadoid INT,
+    tbinventarioestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbinventarioestadohistoricoid)
+);
+
+CREATE TABLE tbinventarionombrehistorico (
+    tbinventarionombrehistoricoid INT,
+    tbinventarioid INT,
+    tbinventarionombrehistoricovalor VARCHAR(100),
+    tbempleadoid INT,
+    tbinventarionombrehistoricofecha DATETIME,
+    PRIMARY KEY (tbinventarionombrehistoricoid)
+);
+
+-- ---------- Históricos del catálogo de arreglos ----------
+CREATE TABLE tbarreglofloralpreciohistorico (
+    tbarreglofloralpreciohistoricoid INT,
+    tbarreglofloralid INT,
+    tbarreglofloralpreciohistoricovalor DECIMAL(10,2),
+    tbempleadoid INT,
+    tbarreglofloralpreciohistoricofecha DATETIME,
+    PRIMARY KEY (tbarreglofloralpreciohistoricoid)
+);
+
+CREATE TABLE tbarreglofloralestadohistorico (
+    tbarreglofloralestadohistoricoid INT,
+    tbarreglofloralid INT,
+    tbarreglofloralestadohistoricovalor TINYINT(1),
+    tbempleadoid INT,
+    tbarreglofloralestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbarreglofloralestadohistoricoid)
+);
+
+CREATE TABLE tbarreglofloralnombrehistorico (
+    tbarreglofloralnombrehistoricoid INT,
+    tbarreglofloralid INT,
+    tbarreglofloralnombrehistoricovalor VARCHAR(100),
+    tbempleadoid INT,
+    tbarreglofloralnombrehistoricofecha DATETIME,
+    PRIMARY KEY (tbarreglofloralnombrehistoricoid)
+);

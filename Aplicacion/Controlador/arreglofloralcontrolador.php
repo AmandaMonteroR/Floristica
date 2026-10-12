@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
+require_once __DIR__ . '/historicocontrolador.php';
 
 class arreglofloralcontrolador
 {
     private $repositorio;
     private $inventario;
+    private $historico;
     private $carpetafotos;
     private $tiposfoto = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     private $tamanomaximo = 2097152;
@@ -14,6 +16,7 @@ class arreglofloralcontrolador
     {
         $this->repositorio = new arreglofloralrepositorio();
         $this->inventario = new inventariorepositorio();
+        $this->historico = new historicocontrolador();
         $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/arreglos/';
     }
 
@@ -67,7 +70,7 @@ class arreglofloralcontrolador
         return $this->respuesta(true, '', $datos);
     }
 
-    public function crear($datos, $archivos)
+    public function crear($datos, $archivos, $usuario)
     {
         $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
         $datos = $this->limpiar($datos);
@@ -82,9 +85,10 @@ class arreglofloralcontrolador
         $arreglo = new Arreglofloral($datos);
 
         try {
-            $id = $this->entransaccion(function () use ($arreglo, $detalles) {
+            $id = $this->entransaccion(function () use ($arreglo, $detalles, $usuario) {
                 $id = $this->repositorio->insertar($arreglo);
                 $this->guardardetalles($id, $detalles);
+                $this->historico->registrar('arreglofloral', $id, [], $this->datoshistorico($arreglo), $usuario['id']);
 
                 return $id;
             });
@@ -96,7 +100,7 @@ class arreglofloralcontrolador
         return $this->respuesta(true, 'Arreglo floral registrado correctamente.', ['tbarreglofloralid' => $id]);
     }
 
-    public function actualizar($datos, $archivos)
+    public function actualizar($datos, $archivos, $usuario)
     {
         $id = (int) ($datos['tbarreglofloralid'] ?? 0);
         $arreglo = $this->repositorio->obtenerporid($id);
@@ -114,6 +118,7 @@ class arreglofloralcontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
+        $anteriores = $this->datoshistorico($arreglo);
         $fotoanterior = $arreglo->getTbarreglofloralfoto();
         $fotonueva = $this->haysubida($foto) ? $this->guardarfoto($foto) : null;
 
@@ -126,8 +131,9 @@ class arreglofloralcontrolador
         }
 
         try {
-            $this->entransaccion(function () use ($arreglo, $detalles, $id) {
+            $this->entransaccion(function () use ($arreglo, $detalles, $id, $anteriores, $usuario) {
                 $this->repositorio->actualizar($arreglo);
+                $this->historico->registrar('arreglofloral', $id, $anteriores, $this->datoshistorico($arreglo), $usuario['id']);
                 $this->repositorio->eliminardetalles($id);
                 $this->guardardetalles($id, $detalles);
             });
@@ -145,7 +151,7 @@ class arreglofloralcontrolador
         return $this->respuesta(true, 'Arreglo floral actualizado correctamente.');
     }
 
-    public function inactivar($id)
+    public function inactivar($id, $usuario)
     {
         $id = (int) $id;
         $arreglo = $this->repositorio->obtenerporid($id);
@@ -158,12 +164,15 @@ class arreglofloralcontrolador
             return $this->respuesta(false, 'El arreglo floral ya está inactivo.');
         }
 
-        $this->repositorio->inactivar($id);
+        $this->entransaccion(function () use ($id, $usuario) {
+            $this->repositorio->inactivar($id);
+            $this->historico->registrar('arreglofloral', $id, ['estado' => 1], ['estado' => 0], $usuario['id']);
+        });
 
         return $this->respuesta(true, 'Arreglo floral inactivado correctamente.');
     }
 
-    public function reactivar($id)
+    public function reactivar($id, $usuario)
     {
         $id = (int) $id;
         $arreglo = $this->repositorio->obtenerporid($id);
@@ -176,20 +185,50 @@ class arreglofloralcontrolador
             return $this->respuesta(false, 'El arreglo floral ya está activo.');
         }
 
-        $this->repositorio->reactivar($id);
+        $this->entransaccion(function () use ($id, $usuario) {
+            $this->repositorio->reactivar($id);
+            $this->historico->registrar('arreglofloral', $id, ['estado' => 0], ['estado' => 1], $usuario['id']);
+        });
 
         return $this->respuesta(true, 'Arreglo floral reactivado correctamente.');
     }
 
-    private function guardardetalles($idarreglo, $detalles)
+    public function historial($id)
     {
-        foreach ($detalles as $detalle) {
-            $this->repositorio->insertardetalle(new Arreglofloraldetalle([
-                'tbarreglofloralid'              => $idarreglo,
-                'tbinventarioid'                 => (int) $detalle['tbinventarioid'],
-                'tbarreglofloraldetallecantidad' => (int) $detalle['tbarreglofloraldetallecantidad'],
-            ]));
+        $id = (int) $id;
+
+        if (!$this->repositorio->obtenerporid($id)) {
+            return $this->respuesta(false, 'El arreglo floral no existe.');
         }
+
+        $etiquetas = [
+            'nombre' => 'Nombre',
+            'precio' => 'Precio de venta',
+            'estado' => 'Estado',
+        ];
+
+        $formatear = function ($campo, $valor) {
+            switch ($campo) {
+                case 'precio':
+                    return historicocontrolador::monto($valor);
+                case 'estado':
+                    return historicocontrolador::estado($valor);
+                default:
+                    return (string) $valor;
+            }
+        };
+
+        return $this->respuesta(true, '', $this->historico->listar('arreglofloral', $id, $etiquetas, $formatear));
+    }
+
+    // Datos del arreglo que llevan histórico, tal como se guardan
+    private function datoshistorico(Arreglofloral $arreglo)
+    {
+        return [
+            'nombre' => $arreglo->getTbarreglofloralnombre(),
+            'precio' => number_format((float) $arreglo->getTbarreglofloralprecio(), 2, '.', ''),
+            'estado' => (int) $arreglo->getTbarreglofloralestado(),
+        ];
     }
 
     private function costo($idarreglo)

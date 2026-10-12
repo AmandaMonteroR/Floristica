@@ -3,6 +3,7 @@ require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
+require_once __DIR__ . '/historicocontrolador.php';
 
 class inventariocontrolador
 {
@@ -10,6 +11,7 @@ class inventariocontrolador
     private $atributos;
     private $proveedores;
     private $movimientos;
+    private $historico;
     private $categorias = ['Flor', 'Base', 'Adorno', 'Extra'];
     private $tiposbase = ['Caja', 'Base'];
     private $materialesbase = ['Plástico', 'Madera'];
@@ -23,6 +25,7 @@ class inventariocontrolador
         $this->atributos = new inventariocategoriarepositorio();
         $this->proveedores = new proveedorrepositorio();
         $this->movimientos = new inventariomovimientorepositorio();
+        $this->historico = new historicocontrolador();
     }
 
     public function proveedores()
@@ -81,6 +84,7 @@ class inventariocontrolador
             $id = $this->repositorio->insertar($inventario);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
             $this->movimientos->registrar($id, 'Inicial', (int) $datos['tbinventariostock'], $usuario['id']);
+            $this->historico->registrar('inventario', $id, [], $this->datoshistorico($inventario), $usuario['id']);
 
             return $id;
         });
@@ -105,6 +109,7 @@ class inventariocontrolador
         }
 
         $stockanterior = (int) $inventario->getTbinventariostock();
+        $anteriores = $this->datoshistorico($inventario);
         $inventario->setTbproveedorid($datos['tbproveedorid']);
         $inventario->setTbinventarionombre($datos['tbinventarionombre']);
         $inventario->setTbinventariocategoria($datos['tbinventariocategoria']);
@@ -114,8 +119,9 @@ class inventariocontrolador
         $inventario->setTbinventariostock($datos['tbinventariostock']);
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
-        $this->entransaccion(function () use ($inventario, $datos, $id, $stockanterior, $usuario) {
+        $this->entransaccion(function () use ($inventario, $datos, $id, $stockanterior, $anteriores, $usuario) {
             $this->repositorio->actualizar($inventario);
+            $this->historico->registrar('inventario', $id, $anteriores, $this->datoshistorico($inventario), $usuario['id']);
             $this->atributos->eliminar($id);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
 
@@ -129,7 +135,7 @@ class inventariocontrolador
         return $this->respuesta(true, 'Producto actualizado correctamente.');
     }
 
-    public function inactivar($id)
+    public function inactivar($id, $usuario)
     {
         $id = (int) $id;
         $inventario = $this->repositorio->obtenerporid($id);
@@ -142,12 +148,15 @@ class inventariocontrolador
             return $this->respuesta(false, 'El producto ya está inactivo.');
         }
 
-        $this->repositorio->inactivar($id);
+        $this->entransaccion(function () use ($id, $usuario) {
+            $this->repositorio->inactivar($id);
+            $this->historico->registrar('inventario', $id, ['estado' => 1], ['estado' => 0], $usuario['id']);
+        });
 
         return $this->respuesta(true, 'Producto inactivado correctamente.');
     }
 
-    public function reactivar($id)
+    public function reactivar($id, $usuario)
     {
         $id = (int) $id;
         $inventario = $this->repositorio->obtenerporid($id);
@@ -160,9 +169,60 @@ class inventariocontrolador
             return $this->respuesta(false, 'El producto ya está activo.');
         }
 
-        $this->repositorio->reactivar($id);
+        $this->entransaccion(function () use ($id, $usuario) {
+            $this->repositorio->reactivar($id);
+            $this->historico->registrar('inventario', $id, ['estado' => 0], ['estado' => 1], $usuario['id']);
+        });
 
         return $this->respuesta(true, 'Producto reactivado correctamente.');
+    }
+
+    public function historial($id)
+    {
+        $id = (int) $id;
+
+        if (!$this->repositorio->obtenerporid($id)) {
+            return $this->respuesta(false, 'El producto no existe.');
+        }
+
+        $etiquetas = [
+            'nombre'      => 'Nombre',
+            'proveedor'   => 'Proveedor',
+            'precio'      => 'Precio del paquete',
+            'stockminimo' => 'Stock mínimo',
+            'estado'      => 'Estado',
+        ];
+
+        $nombres = $this->nombresproveedores();
+
+        $formatear = function ($campo, $valor) use ($nombres) {
+            switch ($campo) {
+                case 'proveedor':
+                    return $nombres[$valor] ?? 'Proveedor eliminado';
+                case 'precio':
+                    [$precio, $unidades] = array_map('trim', explode('/', $valor) + [1 => '']);
+                    return historicocontrolador::monto($precio) . ' por ' . $unidades . ' unidades';
+                case 'estado':
+                    return historicocontrolador::estado($valor);
+                default:
+                    return (string) $valor;
+            }
+        };
+
+        return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear));
+    }
+
+    // Datos del producto que llevan histórico, tal como se guardan
+    private function datoshistorico(Inventario $inventario)
+    {
+        return [
+            'nombre'      => $inventario->getTbinventarionombre(),
+            'proveedor'   => (int) $inventario->getTbproveedorid(),
+            'precio'      => number_format((float) $inventario->getTbinventariopreciopaquete(), 2, '.', '')
+                . ' / ' . (int) $inventario->getTbinventariounidadespaquete(),
+            'stockminimo' => (int) $inventario->getTbinventariostockminimo(),
+            'estado'      => (int) $inventario->getTbinventarioestado(),
+        ];
     }
 
     private function nombresproveedores()

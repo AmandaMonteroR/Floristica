@@ -168,10 +168,13 @@ try {
                     $respuesta = $controlador->actualizar($_POST, $usuarioactual);
                     break;
                 case 'inactivar':
-                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'reactivar':
-                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -225,16 +228,19 @@ try {
                     $respuesta = $controlador->productos();
                     break;
                 case 'crear':
-                    $respuesta = $controlador->crear($_POST, $_FILES);
+                    $respuesta = $controlador->crear($_POST, $_FILES, $usuarioactual);
                     break;
                 case 'actualizar':
-                    $respuesta = $controlador->actualizar($_POST, $_FILES);
+                    $respuesta = $controlador->actualizar($_POST, $_FILES, $usuarioactual);
                     break;
                 case 'inactivar':
-                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'reactivar':
-                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

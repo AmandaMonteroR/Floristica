@@ -417,6 +417,7 @@ async function abrireditar(id) {
 }
 
 async function verdetalle(id) {
+    iddetalle = id;
     const respuesta = await consultar('obtener', { id });
 
     if (!respuesta.exito) {
@@ -600,6 +601,14 @@ filtroestado.addEventListener('change', cargarinventario);
 document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
+
+// "Ver historial" del producto que está abierto en el detalle (solo existe para la dueña)
+let iddetalle = null;
+const botonverhistorial = document.getElementById('botonverhistorial');
+if (botonverhistorial) {
+    botonverhistorial.addEventListener('click', () => ventanahistorial.mostrar('inventario', iddetalle, titulodetalle.textContent));
+}
+
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 formulario.elements.tbinventariocategoriaextrafechavencimiento.min = new Date().toLocaleDateString('en-CA');

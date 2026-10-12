@@ -491,6 +491,7 @@ async function abrireditar(id) {
 }
 
 async function verdetalle(id) {
+    iddetalle = id;
     const respuesta = await consultar('obtener', { id });
 
     if (!respuesta.exito) {
@@ -732,6 +733,14 @@ if (botonnuevo) {
 document.getElementById('botonagregarlinea').addEventListener('click', agregarlinea);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
+
+// "Ver historial" del arreglo que está abierto en el detalle (solo existe para la dueña)
+let iddetalle = null;
+const botonverhistorial = document.getElementById('botonverhistorial');
+if (botonverhistorial) {
+    botonverhistorial.addEventListener('click', () => ventanahistorial.mostrar('catalogo', iddetalle, titulodetalle.textContent));
+}
+
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 cargararreglos();
