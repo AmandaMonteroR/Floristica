@@ -2,12 +2,14 @@
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 
 class inventariocontrolador
 {
     private $repositorio;
     private $atributos;
     private $proveedores;
+    private $movimientos;
     private $categorias = ['Flor', 'Base', 'Adorno', 'Extra'];
     private $tiposbase = ['Caja', 'Base'];
     private $materialesbase = ['Plástico', 'Madera'];
@@ -20,6 +22,7 @@ class inventariocontrolador
         $this->repositorio = new inventariorepositorio();
         $this->atributos = new inventariocategoriarepositorio();
         $this->proveedores = new proveedorrepositorio();
+        $this->movimientos = new inventariomovimientorepositorio();
     }
 
     public function proveedores()
@@ -57,11 +60,12 @@ class inventariocontrolador
 
         $datos = $this->convertirarreglo($inventario, $this->nombresproveedores());
         $datos['categoria'] = $this->convertircategoria($inventario);
+        $datos['movimientos'] = $this->convertirmovimientos($inventario->getTbinventarioid());
 
         return $this->respuesta(true, '', $datos);
     }
 
-    public function crear($datos)
+    public function crear($datos, $usuario)
     {
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos);
@@ -73,9 +77,10 @@ class inventariocontrolador
         $datos['tbinventariopreciounidad'] = $this->calcularpreciounidad($datos);
         $inventario = new Inventario($datos);
 
-        $id = $this->entransaccion(function () use ($inventario, $datos) {
+        $id = $this->entransaccion(function () use ($inventario, $datos, $usuario) {
             $id = $this->repositorio->insertar($inventario);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
+            $this->movimientos->registrar($id, 'Inicial', (int) $datos['tbinventariostock'], $usuario['id']);
 
             return $id;
         });
@@ -83,7 +88,7 @@ class inventariocontrolador
         return $this->respuesta(true, 'Producto registrado correctamente.', ['tbinventarioid' => $id]);
     }
 
-    public function actualizar($datos)
+    public function actualizar($datos, $usuario)
     {
         $id = (int) ($datos['tbinventarioid'] ?? 0);
         $inventario = $this->repositorio->obtenerporid($id);
@@ -99,6 +104,7 @@ class inventariocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
+        $stockanterior = (int) $inventario->getTbinventariostock();
         $inventario->setTbproveedorid($datos['tbproveedorid']);
         $inventario->setTbinventarionombre($datos['tbinventarionombre']);
         $inventario->setTbinventariocategoria($datos['tbinventariocategoria']);
@@ -108,10 +114,16 @@ class inventariocontrolador
         $inventario->setTbinventariostock($datos['tbinventariostock']);
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
-        $this->entransaccion(function () use ($inventario, $datos, $id) {
+        $this->entransaccion(function () use ($inventario, $datos, $id, $stockanterior, $usuario) {
             $this->repositorio->actualizar($inventario);
             $this->atributos->eliminar($id);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
+
+            // Si se corrigió el stock a mano, queda como ajuste
+            $diferencia = (int) $datos['tbinventariostock'] - $stockanterior;
+            if ($diferencia !== 0) {
+                $this->movimientos->registrar($id, 'Ajuste', $diferencia, $usuario['id']);
+            }
         });
 
         return $this->respuesta(true, 'Producto actualizado correctamente.');
@@ -161,6 +173,38 @@ class inventariocontrolador
         }
 
         return $nombres;
+    }
+
+    // Movimientos del stock en palabras, para mostrarlos en "Ver"
+    private function convertirmovimientos($idinventario)
+    {
+        $lista = [];
+        foreach ($this->movimientos->listar($idinventario) as $fila) {
+            switch ($fila['tbinventariomovimientotipo']) {
+                case 'Inicial':
+                    $motivo = 'Stock inicial al registrar el producto';
+                    break;
+                case 'Entrada':
+                    $motivo = 'Pedido N.º ' . $fila['tbpedidoid'] . ' recibido';
+                    break;
+                case 'Salida':
+                    $motivo = 'Encargo N.º ' . $fila['tbencargoid'] . ' terminado';
+                    break;
+                default:
+                    $motivo = 'Ajuste manual al editar el producto';
+            }
+
+            $lista[] = [
+                'fecha'      => $fila['tbinventariomovimientofecha'],
+                'tipo'       => $fila['tbinventariomovimientotipo'],
+                'motivo'     => $motivo,
+                'cantidad'   => (int) $fila['tbinventariomovimientocantidad'],
+                'stockfinal' => (int) $fila['tbinventariomovimientostockfinal'],
+                'hechopor'   => $fila['hechopor'] ?? '',
+            ];
+        }
+
+        return $lista;
     }
 
     private function calcularpreciounidad($datos)

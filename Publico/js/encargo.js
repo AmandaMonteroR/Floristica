@@ -23,6 +23,7 @@ const fotodetalle = document.getElementById('fotodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
 const cuerpodetalle = document.getElementById('cuerpodetalle');
+const cuerpohistorial = document.getElementById('cuerpohistorial');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
 const iconoconfirmacion = document.getElementById('iconoconfirmacion');
 const tituloconfirmacion = document.getElementById('tituloconfirmacion');
@@ -51,6 +52,19 @@ function formatearfecha(fecha) {
     }
     const [anio, mes, dia] = fecha.split('-');
     return `${dia}/${mes}/${anio}`;
+}
+
+// "2026-10-11 15:25:00" -> "11/10/2026 3:25 p. m."
+function formatearfechahora(fechahora) {
+    if (!fechahora) {
+        return '';
+    }
+    const [fecha, hora = '00:00'] = fechahora.split(' ');
+    const [anio, mes, dia] = fecha.split('-');
+    let [horas, minutos] = hora.split(':').map(Number);
+    const sufijo = horas < 12 ? 'a. m.' : 'p. m.';
+    horas = horas % 12 || 12;
+    return `${dia}/${mes}/${anio} ${horas}:${String(minutos).padStart(2, '0')} ${sufijo}`;
 }
 
 function hoy() {
@@ -457,6 +471,16 @@ async function verdetalle(id) {
             <td>${material.stock}</td>
             <td>${material.alcanza ? '<span class="estado estado-activo">Sí</span>' : `<span class="estado estado-bajo">Faltan ${material.necesarias - material.stock}</span>`}</td>
         </tr>`).join('');
+
+
+    cuerpohistorial.innerHTML = encargo.historial.length === 0
+        ? '<tr><td colspan="3" class="vacio">Este encargo no tiene historial registrado.</td></tr>'
+        : encargo.historial.map((cambio) => `
+            <tr>
+                <td>${formatearfechahora(cambio.fecha)}</td>
+                <td>${escapar(cambio.texto)}</td>
+                <td>${cambio.hechopor ? escapar(cambio.hechopor) : '<span class="texto-suave">No registrado</span>'}</td>
+            </tr>`).join('');
 
     dialogodetalle.showModal();
 }

@@ -1454,3 +1454,22 @@ h1 {
     font-weight: 400;
     color: var(--verde);
 }
+
+/* Historial de encargos y movimientos de inventario */
+.tabla-historial td {
+    white-space: normal;
+}
+
+.tabla-historial td:first-child {
+    white-space: nowrap;
+}
+
+.cantidad-entrada {
+    font-weight: 700;
+    color: var(--verde);
+}
+
+.cantidad-salida {
+    font-weight: 700;
+    color: var(--peligro);
+}

@@ -3,6 +3,8 @@ require_once __DIR__ . '/../Repositorio/encargorepositorio.php';
 require_once __DIR__ . '/../Repositorio/empleadorepositorio.php';
 require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
+require_once __DIR__ . '/../Repositorio/encargohistoricorepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 
 class encargocontrolador
 {
@@ -10,6 +12,8 @@ class encargocontrolador
     private $empleados;
     private $arreglos;
     private $inventario;
+    private $historico;
+    private $movimientos;
 
     public function __construct()
     {
@@ -17,6 +21,8 @@ class encargocontrolador
         $this->empleados = new empleadorepositorio();
         $this->arreglos = new arreglofloralrepositorio();
         $this->inventario = new inventariorepositorio();
+        $this->historico = new encargohistoricorepositorio();
+        $this->movimientos = new inventariomovimientorepositorio();
     }
 
     public function arreglos()
@@ -66,6 +72,7 @@ class encargocontrolador
 
         $datos = $this->convertirarreglo($encargo);
         $datos['materiales'] = $this->materiales($encargo);
+        $datos['historial'] = $this->historial($encargo->getTbencargoid());
 
         return $this->respuesta(true, '', $datos);
     }
@@ -74,6 +81,7 @@ class encargocontrolador
     {
         $datos = $this->limpiar($datos);
 
+        // Un empleado solo puede dejarlo sin asignar o asignárselo a sí mismo
         if ($usuario['rol'] !== 'Dueña' && !in_array($datos['tbempleadoid'], ['', (string) $usuario['id']], true)) {
             return $this->respuesta(false, 'Revise los datos ingresados.',
                 ['errores' => ['tbempleadoid' => 'Solo puede asignarse el encargo a usted misma.']]);
@@ -85,7 +93,17 @@ class encargocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
-        $id = $this->repositorio->insertar(new Encargo($datos));
+        $id = $this->entransaccion(function () use ($datos, $usuario) {
+            $id = $this->repositorio->insertar(new Encargo($datos));
+            $this->historico->registrar('estado', $id, 'Pendiente', $usuario['id']);
+
+            // Al validar, "sin asignar" queda como null
+            if ($datos['tbempleadoid'] !== null && $datos['tbempleadoid'] !== '') {
+                $this->historico->registrar('empleado', $id, (int) $datos['tbempleadoid'], $usuario['id']);
+            }
+
+            return $id;
+        });
 
         return $this->respuesta(true, 'Encargo registrado correctamente.', ['tbencargoid' => $id]);
     }
@@ -119,7 +137,7 @@ class encargocontrolador
         return $this->respuesta(true, 'Encargo actualizado correctamente.');
     }
 
-    public function asignar($datos)
+    public function asignar($datos, $usuario)
     {
         $id = (int) ($datos['tbencargoid'] ?? 0);
         $idempleado = trim((string) ($datos['tbempleadoid'] ?? ''));
@@ -139,11 +157,21 @@ class encargocontrolador
         }
 
         $empleado = $this->empleados->obtenerporid((int) $idempleado);
-        $this->repositorio->asignar($id, (int) $idempleado);
+
+        // Si se elige a la misma persona no hay nada que cambiar ni que guardar en el historial
+        if ((int) $encargo->getTbempleadoid() === (int) $idempleado) {
+            return $this->respuesta(true, 'El encargo ya estaba asignado a ' . $empleado->getTbempleadonombre() . '.');
+        }
+
+        $this->entransaccion(function () use ($id, $idempleado, $usuario) {
+            $this->repositorio->asignar($id, (int) $idempleado);
+            $this->historico->registrar('empleado', $id, (int) $idempleado, $usuario['id']);
+        });
 
         return $this->respuesta(true, 'Encargo asignado a ' . $empleado->getTbempleadonombre() . '.');
     }
 
+    // Quien tiene la sesión abierta (dueña o empleado) se asigna el encargo
     public function asignarme($id, $usuario)
     {
         $encargo = $this->repositorio->obtenerporid((int) $id);
@@ -153,7 +181,7 @@ class encargocontrolador
             return $this->respuesta(false, 'Este encargo ya está asignado a otra persona.');
         }
 
-        return $this->asignar(['tbencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']]);
+        return $this->asignar(['tbencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']], $usuario);
     }
 
     // Un empleado solo puede mover sus propios encargos
@@ -183,11 +211,11 @@ class encargocontrolador
             return $this->respuesta(false, 'Solo puede iniciar los encargos asignados a usted.');
         }
 
-        $this->repositorio->cambiarestado($id, 'En proceso');
+        $this->cambiarestado($id, 'En proceso', $usuario);
 
         return $this->respuesta(true, 'El encargo pasó a "En proceso".');
     }
-    
+
     public function terminar($id, $usuario)
     {
         $id = (int) $id;
@@ -217,20 +245,24 @@ class encargocontrolador
             return $this->respuesta(false, 'No alcanza el inventario para terminarlo: ' . implode(', ', $faltantes) . '.');
         }
 
-        $this->entransaccion(function () use ($materiales, $id) {
+        $this->entransaccion(function () use ($materiales, $id, $usuario) {
             foreach ($materiales as $material) {
                 if (!$this->inventario->restarstock($material['tbinventarioid'], $material['necesarias'])) {
                     throw new RuntimeException('El stock de ' . $material['tbinventarionombre'] . ' cambió y ya no alcanza. Intente de nuevo.');
                 }
+
+                $this->movimientos->registrar($material['tbinventarioid'], 'Salida', -$material['necesarias'],
+                    $usuario['id'], null, $id);
             }
 
             $this->repositorio->cambiarestado($id, 'Terminado');
+            $this->historico->registrar('estado', $id, 'Terminado', $usuario['id']);
         });
 
         return $this->respuesta(true, 'Encargo terminado. Se descontaron los productos del inventario.');
     }
 
-    public function cancelar($id)
+    public function cancelar($id, $usuario)
     {
         $id = (int) $id;
         $encargo = $this->repositorio->obtenerporid($id);
@@ -243,11 +275,44 @@ class encargocontrolador
             return $this->respuesta(false, 'Solo se pueden cancelar encargos pendientes o en proceso.');
         }
 
-        $this->repositorio->cambiarestado($id, 'Cancelado');
+        $this->cambiarestado($id, 'Cancelado', $usuario);
 
         return $this->respuesta(true, 'Encargo cancelado.');
     }
 
+    // Cambia el estado y lo deja en el historial con quién lo hizo
+    private function cambiarestado($id, $estado, $usuario)
+    {
+        $this->entransaccion(function () use ($id, $estado, $usuario) {
+            $this->repositorio->cambiarestado($id, $estado);
+            $this->historico->registrar('estado', $id, $estado, $usuario['id']);
+        });
+    }
+
+    // Historial del encargo en palabras, para mostrarlo en "Ver"
+    private function historial($idencargo)
+    {
+        $lista = [];
+        foreach ($this->historico->listar($idencargo) as $fila) {
+            if ($fila['campo'] === 'estado') {
+                $texto = $fila['valor'] === 'Pendiente' && !$lista
+                    ? 'Se registró el encargo'
+                    : 'Pasó a "' . $fila['valor'] . '"';
+            } else {
+                $texto = 'Se asignó a ' . ($fila['nombreasignado'] ?? 'un empleado eliminado');
+            }
+
+            $lista[] = [
+                'fecha'    => $fila['fecha'],
+                'texto'    => $texto,
+                'hechopor' => $fila['hechopor'] ?? '',
+            ];
+        }
+
+        return $lista;
+    }
+
+    // Productos que necesita el encargo (unidades del arreglo x cantidad de arreglos) y si alcanza el stock
     private function materiales(Encargo $encargo)
     {
         $materiales = [];

@@ -194,3 +194,38 @@ CREATE TABLE tbencargo (
     tbencargofecharegistro DATE,
     PRIMARY KEY (tbencargoid)
 );
+
+
+-- ---------- Históricos y movimientos ----------
+-- En todos, tbempleadoid es quien hizo el cambio (la dueña o un empleado)
+CREATE TABLE tbencargoestadohistorico (
+    tbencargoestadohistoricoid INT,
+    tbencargoid INT,
+    tbencargoestadohistoricovalor VARCHAR(20),
+    tbempleadoid INT,
+    tbencargoestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbencargoestadohistoricoid)
+);
+
+CREATE TABLE tbencargoempleadohistorico (
+    tbencargoempleadohistoricoid INT,
+    tbencargoid INT,
+    tbencargoempleadohistoricovalor INT,
+    tbempleadoid INT,
+    tbencargoempleadohistoricofecha DATETIME,
+    PRIMARY KEY (tbencargoempleadohistoricoid)
+);
+
+CREATE TABLE tbinventariomovimiento (
+    tbinventariomovimientoid INT,
+    tbinventarioid INT,
+    tbinventariomovimientotipo VARCHAR(20),
+    tbinventariomovimientocantidad INT,
+    tbinventariomovimientostockfinal INT,
+    tbpedidoid INT,
+    tbencargoid INT,
+    tbempleadoid INT,
+    tbinventariomovimientofecha DATETIME,
+    PRIMARY KEY (tbinventariomovimientoid)
+);
+

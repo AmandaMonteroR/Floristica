@@ -162,10 +162,10 @@ try {
                     $respuesta = $controlador->proveedores();
                     break;
                 case 'crear':
-                    $respuesta = $controlador->crear($_POST);
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
                     break;
                 case 'actualizar':
-                    $respuesta = $controlador->actualizar($_POST);
+                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
                     break;
                 case 'inactivar':
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0);
@@ -204,7 +204,7 @@ try {
                     $respuesta = $controlador->confirmar($_POST);
                     break;
                 case 'recibir':
-                    $respuesta = $controlador->recibir($_POST['id'] ?? 0);
+                    $respuesta = $controlador->recibir($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -291,7 +291,7 @@ try {
                     $respuesta = $controlador->actualizar($_POST);
                     break;
                 case 'asignar':
-                    $respuesta = $controlador->asignar($_POST);
+                    $respuesta = $controlador->asignar($_POST, $usuarioactual);
                     break;
                 case 'asignarme':
                     $respuesta = $controlador->asignarme($_POST['id'] ?? 0, $usuarioactual);
@@ -303,7 +303,7 @@ try {
                     $respuesta = $controlador->terminar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'cancelar':
-                    $respuesta = $controlador->cancelar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->cancelar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

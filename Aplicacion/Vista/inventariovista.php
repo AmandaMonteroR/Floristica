@@ -282,9 +282,25 @@
     </form>
 </dialog>
 
-<dialog id="dialogodetalle" class="dialogo">
+<dialog id="dialogodetalle" class="dialogo dialogo-ancho">
     <h2 id="titulodetalle"></h2>
     <dl id="listadetalle" class="detalle"></dl>
+    <h3 class="subtitulo-seccion">Movimientos del stock</h3>
+    <p class="nota">Los 20 más recientes. Las entradas suman y las salidas restan.</p>
+    <div class="tabla-contenedor">
+        <table class="tabla tabla-historial">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Motivo</th>
+                    <th>Cantidad</th>
+                    <th>Stock</th>
+                    <th>Hecho por</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpomovimientos"></tbody>
+        </table>
+    </div>
     <div class="acciones-dialogo">
         <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
     </div>

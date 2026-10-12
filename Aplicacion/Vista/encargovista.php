@@ -169,6 +169,19 @@
             <tbody id="cuerpodetalle"></tbody>
         </table>
     </div>
+    <h3 class="subtitulo-seccion">Historial</h3>
+    <div class="tabla-contenedor">
+        <table class="tabla tabla-historial">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Qué pasó</th>
+                    <th>Hecho por</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpohistorial"></tbody>
+        </table>
+    </div>
     <div class="acciones-dialogo">
         <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
     </div>

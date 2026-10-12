@@ -61,6 +61,7 @@ const etiquetadiseno = document.getElementById('etiquetadiseno');
 const dialogodetalle = document.getElementById('dialogodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
+const cuerpomovimientos = document.getElementById('cuerpomovimientos');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
 const iconoconfirmacion = document.getElementById('iconoconfirmacion');
 const tituloconfirmacion = document.getElementById('tituloconfirmacion');
@@ -79,6 +80,19 @@ function escapar(texto) {
     const div = document.createElement('div');
     div.textContent = texto ?? '';
     return div.innerHTML;
+}
+
+// "2026-10-11 15:25:00" -> "11/10/2026 3:25 p. m."
+function formatearfechahora(fechahora) {
+    if (!fechahora) {
+        return '';
+    }
+    const [fecha, hora = '00:00'] = fechahora.split(' ');
+    const [anio, mes, dia] = fecha.split('-');
+    let [horas, minutos] = hora.split(':').map(Number);
+    const sufijo = horas < 12 ? 'a. m.' : 'p. m.';
+    horas = horas % 12 || 12;
+    return `${dia}/${mes}/${anio} ${horas}:${String(minutos).padStart(2, '0')} ${sufijo}`;
 }
 
 function formatearfecha(fecha) {
@@ -436,6 +450,21 @@ async function verdetalle(id) {
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
         .join('');
+
+    cuerpomovimientos.innerHTML = producto.movimientos.length === 0
+        ? '<tr><td colspan="5" class="vacio">Este producto todavía no tiene movimientos registrados.</td></tr>'
+        : producto.movimientos.map((movimiento) => {
+            const entra = movimiento.cantidad >= 0;
+            return `
+            <tr>
+                <td>${formatearfechahora(movimiento.fecha)}</td>
+                <td>${escapar(movimiento.motivo)}</td>
+                <td class="${entra ? 'cantidad-entrada' : 'cantidad-salida'}">${entra ? '+' : '−'}${Math.abs(movimiento.cantidad)}</td>
+                <td>${movimiento.stockfinal}</td>
+                <td>${movimiento.hechopor ? escapar(movimiento.hechopor) : '<span class="texto-suave">No registrado</span>'}</td>
+            </tr>`;
+        }).join('');
+
     dialogodetalle.showModal();
 }
 

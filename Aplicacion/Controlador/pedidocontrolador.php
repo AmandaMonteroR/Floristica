@@ -3,6 +3,7 @@ require_once __DIR__ . '/../Repositorio/pedidorepositorio.php';
 require_once __DIR__ . '/../Repositorio/confirmacioncomprarepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 
 class pedidocontrolador
 {
@@ -10,6 +11,7 @@ class pedidocontrolador
     private $confirmaciones;
     private $inventario;
     private $proveedores;
+    private $movimientos;
     private $tipospago = ['Contado', 'Crédito'];
 
     public function __construct()
@@ -18,6 +20,7 @@ class pedidocontrolador
         $this->confirmaciones = new confirmacioncomprarepositorio();
         $this->inventario = new inventariorepositorio();
         $this->proveedores = new proveedorrepositorio();
+        $this->movimientos = new inventariomovimientorepositorio();
     }
 
     public function proveedores()
@@ -200,8 +203,7 @@ class pedidocontrolador
         return $this->respuesta(true, 'Compra confirmada correctamente.');
     }
 
-    public function recibir($id)
-    {
+    public function recibir($id, $usuario)    {
         $id = (int) $id;
         $pedido = $this->repositorio->obtenerporid($id);
 
@@ -213,12 +215,11 @@ class pedidocontrolador
             return $this->respuesta(false, 'Solo se pueden recibir pedidos confirmados.');
         }
 
-        $this->entransaccion(function () use ($id) {
+        $this->entransaccion(function () use ($id, $usuario) {
             foreach ($this->repositorio->listardetalles($id) as $detalle) {
                 $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
                 $unidades = (int) $detalle->getTbpedidodetallecantidad() * (int) $producto->getTbinventariounidadespaquete();
-                $this->inventario->sumarstock($detalle->getTbinventarioid(), $unidades);
-            }
+                $this->movimientos->registrar($detalle->getTbinventarioid(), 'Entrada', $unidades, $usuario['id'], $id);            }
 
             $this->repositorio->cambiarestado($id, 'Recibido');
         });
