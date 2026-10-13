@@ -204,29 +204,40 @@ Resumen según el rol:
 
 ## Históricos
 
-Todo se registra en PHP. La base de datos solo guarda la información.
+Todo se registra en PHP. Cada tabla de histórico guarda el valor, **quién hizo el cambio** (`tbempleadoid`) y la fecha y hora. Se registra al crear y cada vez que el dato cambia de verdad. Los historiales se muestran del más antiguo al más reciente, con la columna "Hecho por":
 
-### Proveedores
+- En proveedores, inventario, catálogo y pedidos: botón **Ver historial** dentro de **Ver**.
+- En empleados: botón **Historial** de cada fila.
+- En encargos: sección **Historial** dentro de **Ver**.
 
-Al crear un proveedor, y cada vez que cambia uno de estos datos, se guarda el nuevo valor con fecha y hora:
+Casi todas las tablas nuevas se manejan con un solo repositorio (`historicorepositorio.php`) y un ayudante (`historicocontrolador.php`). La ventana del historial es `Publico/js/historial.js`.
 
-| Dato | Tabla |
-|------|-------|
-| Nombre de la empresa | `tbproveedornombreempresahistorico` |
-| Nombre del contacto | `tbproveedornombrecontactohistorico` |
-| Teléfono | `tbproveedortelefonohistorico` |
-| Correo | `tbproveedorcorreohistorico` |
-| Ubicación (provincia / cantón / distrito / dirección) | `tbproveedorubicacionhistorico` |
-| Estado (activo / inactivo) | `tbproveedorestadohistorico` |
+| Módulo | Dato | Tabla |
+|--------|------|-------|
+| Proveedores | Nombre de la empresa | `tbproveedornombreempresahistorico` |
+| | Nombre del contacto | `tbproveedornombrecontactohistorico` |
+| | Teléfono | `tbproveedortelefonohistorico` |
+| | Correo | `tbproveedorcorreohistorico` |
+| | Ubicación (provincia / cantón / distrito / dirección) | `tbproveedorubicacionhistorico` |
+| | Estado | `tbproveedorestadohistorico` |
+| Inventario | Nombre | `tbinventarionombrehistorico` |
+| | Proveedor | `tbinventarioproveedorhistorico` |
+| | Precio del paquete y unidades (ej. `12000.00 / 24`) | `tbinventariopreciohistorico` |
+| | Stock mínimo | `tbinventariostockminimohistorico` |
+| | Estado | `tbinventarioestadohistorico` |
+| Catálogo | Nombre | `tbarreglofloralnombrehistorico` |
+| | Precio de venta | `tbarreglofloralpreciohistorico` |
+| | Estado | `tbarreglofloralestadohistorico` |
+| Empleados | Nombre, teléfono, rol, usuario y estado | `tbempleado<dato>historico` |
+| | Contraseña (solo "Asignada" o "Cambiada", **nunca** el valor) | `tbempleadoclavehistorico` |
+| Pedidos | Estado (Pendiente, Confirmado, Recibido) | `tbpedidoestadohistorico` |
+| Encargos | Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbencargoestadohistorico` |
+| | Empleado asignado | `tbencargoempleadohistorico` |
+| | Fecha de entrega | `tbencargofechaentregahistorico` |
 
-### Encargos
+En los históricos de empleado, `tbempleadoid` es el empleado al que se le hizo el cambio, y quien lo hizo va en `tbempleadoidresponsable`.
 
-Se ven en **Ver** de cada encargo, con fecha, hora y quién hizo el cambio:
-
-| Dato | Tabla |
-|------|-------|
-| Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbencargoestadohistorico` |
-| Empleado asignado | `tbencargoempleadohistorico` |
+**No llevan histórico:** `tbpedidodetalle` y `tbarreglofloraldetalle` (son parte de su pedido o arreglo), `tbconfirmacioncompra` (ya registra algo que pasó una vez), las tablas de categoría del inventario, las descripciones y las notas.
 
 ### Movimientos de inventario
 
