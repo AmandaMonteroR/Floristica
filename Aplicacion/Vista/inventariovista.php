@@ -114,22 +114,34 @@
                 <input type="text" name="tbinventariopreciopaquete" inputmode="decimal" maxlength="11" placeholder="12000" autocomplete="off" data-filtro="decimal">
                 <small class="error" data-error="tbinventariopreciopaquete"></small>
             </label>
-            <label class="campo">
+            <div class="campo">
                 <span>Unidades por paquete *</span>
-                <input type="text" name="tbinventariounidadespaquete" inputmode="numeric" maxlength="5" autocomplete="off" data-filtro="entero">
+                <div class="contador">
+                    <button type="button" class="boton-contador" data-paso="-1" data-campo="tbinventariounidadespaquete" aria-label="Quitar una unidad por paquete">−</button>
+                    <input type="text" name="tbinventariounidadespaquete" inputmode="numeric" maxlength="5" autocomplete="off" data-filtro="entero" aria-label="Unidades por paquete">
+                    <button type="button" class="boton-contador" data-paso="1" data-campo="tbinventariounidadespaquete" aria-label="Agregar una unidad por paquete">+</button>
+                </div>
                 <small class="error" data-error="tbinventariounidadespaquete"></small>
-            </label>
+            </div>
             <p class="campo-completo precio-unidad">Precio por unidad: <strong id="preciounidad">—</strong></p>
-            <label class="campo">
+            <div class="campo">
                 <span>Stock actual (unidades) *</span>
-                <input type="text" name="tbinventariostock" inputmode="numeric" maxlength="6" autocomplete="off" data-filtro="entero">
+                <div class="contador">
+                    <button type="button" class="boton-contador" data-paso="-1" data-campo="tbinventariostock" aria-label="Quitar una unidad del stock">−</button>
+                    <input type="text" name="tbinventariostock" inputmode="numeric" maxlength="6" autocomplete="off" data-filtro="entero" aria-label="Stock actual (unidades)">
+                    <button type="button" class="boton-contador" data-paso="1" data-campo="tbinventariostock" aria-label="Agregar una unidad al stock">+</button>
+                </div>
                 <small class="error" data-error="tbinventariostock"></small>
-            </label>
-            <label class="campo">
+            </div>
+            <div class="campo">
                 <span>Stock mínimo (unidades) *</span>
-                <input type="text" name="tbinventariostockminimo" inputmode="numeric" maxlength="6" autocomplete="off" data-filtro="entero">
+                <div class="contador">
+                    <button type="button" class="boton-contador" data-paso="-1" data-campo="tbinventariostockminimo" aria-label="Quitar una unidad del stock mínimo">−</button>
+                    <input type="text" name="tbinventariostockminimo" inputmode="numeric" maxlength="6" autocomplete="off" data-filtro="entero" aria-label="Stock mínimo (unidades)">
+                    <button type="button" class="boton-contador" data-paso="1" data-campo="tbinventariostockminimo" aria-label="Agregar una unidad al stock mínimo">+</button>
+                </div>
                 <small class="error" data-error="tbinventariostockminimo"></small>
-            </label>
+            </div>
         </div>
 
         <fieldset class="seccion-categoria" data-categoria="Flor" hidden>

@@ -518,6 +518,30 @@ formulario.addEventListener('input', (evento) => {
 });
 
 formulario.addEventListener('change', guardarborrador);
+
+// Botones − y + de unidades por paquete, stock y stock mínimo
+const limitescontador = {
+    tbinventariounidadespaquete: [1, 10000],
+    tbinventariostock: [0, 999999],
+    tbinventariostockminimo: [0, 999999],
+};
+
+formulario.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-paso][data-campo]');
+    if (!boton) {
+        return;
+    }
+
+    const campo = formulario.elements[boton.dataset.campo];
+    const [minimo, maximo] = limitescontador[boton.dataset.campo];
+    const actual = parseInt(campo.value, 10);
+    const nuevo = Number.isNaN(actual) ? minimo : actual + Number(boton.dataset.paso);
+
+    campo.value = String(Math.min(maximo, Math.max(minimo, nuevo)));
+    // Avisa del cambio para que se limpie el error, se guarde el borrador y se recalcule el precio por unidad
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+});
+
 selectcategoria.addEventListener('change', mostrarseccioncategoria);
 formulario.elements.tbinventariocategoriaextratipo.addEventListener('change', actualizarvencimiento);
 formulario.elements.tbinventariocategoriaadornotipo.addEventListener('change', actualizardiseno);

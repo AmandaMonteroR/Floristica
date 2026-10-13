@@ -33,9 +33,11 @@ $opcionesmenu = [
     ['texto' => 'Reportes', 'modulo' => 'reporte'],
 ];
 
-// Quita las opciones que el rol del usuario no puede abrir (y los grupos que quedan vacíos)
+// Quita las opciones que el rol del usuario no puede abrir, las de módulos
+// que todavía no tienen página (y los grupos que quedan vacíos)
 function filtrarmenu($opciones)
 {
+    global $vistas;
     $permitidas = [];
 
     foreach ($opciones as $opcion) {
@@ -44,7 +46,7 @@ function filtrarmenu($opciones)
             if ($opcion['hijos']) {
                 $permitidas[] = $opcion;
             }
-        } elseif (Seguridad::permitido($opcion['modulo'])) {
+        } elseif (isset($vistas[$opcion['modulo']]) && Seguridad::permitido($opcion['modulo'])) {            
             $permitidas[] = $opcion;
         }
     }
