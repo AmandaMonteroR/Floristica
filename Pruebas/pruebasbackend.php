@@ -187,7 +187,7 @@ prueba('Sin sesión, pedir datos responde 401', $r['codigo'] === 401, 'HTTP ' . 
 $r = $anonimo->get('');
 prueba('Sin sesión, la página principal muestra el login', $r['codigo'] === 200 && strpos($r['texto'], 'name="usuario"') !== false);
 
-$r = $anonimo->ingresar('duena', 'malaclave1');
+$r = $anonimo->ingresar('duenia', 'malaclave1');
 prueba('Contraseña incorrecta no deja entrar', !exito($r) && mensaje($r) === 'Usuario o contraseña incorrectos.', mensaje($r));
 
 $r = $anonimo->ingresar('noexiste', 'cualquiera1');
@@ -201,14 +201,14 @@ prueba('Empleada inactiva no puede entrar', !exito($r) && strpos(mensaje($r), 'i
 
 $bloqueo = new Cliente($servidor);
 for ($i = 0; $i < 5; $i++) {
-    $bloqueo->ingresar('duena', 'otraclave' . $i);
+    $bloqueo->ingresar('duenia', 'otraclave' . $i);
 }
-$r = $bloqueo->ingresar('duena', 'duena1234');
+$r = $bloqueo->ingresar('duenia', 'duenia123');
 prueba('Después de 5 intentos fallidos se bloquea, aunque la clave sea correcta', !exito($r) && strpos(mensaje($r), 'Demasiados intentos') !== false, mensaje($r));
 
 $duena = new Cliente($servidor);
-$r = $duena->ingresar('duena', 'duena1234');
-prueba('La dueña entra con duena / duena1234', exito($r), mensaje($r));
+$r = $duena->ingresar('duenia', 'duenia123');
+prueba('La dueña entra con duenia / duenia123', exito($r), mensaje($r));
 
 // Las pruebas cuentan con los datos de prueba recién cargados
 if (exito($r) && count(datos($duena->get('proveedor', 'listar'))) !== 8) {
@@ -621,7 +621,7 @@ prueba('El historial dice "Asignada" y "Cambiada", sin la contraseña', array_co
 $r = $duena->post('empleado', 'inactivar', ['id' => 1]);
 prueba('La dueña no puede inactivarse a sí misma', !exito($r), mensaje($r));
 $r = $duena->post('empleado', 'actualizar', ['tbempleadoid' => 1, 'tbempleadonombre' => 'Patricia Mora Solano', 'tbempleadotelefono' => '8800-0001',
-    'tbempleadorol' => 'Empleado', 'tbempleadousuario' => 'duena', 'tbempleadoclave' => '']);
+    'tbempleadorol' => 'Empleado', 'tbempleadousuario' => 'duenia', 'tbempleadoclave' => '']);
 prueba('La dueña no puede quitarse el rol', tieneerror($r, 'tbempleadorol'));
 $r = $duena->post('empleado', 'inactivar', ['id' => 3]);
 prueba('No deja inactivar a alguien con encargos abiertos (Carlos)', !exito($r), mensaje($r));

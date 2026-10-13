@@ -61,7 +61,7 @@ INSERT INTO `tbproveedorubicacionhistorico` VALUES (7,7,'Limón / Pococí / Guá
 INSERT INTO `tbproveedorubicacionhistorico` VALUES (8,8,'Heredia / Santo Domingo / Santo Domingo',1,'2026-10-05 21:27:59');
 INSERT INTO `tbproveedorubicacionhistorico` VALUES (9,2,'Cartago / Cartago / Oriental / 100 m este de la Basílica',1,'2026-10-07 10:00:00');
 
-INSERT INTO `tbempleado` VALUES (1,'Patricia Mora Solano','8800-0001','Dueña',1,'duena','$2y$10$w.4a/iXXe.AuxPSSWICaZuOkPHeeibMHmTu.kOenp5wUqtAUzdgCy');
+INSERT INTO `tbempleado` VALUES (1,'Patricia Mora Solano','8800-0001','Dueña',1,'duenia','$2y$10$zApHadFy9ky.0EvlD9hB/ubz.w62ZWVCaW6CsW7N02LfNW0arNDO.');
 INSERT INTO `tbempleado` VALUES (2,'Lorena Bermúdez Badilla','8800-1001','Empleado',1,'empleado1','$2y$10$7OjNCucp3NvynE06dHv5Xu2er2twWztdLH.wILHC4TwbWS88kBUhu');
 INSERT INTO `tbempleado` VALUES (3,'Carlos Jiménez Rojas','8800-1002','Empleado',1,'empleado2','$2y$10$nFZc2kl/oeYcADoLNJCFkOTLJpbe1g0Rl6LWWXfDnVeTOT5oBZ7h2');
 INSERT INTO `tbempleado` VALUES (4,'Valeria Castro Núñez','8800-1003','Empleado',1,'empleado3','$2y$10$r.uJmF790eZ/3Vzxt8a3guE3nq.gH6uxIW8yWJbviLK/gvoNbSEly');
@@ -395,7 +395,7 @@ INSERT INTO `tbempleadorolhistorico` VALUES (2,2,'Empleado',1,'2026-09-28 09:20:
 INSERT INTO `tbempleadorolhistorico` VALUES (3,3,'Empleado',1,'2026-09-28 09:30:00');
 INSERT INTO `tbempleadorolhistorico` VALUES (4,4,'Empleado',1,'2026-09-28 09:40:00');
 INSERT INTO `tbempleadorolhistorico` VALUES (5,5,'Empleado',1,'2026-09-28 09:50:00');
-INSERT INTO `tbempleadousuariohistorico` VALUES (1,1,'duena',1,'2026-09-28 09:10:00');
+INSERT INTO `tbempleadousuariohistorico` VALUES (1,1,'duenia',1,'2026-09-28 09:10:00');
 INSERT INTO `tbempleadousuariohistorico` VALUES (2,2,'empleado1',1,'2026-09-28 09:20:00');
 INSERT INTO `tbempleadousuariohistorico` VALUES (3,3,'empleado2',1,'2026-09-28 09:30:00');
 INSERT INTO `tbempleadousuariohistorico` VALUES (4,4,'empleado3',1,'2026-09-28 09:40:00');

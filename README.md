@@ -64,7 +64,7 @@ Los crea `datosprueba.sql`:
 
 | Usuario | Contraseña | Nombre | Rol |
 |---------|------------|--------|-----|
-| `duena` | `duena1234` | Patricia Mora Solano | Dueña |
+| `duenia` | `duenia123` | Patricia Mora Solano | Dueña |
 | `empleado1` | `empleado1` | Lorena Bermúdez Badilla | Empleado |
 | `empleado2` | `empleado2` | Carlos Jiménez Rojas | Empleado |
 | `empleado3` | `empleado3` | Valeria Castro Núñez | Empleado |
