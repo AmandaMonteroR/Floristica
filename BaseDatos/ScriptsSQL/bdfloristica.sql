@@ -22,6 +22,7 @@ CREATE TABLE tbproveedornombreempresahistorico (
     tbproveedornombreempresahistoricoid INT,
     tbproveedorid INT,
     tbproveedornombreempresahistoricovalor VARCHAR(100),
+    tbempleadoid INT,
     tbproveedornombreempresahistoricofecha DATETIME,
     PRIMARY KEY (tbproveedornombreempresahistoricoid)
 );
@@ -30,6 +31,7 @@ CREATE TABLE tbproveedornombrecontactohistorico (
     tbproveedornombrecontactohistoricoid INT,
     tbproveedorid INT,
     tbproveedornombrecontactohistoricovalor VARCHAR(100),
+    tbempleadoid INT,
     tbproveedornombrecontactohistoricofecha DATETIME,
     PRIMARY KEY (tbproveedornombrecontactohistoricoid)
 );
@@ -38,6 +40,7 @@ CREATE TABLE tbproveedortelefonohistorico (
     tbproveedortelefonohistoricoid INT,
     tbproveedorid INT,
     tbproveedortelefonohistoricovalor VARCHAR(20),
+    tbempleadoid INT,
     tbproveedortelefonohistoricofecha DATETIME,
     PRIMARY KEY (tbproveedortelefonohistoricoid)
 );
@@ -46,6 +49,7 @@ CREATE TABLE tbproveedorcorreohistorico (
     tbproveedorcorreohistoricoid INT,
     tbproveedorid INT,
     tbproveedorcorreohistoricovalor VARCHAR(100),
+    tbempleadoid INT,
     tbproveedorcorreohistoricofecha DATETIME,
     PRIMARY KEY (tbproveedorcorreohistoricoid)
 );
@@ -55,6 +59,7 @@ CREATE TABLE tbproveedorubicacionhistorico (
     tbproveedorubicacionhistoricoid INT,
     tbproveedorid INT,
     tbproveedorubicacionhistoricovalor VARCHAR(370),
+    tbempleadoid INT,
     tbproveedorubicacionhistoricofecha DATETIME,
     PRIMARY KEY (tbproveedorubicacionhistoricoid)
 );
@@ -63,6 +68,7 @@ CREATE TABLE tbproveedorestadohistorico (
     tbproveedorestadohistoricoid INT,
     tbproveedorid INT,
     tbproveedorestadohistoricovalor TINYINT(1),
+    tbempleadoid INT,
     tbproveedorestadohistoricofecha DATETIME,
     PRIMARY KEY (tbproveedorestadohistoricoid)
 );

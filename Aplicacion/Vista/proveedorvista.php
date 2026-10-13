@@ -154,7 +154,7 @@
 
 <dialog id="dialogohistorial" class="dialogo dialogo-ancho">
     <h2 id="titulohistorial"></h2>
-    <p class="nota">Cambios en los datos principales del proveedor, del más reciente al más antiguo.</p>
+    <p class="nota">Cambios en los datos principales, del más antiguo al más reciente.</p>
     <div class="tabla-contenedor">
         <table class="tabla">
             <thead>
@@ -163,6 +163,7 @@
                     <th>Dato</th>
                     <th>Valor anterior</th>
                     <th>Valor nuevo</th>
+                    <th>Hecho por</th>
                 </tr>
             </thead>
             <tbody id="cuerpohistorial"></tbody>

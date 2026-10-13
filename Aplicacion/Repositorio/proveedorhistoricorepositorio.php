@@ -26,16 +26,19 @@ class proveedorhistoricorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    public function registrar($campo, $idproveedor, $valor)
+    // $idempleado es quien hizo el cambio
+    public function registrar($campo, $idproveedor, $valor, $idempleado)
     {
         $tabla = $this->tabla($campo);
-        $sql = "INSERT INTO {$tabla} ({$tabla}id, tbproveedorid, {$tabla}valor, {$tabla}fecha) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO {$tabla} ({$tabla}id, tbproveedorid, {$tabla}valor, tbempleadoid, {$tabla}fecha)
+                VALUES (?, ?, ?, ?, ?)";
 
         $sentencia = $this->conexion->prepare($sql);
         return $sentencia->execute([
             $this->siguienteid($tabla),
             $idproveedor,
             $valor,
+            $idempleado,
             date('Y-m-d H:i:s'),
         ]);
     }
@@ -43,9 +46,11 @@ class proveedorhistoricorepositorio
     public function listar($campo, $idproveedor)
     {
         $tabla = $this->tabla($campo);
-        $sql = "SELECT {$tabla}valor AS valor, {$tabla}fecha AS fecha FROM {$tabla}
-                WHERE tbproveedorid = ?
-                ORDER BY {$tabla}fecha, {$tabla}id";
+        $sql = "SELECT h.{$tabla}valor AS valor, h.{$tabla}fecha AS fecha, e.tbempleadonombre AS hechopor
+                FROM {$tabla} h
+                LEFT JOIN tbempleado e ON e.tbempleadoid = h.tbempleadoid
+                WHERE h.tbproveedorid = ?
+                ORDER BY h.{$tabla}fecha, h.{$tabla}id";
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute([$idproveedor]);

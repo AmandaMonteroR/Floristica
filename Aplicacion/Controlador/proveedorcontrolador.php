@@ -44,7 +44,7 @@ class proveedorcontrolador
         return $this->respuesta(true, '', $this->convertirarreglo($proveedor));
     }
 
-    public function crear($datos)
+    public function crear($datos, $usuario)
     {
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos);
@@ -55,19 +55,20 @@ class proveedorcontrolador
 
         $proveedor = new Proveedor($datos);
 
-        $id = $this->entransaccion(function () use ($proveedor) {
+        $id = $this->entransaccion(function () use ($proveedor, $usuario) {
             $id = $this->repositorio->insertar($proveedor);
+            $quien = $usuario['id'];
 
-            $this->historico->registrar('nombreempresa', $id, $proveedor->getTbproveedornombreempresa());
-            $this->historico->registrar('nombrecontacto', $id, $proveedor->getTbproveedornombrecontacto());
-            $this->historico->registrar('telefono', $id, $proveedor->getTbproveedortelefono());
+            $this->historico->registrar('nombreempresa', $id, $proveedor->getTbproveedornombreempresa(), $quien);
+            $this->historico->registrar('nombrecontacto', $id, $proveedor->getTbproveedornombrecontacto(), $quien);
+            $this->historico->registrar('telefono', $id, $proveedor->getTbproveedortelefono(), $quien);
 
             if ($proveedor->getTbproveedorcorreo() !== '') {
-                $this->historico->registrar('correo', $id, $proveedor->getTbproveedorcorreo());
+                $this->historico->registrar('correo', $id, $proveedor->getTbproveedorcorreo(), $quien);
             }
 
-            $this->historico->registrar('ubicacion', $id, $this->textoubicacion($proveedor));
-            $this->historico->registrar('estado', $id, 1);
+            $this->historico->registrar('ubicacion', $id, $this->textoubicacion($proveedor), $quien);
+            $this->historico->registrar('estado', $id, 1, $quien);
 
             return $id;
         });
@@ -75,7 +76,7 @@ class proveedorcontrolador
         return $this->respuesta(true, 'Proveedor registrado correctamente.', ['tbproveedorid' => $id]);
     }
 
-    public function actualizar($datos)
+    public function actualizar($datos, $usuario)
     {
         $id = (int) ($datos['tbproveedorid'] ?? 0);
         $proveedor = $this->repositorio->obtenerporid($id);
@@ -123,18 +124,17 @@ class proveedorcontrolador
             $cambios['ubicacion'] = $ubicacionnueva;
         }
 
-        $this->entransaccion(function () use ($proveedor, $cambios, $id) {
+        $this->entransaccion(function () use ($proveedor, $cambios, $id, $usuario) {
             $this->repositorio->actualizar($proveedor);
 
             foreach ($cambios as $campo => $valor) {
-                $this->historico->registrar($campo, $id, $valor);
+                $this->historico->registrar($campo, $id, $valor, $usuario['id']);
             }
         });
-
         return $this->respuesta(true, 'Proveedor actualizado correctamente.');
     }
 
-    public function inactivar($id)
+    public function inactivar($id, $usuario)
     {
         $id = (int) $id;
         $proveedor = $this->repositorio->obtenerporid($id);
@@ -147,15 +147,15 @@ class proveedorcontrolador
             return $this->respuesta(false, 'El proveedor ya está inactivo.');
         }
 
-        $this->entransaccion(function () use ($id) {
+        $this->entransaccion(function () use ($id, $usuario) {
             $this->repositorio->inactivar($id);
-            $this->historico->registrar('estado', $id, 0);
+            $this->historico->registrar('estado', $id, 0, $usuario['id']);
         });
 
         return $this->respuesta(true, 'Proveedor inactivado correctamente.');
     }
 
-    public function reactivar($id)
+    public function reactivar($id, $usuario)
     {
         $id = (int) $id;
         $proveedor = $this->repositorio->obtenerporid($id);
@@ -168,9 +168,9 @@ class proveedorcontrolador
             return $this->respuesta(false, 'El proveedor ya está activo.');
         }
 
-        $this->entransaccion(function () use ($id) {
+        $this->entransaccion(function () use ($id, $usuario) {
             $this->repositorio->reactivar($id);
-            $this->historico->registrar('estado', $id, 1);
+            $this->historico->registrar('estado', $id, 1, $usuario['id']);
         });
 
         return $this->respuesta(true, 'Proveedor reactivado correctamente.');
@@ -207,6 +207,7 @@ class proveedorcontrolador
                     'etiqueta' => $etiqueta,
                     'anterior' => $anterior,
                     'nuevo'    => $valor,
+                    'hechopor' => $fila['hechopor'] ?? '',
                     'fecha'    => $fila['fecha'],
                 ];
 
@@ -214,8 +215,9 @@ class proveedorcontrolador
             }
         }
 
+        // Del más antiguo al más reciente, igual que los demás historiales
         usort($movimientos, function ($a, $b) {
-            return strcmp($b['fecha'], $a['fecha']);
+            return strcmp($a['fecha'], $b['fecha']);
         });
 
         return $this->respuesta(true, '', $movimientos);
