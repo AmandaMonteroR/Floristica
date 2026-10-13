@@ -4,6 +4,7 @@ require_once __DIR__ . '/../Repositorio/confirmacioncomprarepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
+require_once __DIR__ . '/historicocontrolador.php';
 
 class pedidocontrolador
 {
@@ -12,6 +13,7 @@ class pedidocontrolador
     private $inventario;
     private $proveedores;
     private $movimientos;
+    private $historico;
     private $tipospago = ['Contado', 'Crédito'];
 
     public function __construct()
@@ -21,6 +23,7 @@ class pedidocontrolador
         $this->inventario = new inventariorepositorio();
         $this->proveedores = new proveedorrepositorio();
         $this->movimientos = new inventariomovimientorepositorio();
+        $this->historico = new historicocontrolador();
     }
 
     public function proveedores()
@@ -96,7 +99,7 @@ class pedidocontrolador
         return $this->respuesta(true, '', $datos);
     }
 
-    public function crear($datos)
+    public function crear($datos, $usuario)
     {
         $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
         $datos = $this->limpiar($datos);
@@ -108,9 +111,10 @@ class pedidocontrolador
 
         $pedido = new Pedido($datos);
 
-        $id = $this->entransaccion(function () use ($pedido, $detalles) {
+        $id = $this->entransaccion(function () use ($pedido, $detalles, $usuario) {
             $id = $this->repositorio->insertar($pedido);
             $this->guardardetalles($id, $detalles);
+            $this->historico->registrar('pedido', $id, [], ['estado' => 'Pendiente'], $usuario['id']);
 
             return $id;
         });
@@ -151,7 +155,7 @@ class pedidocontrolador
         return $this->respuesta(true, 'Pedido actualizado correctamente.');
     }
 
-    public function confirmar($datos)
+    public function confirmar($datos, $usuario)
     {
         $id = (int) ($datos['tbpedidoid'] ?? 0);
         $pedido = $this->repositorio->obtenerporid($id);
@@ -195,9 +199,10 @@ class pedidocontrolador
             'tbconfirmacioncompraplazodias' => (int) $plazodias,
         ]);
 
-        $this->entransaccion(function () use ($confirmacion, $id) {
+        $this->entransaccion(function () use ($confirmacion, $id, $usuario) {
             $this->confirmaciones->insertar($confirmacion);
             $this->repositorio->cambiarestado($id, 'Confirmado');
+            $this->historico->registrar('pedido', $id, ['estado' => 'Pendiente'], ['estado' => 'Confirmado'], $usuario['id']);
         });
 
         return $this->respuesta(true, 'Compra confirmada correctamente.');
@@ -222,9 +227,25 @@ class pedidocontrolador
                 $this->movimientos->registrar($detalle->getTbinventarioid(), 'Entrada', $unidades, $usuario['id'], $id);            }
 
             $this->repositorio->cambiarestado($id, 'Recibido');
+            $this->historico->registrar('pedido', $id, ['estado' => 'Confirmado'], ['estado' => 'Recibido'], $usuario['id']);
         });
 
         return $this->respuesta(true, 'Pedido recibido. El stock del inventario se actualizó.');
+    }
+
+    public function historial($id)
+    {
+        $id = (int) $id;
+
+        if (!$this->repositorio->obtenerporid($id)) {
+            return $this->respuesta(false, 'El pedido no existe.');
+        }
+
+        $formatear = function ($campo, $valor) {
+            return (string) $valor;
+        };
+
+        return $this->respuesta(true, '', $this->historico->listar('pedido', $id, ['estado' => 'Estado'], $formatear));
     }
 
     private function guardardetalles($idpedido, $detalles)

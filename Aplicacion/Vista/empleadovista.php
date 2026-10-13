@@ -115,6 +115,28 @@
     </form>
 </dialog>
 
+<dialog id="dialogohistorial" class="dialogo dialogo-ancho">
+    <h2 id="titulohistorial"></h2>
+    <p class="nota">Cambios en los datos principales, del más antiguo al más reciente.</p>
+    <div class="tabla-contenedor">
+        <table class="tabla tabla-historial">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Dato</th>
+                    <th>Valor anterior</th>
+                    <th>Valor nuevo</th>
+                    <th>Hecho por</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpohistorial"></tbody>
+        </table>
+    </div>
+    <div class="acciones-dialogo">
+        <button type="button" class="boton boton-principal" id="botoncerrarhistorial">Cerrar</button>
+    </div>
+</dialog>
+
 <dialog id="dialogoconfirmacion" class="dialogo dialogo-confirmacion">
     <div class="icono-confirmacion" id="iconoconfirmacion" aria-hidden="true"></div>
     <h2 id="tituloconfirmacion"></h2>
@@ -126,6 +148,7 @@
 </dialog>
 
 <script src="js/menu.js"></script>
+<script src="js/historial.js"></script>
 <script src="js/empleado.js"></script>
 </body>
 </html>

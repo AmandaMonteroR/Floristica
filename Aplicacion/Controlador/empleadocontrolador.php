@@ -1,17 +1,20 @@
 <?php
 require_once __DIR__ . '/../Repositorio/empleadorepositorio.php';
 require_once __DIR__ . '/../Repositorio/encargorepositorio.php';
+require_once __DIR__ . '/historicocontrolador.php';
 
 class empleadocontrolador
 {
     private $repositorio;
     private $encargos;
+    private $historico;
     private $roles = ['Dueña', 'Empleado'];
 
     public function __construct()
     {
         $this->repositorio = new empleadorepositorio();
         $this->encargos = new encargorepositorio();
+        $this->historico = new historicocontrolador();
     }
 
     public function listar($texto = '', $estado = null)
@@ -35,7 +38,7 @@ class empleadocontrolador
         return $this->respuesta(true, '', $this->convertirarreglo($empleado));
     }
 
-    public function crear($datos)
+    public function crear($datos, $usuarioactual)
     {
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos);
@@ -45,7 +48,15 @@ class empleadocontrolador
         }
 
         $datos['tbempleadoclave'] = password_hash($datos['tbempleadoclave'], PASSWORD_DEFAULT);
-        $id = $this->repositorio->insertar(new Empleado($datos));
+        $empleado = new Empleado($datos);
+
+        $id = $this->entransaccion(function () use ($empleado, $usuarioactual) {
+            $id = $this->repositorio->insertar($empleado);
+            $nuevos = $this->datoshistorico($this->repositorio->obtenerporid($id)) + ['clave' => 'Asignada'];
+            $this->historico->registrar('empleado', $id, [], $nuevos, $usuarioactual['id']);
+
+            return $id;
+        });
 
         return $this->respuesta(true, 'Empleado registrado correctamente.', ['tbempleadoid' => $id]);
     }
@@ -70,17 +81,26 @@ class empleadocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
+        $anteriores = $this->datoshistorico($empleado);
+
         $empleado->setTbempleadonombre($datos['tbempleadonombre']);
         $empleado->setTbempleadotelefono($datos['tbempleadotelefono']);
         $empleado->setTbempleadorol($datos['tbempleadorol']);
         $empleado->setTbempleadousuario($datos['tbempleadousuario']);
 
-        // Si no se escribe una contraseña nueva, se conserva la anterior
+        $nuevos = $this->datoshistorico($empleado);
+
+        // Si no se escribe una contraseña nueva, se conserva la anterior.
+        // Del cambio de contraseña solo queda que se cambió, nunca el valor.
         if ($datos['tbempleadoclave'] !== '') {
+            $nuevos['clave'] = $empleado->tieneCuenta() ? 'Cambiada' : 'Asignada';
             $empleado->setTbempleadoclave(password_hash($datos['tbempleadoclave'], PASSWORD_DEFAULT));
         }
 
-        $this->repositorio->actualizar($empleado);
+        $this->entransaccion(function () use ($empleado, $id, $anteriores, $nuevos, $usuarioactual) {
+            $this->repositorio->actualizar($empleado);
+            $this->historico->registrar('empleado', $id, $anteriores, $nuevos, $usuarioactual['id']);
+        });
 
         return $this->respuesta(true, 'Empleado actualizado correctamente.');
     }
@@ -109,18 +129,28 @@ class empleadocontrolador
 
         $clave = password_hash($datos['tbempleadoclave'], PASSWORD_DEFAULT);
 
-        if ($existente) {
-            $existente->setTbempleadonombre($datos['tbempleadonombre']);
-            $existente->setTbempleadotelefono($datos['tbempleadotelefono']);
-            $existente->setTbempleadousuario($datos['tbempleadousuario']);
-            $existente->setTbempleadoclave($clave);
-            $this->repositorio->actualizar($existente);
-            $duena = $existente;
-        } else {
-            $datos['tbempleadoclave'] = $clave;
-            $id = $this->repositorio->insertar(new Empleado($datos));
-            $duena = $this->repositorio->obtenerporid($id);
-        }
+        // La dueña es quien hace el cambio en su propio registro
+        $duena = $this->entransaccion(function () use ($existente, $datos, $clave) {
+            if ($existente) {
+                $anteriores = $this->datoshistorico($existente);
+                $existente->setTbempleadonombre($datos['tbempleadonombre']);
+                $existente->setTbempleadotelefono($datos['tbempleadotelefono']);
+                $existente->setTbempleadousuario($datos['tbempleadousuario']);
+                $existente->setTbempleadoclave($clave);
+                $this->repositorio->actualizar($existente);
+                $duena = $existente;
+            } else {
+                $anteriores = [];
+                $datos['tbempleadoclave'] = $clave;
+                $id = $this->repositorio->insertar(new Empleado($datos));
+                $duena = $this->repositorio->obtenerporid($id);
+            }
+
+            $nuevos = $this->datoshistorico($duena) + ['clave' => 'Asignada'];
+            $this->historico->registrar('empleado', $duena->getTbempleadoid(), $anteriores, $nuevos, $duena->getTbempleadoid());
+
+            return $duena;
+        });
 
         return $this->respuesta(true, 'Cuenta creada.', ['empleado' => $duena]);
     }
@@ -148,12 +178,15 @@ class empleadocontrolador
                 . ' encargo(s) pendiente(s) o en proceso. Reasígnelos primero.');
         }
 
-        $this->repositorio->inactivar($id);
+        $this->entransaccion(function () use ($id, $usuarioactual) {
+            $this->repositorio->inactivar($id);
+            $this->historico->registrar('empleado', $id, ['estado' => 1], ['estado' => 0], $usuarioactual['id']);
+        });
 
         return $this->respuesta(true, 'Empleado inactivado correctamente. Ya no podrá iniciar sesión.');
     }
 
-    public function reactivar($id)
+    public function reactivar($id, $usuarioactual)
     {
         $id = (int) $id;
         $empleado = $this->repositorio->obtenerporid($id);
@@ -170,9 +203,72 @@ class empleadocontrolador
             return $this->respuesta(false, 'Ya hay otra dueña activa. Solo puede haber una.');
         }
 
-        $this->repositorio->reactivar($id);
+        $this->entransaccion(function () use ($id, $usuarioactual) {
+            $this->repositorio->reactivar($id);
+            $this->historico->registrar('empleado', $id, ['estado' => 0], ['estado' => 1], $usuarioactual['id']);
+        });
 
         return $this->respuesta(true, 'Empleado reactivado correctamente.');
+    }
+
+    public function historial($id)
+    {
+        $id = (int) $id;
+
+        if (!$this->repositorio->obtenerporid($id)) {
+            return $this->respuesta(false, 'El empleado no existe.');
+        }
+
+        $etiquetas = [
+            'nombre'   => 'Nombre',
+            'telefono' => 'Teléfono',
+            'rol'      => 'Rol',
+            'usuario'  => 'Usuario',
+            'clave'    => 'Contraseña',
+            'estado'   => 'Estado',
+        ];
+
+        $formatear = function ($campo, $valor) {
+            return $campo === 'estado' ? historicocontrolador::estado($valor) : (string) $valor;
+        };
+
+        $cambios = $this->historico->listar('empleado', $id, $etiquetas, $formatear);
+
+        // De la contraseña no hay "valor anterior" que mostrar, solo que se cambió
+        foreach ($cambios as $indice => $cambio) {
+            if ($cambio['campo'] === 'clave' && $cambio['anterior'] !== null) {
+                $cambios[$indice]['anterior'] = '—';
+            }
+        }
+
+        return $this->respuesta(true, '', $cambios);
+    }
+
+    // Datos del empleado que llevan histórico (la contraseña se registra aparte)
+    private function datoshistorico(Empleado $empleado)
+    {
+        return [
+            'nombre'   => $empleado->getTbempleadonombre(),
+            'telefono' => $empleado->getTbempleadotelefono(),
+            'rol'      => $empleado->getTbempleadorol(),
+            'usuario'  => (string) $empleado->getTbempleadousuario(),
+            'estado'   => (int) $empleado->getTbempleadoestado(),
+        ];
+    }
+
+    private function entransaccion($operacion)
+    {
+        $conexion = Basedatos::conectar();
+        $conexion->beginTransaction();
+
+        try {
+            $resultado = $operacion();
+            $conexion->commit();
+            return $resultado;
+        } catch (Throwable $excepcion) {
+            $conexion->rollBack();
+            throw $excepcion;
+        }
     }
 
     private function limpiar($datos)

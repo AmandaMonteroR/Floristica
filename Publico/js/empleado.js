@@ -219,6 +219,7 @@ async function cargarempleados() {
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
                     <button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
+                    <button type="button" class="enlace" data-accion="historial" data-id="${id}">Historial</button>
                     ${botonestado}
                 </td>
             </tr>`;
@@ -392,6 +393,9 @@ cuerpotabla.addEventListener('click', (evento) => {
     switch (boton.dataset.accion) {
         case 'editar':
             abrireditar(id);
+            break;
+        case 'historial':
+            ventanahistorial.mostrar('empleado', id, nombre);
             break;
         case 'inactivar':
         case 'reactivar':

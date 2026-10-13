@@ -452,6 +452,7 @@ async function abrireditar(id) {
 /* ---------- Ver detalle ---------- */
 
 async function verdetalle(id) {
+    iddetalle = id;
     const respuesta = await consultar('obtener', { id });
 
     if (!respuesta.exito) {
@@ -777,6 +778,13 @@ document.getElementById('botonagregarlinea').addEventListener('click', agregarli
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncancelarconfirmar').addEventListener('click', () => dialogoconfirmarcompra.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
+
+// "Ver historial" del pedido que está abierto en el detalle
+let iddetalle = null;
+document.getElementById('botonverhistorial').addEventListener('click', () => {
+    ventanahistorial.mostrar('pedido', iddetalle, titulodetalle.textContent);
+});
+
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 campofecha.max = hoy();

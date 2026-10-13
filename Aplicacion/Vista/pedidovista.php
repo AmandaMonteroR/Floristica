@@ -166,7 +166,30 @@
         </table>
     </div>
     <div class="acciones-dialogo">
+        <button type="button" class="boton" id="botonverhistorial">Ver historial</button>
         <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
+    </div>
+</dialog>
+
+<dialog id="dialogohistorial" class="dialogo dialogo-ancho">
+    <h2 id="titulohistorial"></h2>
+    <p class="nota">Cambios en los datos principales, del más antiguo al más reciente.</p>
+    <div class="tabla-contenedor">
+        <table class="tabla tabla-historial">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Dato</th>
+                    <th>Valor anterior</th>
+                    <th>Valor nuevo</th>
+                    <th>Hecho por</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpohistorial"></tbody>
+        </table>
+    </div>
+    <div class="acciones-dialogo">
+        <button type="button" class="boton boton-principal" id="botoncerrarhistorial">Cerrar</button>
     </div>
 </dialog>
 
@@ -181,6 +204,7 @@
 </dialog>
 
 <script src="js/menu.js"></script>
+<script src="js/historial.js"></script>
 <script src="js/pedido.js"></script>
 </body>
 </html>

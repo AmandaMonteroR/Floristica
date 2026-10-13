@@ -198,16 +198,19 @@ try {
                     $respuesta = $controlador->productos($_GET['proveedor'] ?? 0);
                     break;
                 case 'crear':
-                    $respuesta = $controlador->crear($_POST);
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST);
                     break;
                 case 'confirmar':
-                    $respuesta = $controlador->confirmar($_POST);
+                    $respuesta = $controlador->confirmar($_POST, $usuarioactual);
                     break;
                 case 'recibir':
                     $respuesta = $controlador->recibir($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -258,7 +261,7 @@ try {
                     $respuesta = $controlador->obtener($_GET['id'] ?? 0);
                     break;
                 case 'crear':
-                    $respuesta = $controlador->crear($_POST);
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST, $usuarioactual);
@@ -267,7 +270,10 @@ try {
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'reactivar':
-                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0);
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -294,7 +300,7 @@ try {
                     $respuesta = $controlador->crear($_POST, $usuarioactual);
                     break;
                 case 'actualizar':
-                    $respuesta = $controlador->actualizar($_POST);
+                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
                     break;
                 case 'asignar':
                     $respuesta = $controlador->asignar($_POST, $usuarioactual);

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 
+// Repositorio único para los históricos nuevos.
 class historicorepositorio
 {
     private $conexion;
@@ -9,6 +10,9 @@ class historicorepositorio
     private $campos = [
         'inventario'    => ['nombre', 'proveedor', 'precio', 'stockminimo', 'estado'],
         'arreglofloral' => ['nombre', 'precio', 'estado'],
+        'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
+        'pedido'        => ['estado'],
+        'encargo'       => ['fechaentrega'],
     ];
 
     public function __construct()
@@ -25,6 +29,13 @@ class historicorepositorio
         return 'tb' . $entidad . $campo . 'historico';
     }
 
+    // Columna de quién hizo el cambio. En los históricos de empleado se llama distinto,
+    // porque tbempleadoid ya es el empleado al que se le hizo el cambio.
+    private function columnaresponsable($entidad)
+    {
+        return $entidad === 'empleado' ? 'tbempleadoidresponsable' : 'tbempleadoid';
+    }
+
     private function siguienteid($tabla)
     {
         $consulta = $this->conexion->query("SELECT IFNULL(MAX({$tabla}id), 0) + 1 AS siguiente FROM {$tabla}");
@@ -34,7 +45,8 @@ class historicorepositorio
     public function registrar($entidad, $campo, $id, $valor, $idempleado)
     {
         $tabla = $this->tabla($entidad, $campo);
-        $sql = "INSERT INTO {$tabla} ({$tabla}id, tb{$entidad}id, {$tabla}valor, tbempleadoid, {$tabla}fecha)
+        $responsable = $this->columnaresponsable($entidad);
+        $sql = "INSERT INTO {$tabla} ({$tabla}id, tb{$entidad}id, {$tabla}valor, {$responsable}, {$tabla}fecha)
                 VALUES (?, ?, ?, ?, ?)";
 
         $sentencia = $this->conexion->prepare($sql);
@@ -51,9 +63,10 @@ class historicorepositorio
     public function listar($entidad, $campo, $id)
     {
         $tabla = $this->tabla($entidad, $campo);
+        $responsable = $this->columnaresponsable($entidad);
         $sql = "SELECT h.{$tabla}valor AS valor, h.{$tabla}fecha AS fecha, e.tbempleadonombre AS hechopor
                 FROM {$tabla} h
-                LEFT JOIN tbempleado e ON e.tbempleadoid = h.tbempleadoid
+                LEFT JOIN tbempleado e ON e.tbempleadoid = h.{$responsable}
                 WHERE h.tb{$entidad}id = ?
                 ORDER BY h.{$tabla}fecha, h.{$tabla}id";
 

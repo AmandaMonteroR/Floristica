@@ -304,3 +304,78 @@ CREATE TABLE tbarreglofloralnombrehistorico (
     tbarreglofloralnombrehistoricofecha DATETIME,
     PRIMARY KEY (tbarreglofloralnombrehistoricoid)
 );
+
+-- ---------- Históricos de empleados ----------
+CREATE TABLE tbempleadonombrehistorico (
+    tbempleadonombrehistoricoid INT,
+    tbempleadoid INT,
+    tbempleadonombrehistoricovalor VARCHAR(100),
+    tbempleadoidresponsable INT,
+    tbempleadonombrehistoricofecha DATETIME,
+    PRIMARY KEY (tbempleadonombrehistoricoid)
+);
+
+CREATE TABLE tbempleadotelefonohistorico (
+    tbempleadotelefonohistoricoid INT,
+    tbempleadoid INT,
+    tbempleadotelefonohistoricovalor VARCHAR(20),
+    tbempleadoidresponsable INT,
+    tbempleadotelefonohistoricofecha DATETIME,
+    PRIMARY KEY (tbempleadotelefonohistoricoid)
+);
+
+CREATE TABLE tbempleadorolhistorico (
+    tbempleadorolhistoricoid INT,
+    tbempleadoid INT,
+    tbempleadorolhistoricovalor VARCHAR(20),
+    tbempleadoidresponsable INT,
+    tbempleadorolhistoricofecha DATETIME,
+    PRIMARY KEY (tbempleadorolhistoricoid)
+);
+
+CREATE TABLE tbempleadousuariohistorico (
+    tbempleadousuariohistoricoid INT,
+    tbempleadoid INT,
+    tbempleadousuariohistoricovalor VARCHAR(30),
+    tbempleadoidresponsable INT,
+    tbempleadousuariohistoricofecha DATETIME,
+    PRIMARY KEY (tbempleadousuariohistoricoid)
+);
+
+-- De la contraseña NUNCA se guarda el valor: solo "Asignada" o "Cambiada"
+CREATE TABLE tbempleadoclavehistorico (
+    tbempleadoclavehistoricoid INT,
+    tbempleadoid INT,
+    tbempleadoclavehistoricovalor VARCHAR(20),
+    tbempleadoidresponsable INT,
+    tbempleadoclavehistoricofecha DATETIME,
+    PRIMARY KEY (tbempleadoclavehistoricoid)
+);
+
+CREATE TABLE tbempleadoestadohistorico (
+    tbempleadoestadohistoricoid INT,
+    tbempleadoid INT,
+    tbempleadoestadohistoricovalor TINYINT(1),
+    tbempleadoidresponsable INT,
+    tbempleadoestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbempleadoestadohistoricoid)
+);
+
+-- ---------- Históricos de pedidos y encargos ----------
+CREATE TABLE tbpedidoestadohistorico (
+    tbpedidoestadohistoricoid INT,
+    tbpedidoid INT,
+    tbpedidoestadohistoricovalor VARCHAR(20),
+    tbempleadoid INT,
+    tbpedidoestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbpedidoestadohistoricoid)
+);
+
+CREATE TABLE tbencargofechaentregahistorico (
+    tbencargofechaentregahistoricoid INT,
+    tbencargoid INT,
+    tbencargofechaentregahistoricovalor DATE,
+    tbempleadoid INT,
+    tbencargofechaentregahistoricofecha DATETIME,
+    PRIMARY KEY (tbencargofechaentregahistoricoid)
+);

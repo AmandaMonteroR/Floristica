@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/encargohistoricorepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
+require_once __DIR__ . '/historicocontrolador.php';
 
 class encargocontrolador
 {
@@ -14,6 +15,7 @@ class encargocontrolador
     private $inventario;
     private $historico;
     private $movimientos;
+    private $fechas;
 
     public function __construct()
     {
@@ -23,6 +25,7 @@ class encargocontrolador
         $this->inventario = new inventariorepositorio();
         $this->historico = new encargohistoricorepositorio();
         $this->movimientos = new inventariomovimientorepositorio();
+        $this->fechas = new historicocontrolador();
     }
 
     public function arreglos()
@@ -96,6 +99,7 @@ class encargocontrolador
         $id = $this->entransaccion(function () use ($datos, $usuario) {
             $id = $this->repositorio->insertar(new Encargo($datos));
             $this->historico->registrar('estado', $id, 'Pendiente', $usuario['id']);
+            $this->fechas->registrar('encargo', $id, [], ['fechaentrega' => $datos['tbencargofechaentrega']], $usuario['id']);
 
             // Al validar, "sin asignar" queda como null
             if ($datos['tbempleadoid'] !== null && $datos['tbempleadoid'] !== '') {
@@ -108,7 +112,7 @@ class encargocontrolador
         return $this->respuesta(true, 'Encargo registrado correctamente.', ['tbencargoid' => $id]);
     }
 
-    public function actualizar($datos)
+    public function actualizar($datos, $usuario)
     {
         $id = (int) ($datos['tbencargoid'] ?? 0);
         $encargo = $this->repositorio->obtenerporid($id);
@@ -128,11 +132,18 @@ class encargocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
+        $fechaanterior = $encargo->getTbencargofechaentrega();
+
         $encargo->setTbarreglofloralid($datos['tbarreglofloralid']);
         $encargo->setTbencargocantidad($datos['tbencargocantidad']);
         $encargo->setTbencargofechaentrega($datos['tbencargofechaentrega']);
         $encargo->setTbencargonota($datos['tbencargonota']);
-        $this->repositorio->actualizar($encargo);
+
+        $this->entransaccion(function () use ($encargo, $id, $fechaanterior, $datos, $usuario) {
+            $this->repositorio->actualizar($encargo);
+            $this->fechas->registrar('encargo', $id, ['fechaentrega' => $fechaanterior],
+                ['fechaentrega' => $datos['tbencargofechaentrega']], $usuario['id']);
+        });
 
         return $this->respuesta(true, 'Encargo actualizado correctamente.');
     }
@@ -308,6 +319,27 @@ class encargocontrolador
                 'hechopor' => $fila['hechopor'] ?? '',
             ];
         }
+
+        // Cambios de fecha de entrega. La primera es la fecha con que se registró, así que no se repite.
+        $formatear = function ($campo, $valor) {
+            return date('d/m/Y', strtotime($valor));
+        };
+
+        foreach ($this->fechas->listar('encargo', $idencargo, ['fechaentrega' => 'Fecha de entrega'], $formatear) as $cambio) {
+            if ($cambio['anterior'] === null) {
+                continue;
+            }
+
+            $lista[] = [
+                'fecha'    => $cambio['fecha'],
+                'texto'    => 'La fecha de entrega cambió del ' . $cambio['anterior'] . ' al ' . $cambio['nuevo'],
+                'hechopor' => $cambio['hechopor'],
+            ];
+        }
+
+        usort($lista, function ($a, $b) {
+            return strcmp($a['fecha'], $b['fecha']);
+        });
 
         return $lista;
     }
