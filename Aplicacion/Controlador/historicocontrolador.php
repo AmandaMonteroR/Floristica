@@ -47,9 +47,10 @@ class historicocontrolador
                 $anterior = $valor;
             }
         }
-
+        
+        // Por fecha y hora; si coinciden en el mismo segundo, primero el registro inicial
         usort($cambios, function ($a, $b) {
-            return strcmp($a['fecha'], $b['fecha']);
+            return [$a['fecha'], $a['anterior'] !== null] <=> [$b['fecha'], $b['anterior'] !== null];
         });
 
         return $cambios;

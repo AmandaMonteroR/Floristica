@@ -215,9 +215,9 @@ class proveedorcontrolador
             }
         }
 
-        // Del más antiguo al más reciente, igual que los demás historiales
+        // Del más antiguo al más reciente; si coinciden en el mismo segundo, primero el registro inicial
         usort($movimientos, function ($a, $b) {
-            return strcmp($a['fecha'], $b['fecha']);
+            return [$a['fecha'], $a['anterior'] !== null] <=> [$b['fecha'], $b['anterior'] !== null];
         });
 
         return $this->respuesta(true, '', $movimientos);

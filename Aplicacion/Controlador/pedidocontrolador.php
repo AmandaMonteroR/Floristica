@@ -208,7 +208,8 @@ class pedidocontrolador
         return $this->respuesta(true, 'Compra confirmada correctamente.');
     }
 
-    public function recibir($id, $usuario)    {
+    public function recibir($id, $usuario)
+    {
         $id = (int) $id;
         $pedido = $this->repositorio->obtenerporid($id);
 
@@ -224,7 +225,9 @@ class pedidocontrolador
             foreach ($this->repositorio->listardetalles($id) as $detalle) {
                 $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
                 $unidades = (int) $detalle->getTbpedidodetallecantidad() * (int) $producto->getTbinventariounidadespaquete();
-                $this->movimientos->registrar($detalle->getTbinventarioid(), 'Entrada', $unidades, $usuario['id'], $id);            }
+                $this->inventario->sumarstock($detalle->getTbinventarioid(), $unidades);
+                $this->movimientos->registrar($detalle->getTbinventarioid(), 'Entrada', $unidades, $usuario['id'], $id);
+            }
 
             $this->repositorio->cambiarestado($id, 'Recibido');
             $this->historico->registrar('pedido', $id, ['estado' => 'Confirmado'], ['estado' => 'Recibido'], $usuario['id']);

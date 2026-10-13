@@ -231,6 +231,17 @@ class arreglofloralcontrolador
         ];
     }
 
+    private function guardardetalles($idarreglo, $detalles)
+    {
+        foreach ($detalles as $detalle) {
+            $this->repositorio->insertardetalle(new Arreglofloraldetalle([
+                'tbarreglofloralid'              => $idarreglo,
+                'tbinventarioid'                 => (int) $detalle['tbinventarioid'],
+                'tbarreglofloraldetallecantidad' => (int) $detalle['tbarreglofloraldetallecantidad'],
+            ]));
+        }
+    }
+
     private function costo($idarreglo)
     {
         $costo = 0;
