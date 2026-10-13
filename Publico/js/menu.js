@@ -103,6 +103,31 @@ document.addEventListener('keydown', (evento) => {
     }
 });
 
+// En el celular las listas se ven como tarjetas: cada celda guarda el nombre
+// de su columna (data-etiqueta) para mostrarlo a la izquierda del dato.
+document.querySelectorAll('.contenedor > .tabla-contenedor .tabla').forEach((tabla) => {
+    const titulos = Array.from(tabla.querySelectorAll('thead th')).map((th) => th.textContent.trim());
+    const cuerpo = tabla.tBodies[0];
+
+    if (!cuerpo) {
+        return;
+    }
+
+    const etiquetar = () => {
+        Array.from(cuerpo.rows).forEach((fila) => {
+            Array.from(fila.cells).forEach((celda) => {
+                if (titulos[celda.cellIndex] && !celda.dataset.etiqueta) {
+                    celda.dataset.etiqueta = titulos[celda.cellIndex];
+                }
+            });
+        });
+    };
+
+    etiquetar();
+    new MutationObserver(etiquetar).observe(cuerpo, { childList: true });
+});
+
+// Pone en los filtros los valores que vienen en la dirección, por ejemplo
 // Al cambiar un filtro, la dirección se actualiza para que al recargar se mantenga.
 function filtrosdesdeurl(filtros) {
     const parametros = new URLSearchParams(window.location.search);
@@ -127,6 +152,7 @@ function filtrosdesdeurl(filtros) {
         }
     });
 }
+
 
 // "Agregar nuevo ..." del menú: abre el formulario de la página automáticamente
 function abrirformulariosipide(abrirnuevo) {

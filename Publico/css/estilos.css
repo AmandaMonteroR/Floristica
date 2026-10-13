@@ -1483,3 +1483,219 @@ h1 {
 #dialogohistorial .tabla td:first-child {
     white-space: nowrap;
 }
+
+
+/* ---------- Celular ----------
+   En pantallas angostas todo se hace más compacto y las listas
+   se muestran como tarjetas en lugar de tablas anchas. */
+@media (max-width: 600px) {
+    .contenedor {
+        padding: 1rem 0.75rem;
+    }
+
+    .barra-superior {
+        height: 54px;
+        padding: 0 0.75rem;
+    }
+
+    .boton-salir {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    /* Encabezado de cada página */
+    .encabezado {
+        padding: 1rem 1.1rem;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+    }
+
+    h1 {
+        font-size: 1.45rem;
+    }
+
+    .subtitulo {
+        font-size: 0.875rem;
+    }
+
+    .encabezado .boton {
+        padding: 0.45rem 0.9rem;
+        font-size: 0.9rem;
+    }
+
+    /* Inicio: tarjetas de dos en dos */
+    .resumen-inicio {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+        margin-bottom: 1rem;
+    }
+
+    .tarjeta-resumen {
+        padding: 0.75rem 0.85rem;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        line-height: 1.25;
+    }
+
+    .tarjeta-resumen .numero {
+        font-size: 1.5rem;
+    }
+
+    .accesos-inicio {
+        gap: 0.45rem;
+        margin-bottom: 1rem;
+    }
+
+    .accesos-inicio .boton {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.875rem;
+    }
+
+    .panel-inicio {
+        padding: 1rem;
+    }
+
+    /* Filtros: dos por fila y la búsqueda a todo el ancho */
+    .filtros {
+        gap: 0.6rem;
+    }
+
+    .filtros .campo {
+        flex: 1 1 140px;
+    }
+
+    .filtros .campo-busqueda {
+        flex-basis: 100%;
+        min-width: 0;
+    }
+
+    .filtros select {
+        width: 100%;
+    }
+
+    .pestanas {
+        margin-bottom: 0.75rem;
+    }
+
+    /* Listas: cada fila de la tabla se convierte en una tarjeta */
+    .contenedor > .tabla-contenedor {
+        overflow: visible;
+        background: none;
+        border: none;
+    }
+
+    .contenedor > .tabla-contenedor .tabla thead {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+    }
+
+    .contenedor > .tabla-contenedor .tabla,
+    .contenedor > .tabla-contenedor .tabla tbody,
+    .contenedor > .tabla-contenedor .tabla tr,
+    .contenedor > .tabla-contenedor .tabla td {
+        display: block;
+        width: 100%;
+    }
+
+    .contenedor > .tabla-contenedor .tabla tr {
+        margin-bottom: 0.6rem;
+        padding: 0.4rem 0.85rem;
+        background: var(--superficie);
+        border: 1px solid var(--borde);
+        border-radius: var(--radio);
+    }
+
+    .contenedor > .tabla-contenedor .tabla td {
+        display: flow-root;
+        padding: 0.3rem 0;
+        text-align: right;
+        white-space: normal;
+        border-bottom: none;
+    }
+
+    /* Nombre de la columna a la izquierda de cada dato */
+    .contenedor > .tabla-contenedor .tabla td::before {
+        content: attr(data-etiqueta);
+        float: left;
+        margin-right: 1rem;
+        padding-top: 0.1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-align: left;
+        color: var(--texto-suave);
+    }
+
+    .contenedor > .tabla-contenedor .tabla td.columna-acciones {
+        margin-top: 0.3rem;
+        padding-top: 0.4rem;
+        border-top: 1px solid var(--borde);
+    }
+
+    .contenedor > .tabla-contenedor .tabla td.columna-acciones::before,
+    .contenedor > .tabla-contenedor .tabla td.vacio::before {
+        content: none;
+    }
+
+    .contenedor > .tabla-contenedor .tabla td.vacio {
+        text-align: center;
+    }
+
+    .contenedor > .tabla-contenedor .celda-arreglo {
+        justify-content: flex-end;
+        text-align: right;
+    }
+
+    /* Catálogo: dos arreglos por fila */
+    .galeria {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+    }
+
+    .tarjeta-arreglo img {
+        aspect-ratio: 1 / 1;
+    }
+
+    .tarjeta-cuerpo {
+        padding: 0.6rem 0.65rem 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    /* El nombre arriba y el estado debajo, para que el nombre no se parta */
+    .tarjeta-titulo {
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+
+    .tarjeta-titulo h2 {
+        font-size: 0.95rem;
+        overflow-wrap: normal;
+    }
+
+    .tarjeta-precio {
+        font-size: 1.05rem;
+    }
+
+    .tarjeta-costo {
+        font-size: 0.78rem;
+    }
+
+    .tarjeta-acciones {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        gap: 0.1rem;
+    }
+
+    .tarjeta-acciones .enlace {
+        padding: 0.25rem 0.3rem;
+    }
+
+    /* Ventanas de formularios */
+    .dialogo {
+        width: calc(100% - 1rem);
+        padding: 1rem;
+    }
+}
