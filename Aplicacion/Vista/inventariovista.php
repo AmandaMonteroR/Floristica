@@ -42,6 +42,15 @@
                 <option value="0">Inactivos</option>
             </select>
         </label>
+        <label class="campo">
+            <span>Nivel de stock</span>
+            <select id="filtrostock">
+                <option value="">Todos</option>
+                <option value="bajo">Bajo el mínimo</option>
+                <option value="medio">Cerca del mínimo</option>
+                <option value="bien">Suficiente</option>
+            </select>
+        </label>
     </section>
 
     <div id="aviso" class="aviso" role="status" hidden></div>

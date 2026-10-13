@@ -117,7 +117,10 @@ class pedidorepositorio
             $parametros[] = (int) $idproveedor;
         }
 
-        if ($estado !== '') {
+        if ($estado === 'sinrecibir') {
+            // Sin recibir: pendientes y confirmados
+            $sql .= " AND tbpedidoestado IN ('Pendiente', 'Confirmado')";
+        } elseif ($estado !== '') {
             $sql .= ' AND tbpedidoestado = ?';
             $parametros[] = $estado;
         }

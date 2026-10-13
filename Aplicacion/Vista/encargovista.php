@@ -29,6 +29,8 @@
             <span>Estado</span>
             <select id="filtroestado">
                 <option value="">Todos</option>
+                <option value="abiertos">Abiertos (pendientes y en proceso)</option>
+                <option value="atrasados">Atrasados</option>
                 <option value="Pendiente">Pendientes</option>
                 <option value="En proceso">En proceso</option>
                 <option value="Terminado">Terminados</option>

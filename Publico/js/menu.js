@@ -103,6 +103,31 @@ document.addEventListener('keydown', (evento) => {
     }
 });
 
+// Al cambiar un filtro, la dirección se actualiza para que al recargar se mantenga.
+function filtrosdesdeurl(filtros) {
+    const parametros = new URLSearchParams(window.location.search);
+
+    Object.entries(filtros).forEach(([nombre, select]) => {
+        const valor = parametros.get(nombre);
+        if (valor !== null && Array.from(select.options).some((opcion) => opcion.value === valor)) {
+            select.value = valor;
+        }
+
+        if (!select.dataset.enurl) {
+            select.dataset.enurl = '1';
+            select.addEventListener('change', () => {
+                const actuales = new URLSearchParams(window.location.search);
+                if (select.value === '') {
+                    actuales.delete(nombre);
+                } else {
+                    actuales.set(nombre, select.value);
+                }
+                window.history.replaceState(null, '', `${window.location.pathname}?${actuales}`);
+            });
+        }
+    });
+}
+
 // "Agregar nuevo ..." del menú: abre el formulario de la página automáticamente
 function abrirformulariosipide(abrirnuevo) {
     const parametros = new URLSearchParams(window.location.search);

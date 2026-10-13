@@ -1448,6 +1448,10 @@ h1 {
     font-weight: 600;
 }
 
+.enlace-panel + .enlace-panel {
+    margin-left: 1.25rem;
+}
+
 /* Mensaje en vivo de la contraseña */
 .correcto {
     font-size: 0.82rem;

@@ -32,6 +32,17 @@ function textoentrega($fecha, $hoy)
 }
 
 $primernombre = explode(' ', trim($usuarioactual['nombre']))[0];
+
+// Cada tarjeta abre la lista con el filtro que corresponde a lo que cuenta
+$idusuario = (int) $usuarioactual['id'];
+$enlaces = [
+    'mios'       => 'index.php?modulo=encargo&estado=abiertos&empleado=' . $idusuario,
+    'sinasignar' => 'index.php?modulo=encargo&estado=abiertos&empleado=sinasignar',
+    'atrasados'  => 'index.php?modulo=encargo&estado=atrasados' . ($esduena ? '' : '&empleado=' . $idusuario),
+    'stockbajo'  => 'index.php?modulo=inventario&estado=1&stock=bajo',
+    'sinrecibir' => 'index.php?modulo=pedido&estado=sinrecibir',
+    'abiertos'   => 'index.php?modulo=encargo&estado=abiertos' . ($esduena ? '' : '&empleado=' . $idusuario),
+];
 $listaencargos = $esduena ? $resumen['abiertos'] : $resumen['mios'];
 
 // Accesos rápidos: solo se muestran los que el rol puede abrir
@@ -65,24 +76,24 @@ $accesos = [
     </header>
 
     <section class="resumen-inicio" aria-label="Resumen">
-        <a class="tarjeta-resumen" href="index.php?modulo=encargo">
+        <a class="tarjeta-resumen" href="<?= e($enlaces['mios']) ?>">
             <span class="numero"><?= count($resumen['mios']) ?></span>
             <span>Mis encargos abiertos</span>
         </a>
-        <a class="tarjeta-resumen" href="index.php?modulo=encargo">
+        <a class="tarjeta-resumen" href="<?= e($enlaces['sinasignar']) ?>">
             <span class="numero"><?= count($resumen['sinasignar']) ?></span>
             <span>Encargos sin asignar</span>
         </a>
-        <a class="tarjeta-resumen<?= $resumen['atrasados'] ? ' tarjeta-alerta' : '' ?>" href="index.php?modulo=encargo">
+        <a class="tarjeta-resumen<?= $resumen['atrasados'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['atrasados']) ?>">
             <span class="numero"><?= count($resumen['atrasados']) ?></span>
             <span><?= $esduena ? 'Encargos atrasados' : 'Mis encargos atrasados' ?></span>
         </a>
         <?php if ($esduena): ?>
-            <a class="tarjeta-resumen<?= $resumen['stockbajo'] ? ' tarjeta-alerta' : '' ?>" href="index.php?modulo=inventario">
+            <a class="tarjeta-resumen<?= $resumen['stockbajo'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['stockbajo']) ?>">
                 <span class="numero"><?= count($resumen['stockbajo']) ?></span>
                 <span>Productos con stock bajo</span>
             </a>
-            <a class="tarjeta-resumen" href="index.php?modulo=pedido">
+            <a class="tarjeta-resumen" href="<?= e($enlaces['sinrecibir']) ?>">
                 <span class="numero"><?= count($resumen['pedidospendientes']) + count($resumen['pedidosporrecibir']) ?></span>
                 <span>Pedidos sin recibir</span>
             </a>
@@ -120,6 +131,9 @@ $accesos = [
                         </li>
                     <?php endforeach; ?>
                 </ul>
+                <?php if (count($listaencargos) > 6): ?>
+                    <a class="enlace-panel" href="<?= e($enlaces['abiertos']) ?>">Ver los <?= count($listaencargos) ?> encargos</a>
+                <?php endif; ?>
             <?php endif; ?>
         </section>
 
@@ -138,7 +152,7 @@ $accesos = [
                             </li>
                         <?php endforeach; ?>
                     </ul>
-                    <a class="enlace-panel" href="index.php?modulo=encargo">Ir a encargos para asignárselo</a>
+                    <a class="enlace-panel" href="<?= e($enlaces['sinasignar']) ?>">Ir a encargos para asignárselo</a>
                 <?php endif; ?>
             </section>
         <?php else: ?>
@@ -158,6 +172,7 @@ $accesos = [
                             </li>
                         <?php endforeach; ?>
                     </ul>
+                    <a class="enlace-panel" href="<?= e($enlaces['stockbajo']) ?>">Ver los productos con stock bajo</a>
                     <a class="enlace-panel" href="index.php?modulo=pedido&amp;nuevo=1">Hacer un pedido</a>
                 <?php endif; ?>
             </section>

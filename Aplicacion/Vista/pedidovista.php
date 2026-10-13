@@ -30,6 +30,7 @@
             <span>Estado</span>
             <select id="filtroestado">
                 <option value="">Todos</option>
+                <option value="sinrecibir">Sin recibir (pendientes y confirmados)</option>
                 <option value="Pendiente">Pendientes</option>
                 <option value="Confirmado">Confirmados</option>
                 <option value="Recibido">Recibidos</option>

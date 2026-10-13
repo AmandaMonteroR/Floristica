@@ -83,7 +83,16 @@ class encargorepositorio
         $sql = 'SELECT * FROM tbencargo WHERE 1 = 1';
         $parametros = [];
 
-        if ($estado !== '') {
+        if ($estado === 'abiertos' || $estado === 'atrasados') {
+            // Abiertos: los que todavía hay que preparar
+            $sql .= " AND tbencargoestado IN ('Pendiente', 'En proceso')";
+
+            // Atrasados: abiertos con la fecha de entrega ya pasada
+            if ($estado === 'atrasados') {
+                $sql .= ' AND tbencargofechaentrega < ?';
+                $parametros[] = date('Y-m-d');
+            }
+        } elseif ($estado !== '') {
             $sql .= ' AND tbencargoestado = ?';
             $parametros[] = $estado;
         }

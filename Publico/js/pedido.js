@@ -790,5 +790,10 @@ document.getElementById('botondescartarborrador').addEventListener('click', desc
 campofecha.max = hoy();
 
 const proveedoreslistos = cargarproveedores();
-cargarpedidos();
+
+// El filtro de proveedor se llena con los proveedores, así que se espera a que estén cargados
+proveedoreslistos.finally(() => {
+    filtrosdesdeurl({ proveedor: filtroproveedor, estado: filtroestado });
+    cargarpedidos();
+});
 abrirformulariosipide(abrirnuevo);

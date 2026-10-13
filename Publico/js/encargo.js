@@ -682,5 +682,10 @@ document.getElementById('botondescartarborrador').addEventListener('click', () =
 formulario.elements.tbencargofechaentrega.min = hoy();
 
 const listaslistas = cargarlistas();
-cargarencargos();
+
+// El filtro "Asignado a" se llena con los empleados, así que se espera a que estén cargados
+listaslistas.finally(() => {
+    filtrosdesdeurl({ estado: filtroestado, empleado: filtroempleado });
+    cargarencargos();
+});
 abrirformulariosipide(abrirnuevo);

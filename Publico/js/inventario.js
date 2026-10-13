@@ -48,6 +48,7 @@ const cuerpotabla = document.getElementById('cuerpotabla');
 const busqueda = document.getElementById('busqueda');
 const filtrocategoria = document.getElementById('filtrocategoria');
 const filtroestado = document.getElementById('filtroestado');
+const filtrostock = document.getElementById('filtrostock');
 const aviso = document.getElementById('aviso');
 const dialogoformulario = document.getElementById('dialogoformulario');
 const formulario = document.getElementById('formulario');
@@ -327,8 +328,14 @@ async function cargarinventario() {
         return;
     }
 
-    if (respuesta.datos.length === 0) {
-        const sinfiltros = busqueda.value.trim() === '' && filtrocategoria.value === '' && filtroestado.value === '';
+    // El nivel de stock se filtra aquí
+    const productos = filtrostock.value === ''
+        ? respuesta.datos
+        : respuesta.datos.filter((producto) => nivelstock(producto).clase === `stock-${filtrostock.value}`);
+
+    if (productos.length === 0) {
+        const sinfiltros = busqueda.value.trim() === '' && filtrocategoria.value === ''
+            && filtroestado.value === '' && filtrostock.value === '';
         const mensaje = sinfiltros
             ? 'Aún no hay productos registrados. Use "Nuevo producto" para agregar el primero.'
             : 'No hay productos que coincidan con la búsqueda.';
@@ -336,7 +343,7 @@ async function cargarinventario() {
         return;
     }
 
-    cuerpotabla.innerHTML = respuesta.datos.map((producto) => {
+    cuerpotabla.innerHTML = productos.map((producto) => {
         const activo = producto.tbinventarioestado === 1;
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${producto.tbinventarioid}">Inactivar</button>`
@@ -622,6 +629,7 @@ busqueda.addEventListener('input', () => {
 
 filtrocategoria.addEventListener('change', cargarinventario);
 filtroestado.addEventListener('change', cargarinventario);
+filtrostock.addEventListener('change', cargarinventario);
 document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
@@ -638,6 +646,7 @@ document.getElementById('botondescartarborrador').addEventListener('click', desc
 formulario.elements.tbinventariocategoriaextrafechavencimiento.min = new Date().toLocaleDateString('en-CA');
 
 const proveedoreslistos = cargarproveedores();
+filtrosdesdeurl({ categoria: filtrocategoria, estado: filtroestado, stock: filtrostock });
 cargarinventario();
 
 
