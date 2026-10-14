@@ -8,6 +8,7 @@ class Seguridad
     // La dueña puede hacer todo.
     private static $permisosempleado = [
         'inicio'     => '*',
+        'cuenta'     => ['cambiarclave'],
         'cliente'    => '*',
         'cotizacion' => '*',
         'catalogo'   => ['', 'listar', 'obtener'],

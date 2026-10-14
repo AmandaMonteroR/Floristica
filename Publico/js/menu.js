@@ -166,3 +166,85 @@ function abrirformulariosipide(abrirnuevo) {
     window.history.replaceState(null, '', `${window.location.pathname}?${parametros}`);
     abrirnuevo();
 }
+
+/* ---------- Cambiar la contraseña propia ---------- */
+const dialogoclave = document.getElementById('dialogoclave');
+const formularioclave = document.getElementById('formularioclave');
+const avisoclave = document.getElementById('avisoclave');
+const botonguardarclave = document.getElementById('botonguardarclave');
+
+function limpiarerroresclave() {
+    formularioclave.querySelectorAll('[data-error]').forEach((error) => {
+        error.textContent = '';
+    });
+    formularioclave.querySelectorAll('[aria-invalid]').forEach((campo) => campo.removeAttribute('aria-invalid'));
+    avisoclave.hidden = true;
+}
+
+function mostraravisoclave(mensaje, exito) {
+    avisoclave.textContent = mensaje;
+    avisoclave.className = `aviso ${exito ? 'aviso-exito' : 'aviso-error'}`;
+    avisoclave.hidden = false;
+}
+
+document.getElementById('botoncambiarclave').addEventListener('click', () => {
+    cerrarmenu();
+    formularioclave.reset();
+    limpiarerroresclave();
+    botonguardarclave.disabled = false;
+    dialogoclave.showModal();
+    formularioclave.elements.claveactual.focus();
+});
+
+document.getElementById('botoncancelarclave').addEventListener('click', () => dialogoclave.close());
+
+// Al escribir en un campo se borra su error
+formularioclave.addEventListener('input', (evento) => {
+    const error = formularioclave.querySelector(`[data-error="${evento.target.name}"]`);
+    if (error) {
+        error.textContent = '';
+    }
+    evento.target.removeAttribute('aria-invalid');
+});
+
+formularioclave.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    limpiarerroresclave();
+    botonguardarclave.disabled = true;
+
+    let respuesta;
+    try {
+        const peticion = await fetch('index.php?modulo=cuenta&accion=cambiarclave', {
+            method: 'POST',
+            body: new FormData(formularioclave),
+        });
+        respuesta = await peticion.json();
+    } catch (error) {
+        respuesta = { exito: false, mensaje: 'No se pudo conectar con el servidor. Intente de nuevo.', datos: {} };
+    }
+
+    botonguardarclave.disabled = false;
+
+    if (respuesta.exito) {
+        formularioclave.reset();
+        mostraravisoclave(respuesta.mensaje, true);
+        // Se cierra sola después de un momento para que se alcance a leer el mensaje
+        setTimeout(() => dialogoclave.close(), 1800);
+        return;
+    }
+
+    const errores = respuesta.datos && respuesta.datos.errores ? respuesta.datos.errores : {};
+    Object.entries(errores).forEach(([nombre, mensaje]) => {
+        const error = formularioclave.querySelector(`[data-error="${nombre}"]`);
+        if (error) {
+            error.textContent = mensaje;
+            formularioclave.elements[nombre].setAttribute('aria-invalid', 'true');
+        }
+    });
+
+    mostraravisoclave(respuesta.mensaje, false);
+    const primero = formularioclave.querySelector('[aria-invalid="true"]');
+    if (primero) {
+        primero.focus();
+    }
+});

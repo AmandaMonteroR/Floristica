@@ -105,6 +105,57 @@ class empleadocontrolador
         return $this->respuesta(true, 'Empleado actualizado correctamente.');
     }
 
+    // Cada usuario cambia su propia contraseña. Debe escribir la actual para
+    // confirmar que es esa persona (por si dejó la sesión abierta en otra compu).
+    public function cambiarclave($datos, $usuarioactual)
+    {
+        $id = (int) $usuarioactual['id'];
+        $empleado = $this->repositorio->obtenerporid($id);
+
+        if (!$empleado) {
+            return $this->respuesta(false, 'No se encontró su cuenta.');
+        }
+
+        $actual = (string) ($datos['claveactual'] ?? '');
+        $nueva = (string) ($datos['clavenueva'] ?? '');
+        $confirmar = (string) ($datos['claveconfirmar'] ?? '');
+        $errores = [];
+
+        if ($actual === '') {
+            $errores['claveactual'] = 'Escriba su contraseña actual.';
+        } elseif (!password_verify($actual, $empleado->getTbempleadoclave())) {
+            $errores['claveactual'] = 'La contraseña actual no es correcta.';
+        }
+
+        if ($nueva === '') {
+            $errores['clavenueva'] = 'Escriba la contraseña nueva.';
+        } elseif (mb_strlen($nueva) < 8 || strlen($nueva) > 72) {
+            $errores['clavenueva'] = 'La contraseña debe tener entre 8 y 72 caracteres.';
+        } elseif (!preg_match('/\p{L}/u', $nueva) || !preg_match('/\d/', $nueva)) {
+            $errores['clavenueva'] = 'La contraseña debe tener al menos una letra y un número.';
+        } elseif ($nueva === $actual) {
+            $errores['clavenueva'] = 'La contraseña nueva debe ser diferente de la actual.';
+        }
+
+        if ($confirmar !== $nueva) {
+            $errores['claveconfirmar'] = 'Las contraseñas no coinciden.';
+        }
+
+        if ($errores) {
+            return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
+        }
+
+        $empleado->setTbempleadoclave(password_hash($nueva, PASSWORD_DEFAULT));
+
+        // En el historial solo queda que se cambió (y quién lo hizo), nunca el valor
+        $this->entransaccion(function () use ($empleado, $id) {
+            $this->repositorio->actualizar($empleado);
+            $this->historico->registrar('empleado', $id, [], ['clave' => 'Cambiada'], $id);
+        });
+
+        return $this->respuesta(true, 'Contraseña cambiada. La próxima vez que ingrese, use la nueva.');
+    }
+
     // Primera vez que se usa el sistema: se crea (o completa) la cuenta de la dueña
     public function crearduena($datos)
     {

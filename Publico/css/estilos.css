@@ -667,6 +667,7 @@ h1 {
 /* Proveedores: teléfono nacional o internacional */
 .grupo-telefono {
     display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
@@ -675,9 +676,10 @@ h1 {
     min-width: 0;
 }
 
+/* El país va arriba a todo el ancho, para que se lea el nombre y el código */
 .grupo-telefono select {
     flex: none;
-    width: 45%;
+    width: 100%;
     min-width: 0;
 }
 
@@ -1484,6 +1486,67 @@ h1 {
     white-space: nowrap;
 }
 
+/* Botón "Inicio" en la barra de arriba */
+.boton-inicio {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+}
+
+.boton-inicio:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.boton-inicio:focus-visible,
+.menu-cuenta-boton:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
+
+/* Datos del usuario en el menú lateral, con el botón para cambiar la contraseña */
+.menu-cuenta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.85rem 1rem;
+    margin: 0.75rem 0 1rem;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radio);
+}
+
+.menu-cuenta small {
+    color: #f6dce7;
+}
+
+.menu-cuenta-boton {
+    align-self: flex-start;
+    padding: 0.35rem 0.8rem;
+    margin-top: 0.6rem;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.menu-cuenta-boton:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.campos-clave {
+    display: grid;
+    gap: 0.5rem;
+}
 
 /* ---------- Celular ----------
    En pantallas angostas todo se hace más compacto y las listas
@@ -1500,6 +1563,15 @@ h1 {
 
     .boton-salir {
         padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+    .barra-superior {
+        gap: 0.5rem;
+    }
+
+    .boton-inicio {
+        padding: 0.35rem 0.7rem;
         font-size: 0.85rem;
     }
 
@@ -1699,3 +1771,4 @@ h1 {
         padding: 1rem;
     }
 }
+

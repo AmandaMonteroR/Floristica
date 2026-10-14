@@ -1,4 +1,5 @@
 <?php
+// $modulo y $usuarioactual vienen de index.php
 $moduloactual = $modulo;
 
 // Estructura del menú: una opción tiene 'modulo' (enlace) o 'hijos' (submenú)
@@ -46,7 +47,7 @@ function filtrarmenu($opciones)
             if ($opcion['hijos']) {
                 $permitidas[] = $opcion;
             }
-        } elseif (isset($vistas[$opcion['modulo']]) && Seguridad::permitido($opcion['modulo'])) {            
+        } elseif (isset($vistas[$opcion['modulo']]) && Seguridad::permitido($opcion['modulo'])) {
             $permitidas[] = $opcion;
         }
     }
@@ -106,6 +107,14 @@ function dibujarmenu($opciones, $moduloactual, $nivel = 1)
         <img class="logo" src="imagenes/logo.png" alt="">
         <span>Floristica</span>
     </a>
+    <?php if ($moduloactual !== 'inicio'): ?>
+        <a class="boton-inicio" href="index.php" title="Volver al inicio">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+                <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+            <span>Inicio</span>
+        </a>
+    <?php endif; ?>
     <div class="usuario-sesion">
         <span class="usuario-datos">
             <strong><?= e($usuarioactual['nombre']) ?></strong>
@@ -130,5 +139,43 @@ function dibujarmenu($opciones, $moduloactual, $nivel = 1)
         </span>
         <button type="button" class="boton-cerrar-menu" id="botoncerrarmenu" aria-label="Cerrar menú">&times;</button>
     </div>
+    <div class="menu-cuenta">
+        <strong><?= e($usuarioactual['nombre']) ?></strong>
+        <small><?= e($usuarioactual['rol']) ?></small>
+        <button type="button" class="menu-cuenta-boton" id="botoncambiarclave">Cambiar contraseña</button>
+    </div>
     <?php dibujarmenu($opcionesmenu, $moduloactual); ?>
 </nav>
+
+<!-- Cambiar la contraseña propia (lo puede hacer cualquier usuario) -->
+<dialog id="dialogoclave" class="dialogo dialogo-angosto" aria-labelledby="tituloclave">
+    <form id="formularioclave" novalidate>
+        <h2 id="tituloclave">Cambiar contraseña</h2>
+        <p class="nota">La nueva debe tener entre 8 y 72 caracteres, con al menos una letra y un número.</p>
+
+        <p id="avisoclave" class="aviso" role="alert" hidden></p>
+
+        <div class="campos-clave">
+            <label class="campo">
+                <span>Contraseña actual *</span>
+                <input type="password" name="claveactual" maxlength="72" autocomplete="current-password">
+                <small class="error" data-error="claveactual"></small>
+            </label>
+            <label class="campo">
+                <span>Contraseña nueva *</span>
+                <input type="password" name="clavenueva" maxlength="72" autocomplete="new-password">
+                <small class="error" data-error="clavenueva"></small>
+            </label>
+            <label class="campo">
+                <span>Confirmar contraseña nueva *</span>
+                <input type="password" name="claveconfirmar" maxlength="72" autocomplete="new-password">
+                <small class="error" data-error="claveconfirmar"></small>
+            </label>
+        </div>
+
+        <div class="acciones-dialogo">
+            <button type="button" class="boton" id="botoncancelarclave">Cancelar</button>
+            <button type="submit" class="boton boton-principal" id="botonguardarclave">Guardar contraseña</button>
+        </div>
+    </form>
+</dialog>

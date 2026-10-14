@@ -84,7 +84,7 @@
                     <select name="tbproveedorcodigopais" aria-label="Código del país" hidden>
                         <option value="">País…</option>
                         <?php foreach (require __DIR__ . '/../../Configuracion/paises.php' as $codigo => $pais): ?>
-                            <option value="<?= $codigo ?>">+<?= $codigo ?> <?= e($pais) ?></option>
+                            <option value="<?= $codigo ?>"><?= e($pais) ?> (+<?= $codigo ?>)</option>
                         <?php endforeach; ?>
                     </select>
                     <input type="tel" name="tbproveedortelefono" inputmode="numeric" maxlength="9" placeholder="8888-8888" autocomplete="off" aria-label="Número de teléfono">

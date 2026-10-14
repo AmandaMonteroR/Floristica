@@ -105,7 +105,7 @@ if ($accion === '') {
 header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
-    'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar'];
+    'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -321,7 +321,18 @@ try {
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
             }
             break;
+        // Cuenta del usuario conectado: cada uno cambia solo su propia contraseña
+        case 'cuenta':
+            $controlador = new empleadocontrolador();
 
+            switch ($accion) {
+                case 'cambiarclave':
+                    $respuesta = $controlador->cambiarclave($_POST, $usuarioactual);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
         default:
             $respuesta = ['exito' => false, 'mensaje' => 'Módulo no válido.', 'datos' => []];
     }
