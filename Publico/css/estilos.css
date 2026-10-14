@@ -677,10 +677,51 @@ h1 {
 }
 
 /* El país va arriba a todo el ancho, para que se lea el nombre y el código */
-.grupo-telefono select {
+.selector-pais {
+    position: relative;
     flex: none;
     width: 100%;
-    min-width: 0;
+}
+
+.selector-pais input {
+    width: 100%;
+}
+
+/* Lista que se va filtrando mientras se escribe el país */
+.lista-paises {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 5;
+    max-height: 230px;
+    margin: 0;
+    padding: 0.3rem;
+    overflow-y: auto;
+    list-style: none;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    box-shadow: 0 8px 20px rgba(59, 15, 36, 0.15);
+}
+
+.lista-paises li {
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.lista-paises li:hover,
+.lista-paises li.activa {
+    background: var(--rosa-claro);
+    color: var(--principal-oscuro);
+}
+
+.lista-paises .sin-resultados,
+.lista-paises .sin-resultados:hover {
+    color: var(--texto-suave);
+    background: none;
+    cursor: default;
 }
 
 .grupo-telefono input {

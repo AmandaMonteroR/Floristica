@@ -81,12 +81,19 @@
             <div class="campo">
                 <span>Teléfono *</span>
                 <div class="grupo-telefono">
-                    <select name="tbproveedorcodigopais" aria-label="Código del país" hidden>
-                        <option value="">País…</option>
-                        <?php foreach (require __DIR__ . '/../../Configuracion/paises.php' as $codigo => $pais): ?>
-                            <option value="<?= $codigo ?>"><?= e($pais) ?> (+<?= $codigo ?>)</option>
-                        <?php endforeach; ?>
-                    </select>
+                    <!-- País: se escribe parte del nombre (o el código) y la lista se va filtrando -->
+                    <div class="selector-pais" id="selectorpais" hidden>
+                        <input type="text" id="buscarpais" placeholder="Escriba el país o el código…" autocomplete="off"
+                               role="combobox" aria-label="País del teléfono" aria-autocomplete="list"
+                               aria-expanded="false" aria-controls="listapaises">
+                        <input type="hidden" name="tbproveedorcodigopais">
+                        <ul class="lista-paises" id="listapaises" role="listbox" hidden>
+                            <?php foreach (require __DIR__ . '/../../Configuracion/paises.php' as $codigo => $pais): ?>
+                                <li role="option" data-codigo="<?= $codigo ?>"><?= e($pais) ?> (+<?= $codigo ?>)</li>
+                            <?php endforeach; ?>
+                            <li class="sin-resultados" hidden>No hay países con ese nombre.</li>
+                        </ul>
+                    </div>
                     <input type="tel" name="tbproveedortelefono" inputmode="numeric" maxlength="9" placeholder="8888-8888" autocomplete="off" aria-label="Número de teléfono">
                 </div>
                 <label class="casilla">
@@ -101,7 +108,7 @@
                 <input type="email" name="tbproveedorcorreo" maxlength="100">
                 <small class="error" data-error="tbproveedorcorreo"></small>
             </label>
-            <div class="campo-completo rejilla-ubicacion">
+            <div class="campo-completo rejilla-ubicacion" id="bloqueubicacion">                
                 <label class="campo">
                     <span>Provincia *</span>
                     <select name="tbproveedorprovincia">
@@ -125,7 +132,7 @@
                 </label>
             </div>
             <label class="campo campo-completo">
-                <span>Dirección exacta</span>
+                <span id="etiquetadireccion">Dirección exacta</span>
                 <textarea name="tbproveedordireccion" maxlength="200" placeholder="200 m norte de la iglesia…"></textarea>
                 <small class="error" data-error="tbproveedordireccion"></small>
             </label>

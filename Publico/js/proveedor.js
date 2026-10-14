@@ -41,8 +41,16 @@ const selectprovincia = formulario.elements.tbproveedorprovincia;
 const selectcanton = formulario.elements.tbproveedorcanton;
 const selectdistrito = formulario.elements.tbproveedordistrito;
 const casillainternacional = formulario.elements.tbproveedortelefonointernacional;
-const selectcodigopais = formulario.elements.tbproveedorcodigopais;
+const campocodigopais = formulario.elements.tbproveedorcodigopais;
 const campotelefono = formulario.elements.tbproveedortelefono;
+const selectorpais = document.getElementById('selectorpais');
+const buscarpais = document.getElementById('buscarpais');
+const listapaises = document.getElementById('listapaises');
+const opcionespais = Array.from(listapaises.querySelectorAll('[data-codigo]'));
+const sinresultadospais = listapaises.querySelector('.sin-resultados');
+const bloqueubicacion = document.getElementById('bloqueubicacion');
+const etiquetadireccion = document.getElementById('etiquetadireccion');
+const campodireccion = formulario.elements.tbproveedordireccion;
 
 let temporizadorbusqueda;
 let temporizadoraviso;
@@ -112,10 +120,15 @@ function valorcampo(campo) {
     return elemento.value;
 }
 
+// Un proveedor con número internacional es de otro país: no lleva provincia,
+// cantón ni distrito, y la dirección se escribe libre (ciudad, país…)
 function actualizartipotelefono() {
     const internacional = casillainternacional.checked;
 
-    selectcodigopais.hidden = !internacional;
+    selectorpais.hidden = !internacional;
+    bloqueubicacion.hidden = internacional;
+    etiquetadireccion.textContent = internacional ? 'Dirección (ciudad y país)' : 'Dirección exacta';
+    campodireccion.placeholder = internacional ? 'Medellín, Colombia…' : '200 m norte de la iglesia…';
     campotelefono.placeholder = internacional ? '3001234567' : '8888-8888';
     campotelefono.maxLength = internacional ? 12 : 9;
     campotelefono.value = formatearnumero(campotelefono.value, internacional);
@@ -123,9 +136,134 @@ function actualizartipotelefono() {
     if (!internacional) {
         const error = formulario.querySelector('[data-error="tbproveedorcodigopais"]');
         error.textContent = '';
-        selectcodigopais.removeAttribute('aria-invalid');
+        buscarpais.removeAttribute('aria-invalid');
+        cerrarlistapaises();
     }
 }
+
+/* ---------- Buscador de país ---------- */
+
+// Quita tildes y mayúsculas para comparar: "mexi" encuentra "México"
+function sintildes(texto) {
+    return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function textopais(codigo) {
+    const opcion = opcionespais.find((elemento) => elemento.dataset.codigo === String(codigo));
+    return opcion ? opcion.textContent : '';
+}
+
+function establecerpais(codigo) {
+    campocodigopais.value = textopais(codigo) ? String(codigo) : '';
+    buscarpais.value = textopais(codigo);
+}
+
+function opcionesvisibles() {
+    return opcionespais.filter((opcion) => !opcion.hidden);
+}
+
+function marcaropcion(opcion) {
+    opcionespais.forEach((elemento) => elemento.classList.remove('activa'));
+    if (opcion) {
+        opcion.classList.add('activa');
+        opcion.scrollIntoView({ block: 'nearest' });
+        buscarpais.setAttribute('aria-activedescendant', opcion.id);
+    } else {
+        buscarpais.removeAttribute('aria-activedescendant');
+    }
+}
+
+// Si escribe letras busca por nombre ("mexi"); si escribe números, por código ("57" o "+57")
+function filtrarpaises() {
+    const texto = sintildes(buscarpais.value);
+    const escodigo = /^\+?\d+$/.test(texto);
+    const digitos = texto.replace('+', '');
+
+    opcionespais.forEach((opcion) => {
+        const nombre = sintildes(opcion.textContent.replace(/\s*\(\+\d+\)$/, ''));
+        const coincide = escodigo ? opcion.dataset.codigo.startsWith(digitos) : nombre.includes(texto);
+        opcion.hidden = texto !== '' && !coincide;
+    });
+
+    const visibles = opcionesvisibles();
+    sinresultadospais.hidden = visibles.length > 0;
+    listapaises.hidden = false;
+    buscarpais.setAttribute('aria-expanded', 'true');
+    marcaropcion(visibles[0]);
+}
+
+function cerrarlistapaises() {
+    listapaises.hidden = true;
+    buscarpais.setAttribute('aria-expanded', 'false');
+    marcaropcion(null);
+}
+
+function elegirpais(opcion) {
+    establecerpais(opcion.dataset.codigo);
+    cerrarlistapaises();
+    formulario.querySelector('[data-error="tbproveedorcodigopais"]').textContent = '';
+    buscarpais.removeAttribute('aria-invalid');
+    guardarborrador();
+}
+
+opcionespais.forEach((opcion, indice) => {
+    opcion.id = `pais-${indice}`;
+});
+
+buscarpais.addEventListener('input', () => {
+    // Mientras escribe, el país todavía no está elegido
+    campocodigopais.value = '';
+    filtrarpaises();
+});
+
+buscarpais.addEventListener('focus', filtrarpaises);
+
+buscarpais.addEventListener('keydown', (evento) => {
+    const visibles = opcionesvisibles();
+    const actual = visibles.indexOf(listapaises.querySelector('.activa'));
+
+    if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
+        evento.preventDefault();
+        if (listapaises.hidden) {
+            filtrarpaises();
+            return;
+        }
+        const paso = evento.key === 'ArrowDown' ? 1 : -1;
+        const siguiente = Math.min(visibles.length - 1, Math.max(0, actual + paso));
+        marcaropcion(visibles[siguiente]);
+    } else if (evento.key === 'Enter' && !listapaises.hidden) {
+        // Enter elige el país marcado y no envía el formulario
+        evento.preventDefault();
+        if (visibles[actual]) {
+            elegirpais(visibles[actual]);
+        }
+    } else if (evento.key === 'Escape' && !listapaises.hidden) {
+        evento.preventDefault();
+        evento.stopPropagation();
+        cerrarlistapaises();
+    }
+});
+
+// mousedown en lugar de click, para que el campo no pierda el foco antes de elegir
+listapaises.addEventListener('mousedown', (evento) => {
+    evento.preventDefault();
+    const opcion = evento.target.closest('[data-codigo]');
+    if (opcion) {
+        elegirpais(opcion);
+    }
+});
+
+// Al salir del campo: si escribió el nombre completo de un país, se toma; si no, queda sin elegir
+buscarpais.addEventListener('blur', () => {
+    cerrarlistapaises();
+    if (campocodigopais.value === '') {
+        const exacta = opcionespais.find((opcion) => sintildes(opcion.textContent) === sintildes(buscarpais.value));
+        if (exacta) {
+            establecerpais(exacta.dataset.codigo);
+            guardarborrador();
+        }
+    }
+});
 
 async function peticion(accion, opciones = {}, parametros = {}) {
     const url = `${rutabase}&accion=${accion}&${new URLSearchParams(parametros)}`;
@@ -276,6 +414,7 @@ function asignarcampos(datos) {
             formulario.elements[campo].value = normalizar(campo, datos[campo], datos);
         });
 
+    establecerpais(datos.tbproveedorcodigopais ?? '');
     actualizartipotelefono();
 
     establecerubicacion(
@@ -369,8 +508,10 @@ function mostrarerrores(errores) {
         if (error) {
             error.textContent = mensaje;
         }
-        if (formulario.elements[campo]) {
-            formulario.elements[campo].setAttribute('aria-invalid', 'true');
+        // El error del país se marca en el campo donde se escribe
+        const elemento = campo === 'tbproveedorcodigopais' ? buscarpais : formulario.elements[campo];
+        if (elemento) {
+            elemento.setAttribute('aria-invalid', 'true');
         }
     });
 
@@ -426,16 +567,18 @@ async function verdetalle(id) {
 
     const proveedor = respuesta.datos;
     iddetalle = id;
-    const ubicacion = [proveedor.tbproveedordistrito, proveedor.tbproveedorcanton, proveedor.tbproveedorprovincia]
-        .filter((parte) => parte)
-        .join(', ');
+    const extranjero = String(proveedor.tbproveedortelefono ?? '').startsWith('+');
+    const ubicacion = extranjero
+        ? 'Fuera de Costa Rica'
+        : [proveedor.tbproveedordistrito, proveedor.tbproveedorcanton, proveedor.tbproveedorprovincia]
+            .filter((parte) => parte)
+            .join(', ');
     const filas = [
         ['Contacto', proveedor.tbproveedornombrecontacto],
         ['Teléfono', mostrartelefono(proveedor.tbproveedortelefono)],
         ['Correo', proveedor.tbproveedorcorreo],
         ['Ubicación', ubicacion],
-        ['Dirección exacta', proveedor.tbproveedordireccion],
-        ['Productos que ofrece', proveedor.tbproveedordescripcion],
+        [extranjero ? 'Dirección' : 'Dirección exacta', proveedor.tbproveedordireccion],        ['Productos que ofrece', proveedor.tbproveedordescripcion],
         ['Estado', proveedor.tbproveedorestado === 1 ? 'Activo' : 'Inactivo'],
         ['Fecha de registro', formatearfecha(proveedor.tbproveedorfecharegistro)],
     ];
@@ -495,7 +638,6 @@ selectprovincia.addEventListener('change', () => {
     guardarborrador();
 });
 
-selectcodigopais.addEventListener('change', guardarborrador);
 
 selectcanton.addEventListener('change', () => {
     actualizardistritos(selectprovincia.value, selectcanton.value);

@@ -263,6 +263,11 @@ class proveedorcontrolador
         $limpios['numerointernacional'] = $digitos;
 
         if ($limpios['telefonointernacional']) {
+            // Un proveedor de otro país no lleva provincia, cantón ni distrito
+            $limpios['tbproveedorprovincia'] = '';
+            $limpios['tbproveedorcanton'] = '';
+            $limpios['tbproveedordistrito'] = '';
+
             // Los números internacionales se guardan como "+57 3001234567"
             $limpios['tbproveedortelefono'] = $limpios['codigopais'] !== '' && $digitos !== ''
                 ? '+' . $limpios['codigopais'] . ' ' . $digitos
@@ -299,7 +304,7 @@ class proveedorcontrolador
 
         if ($datos['telefonointernacional']) {
             if ($datos['codigopais'] === '') {
-                $errores['tbproveedorcodigopais'] = 'Seleccione el código del país.';
+                $errores['tbproveedorcodigopais'] = 'Elija el país de la lista.';
             } elseif (!isset($this->paises[$datos['codigopais']])) {
                 $errores['tbproveedorcodigopais'] = 'El código de país seleccionado no es válido.';
             }
@@ -330,22 +335,25 @@ class proveedorcontrolador
             }
         }
 
-        if ($datos['tbproveedorprovincia'] === '') {
-            $errores['tbproveedorprovincia'] = 'La provincia es obligatoria.';
-        } elseif (!$this->ubicaciones->existeprovincia($datos['tbproveedorprovincia'])) {
-            $errores['tbproveedorprovincia'] = 'La provincia seleccionada no es válida.';
-        }
+        // Provincia, cantón y distrito solo se piden a los proveedores de Costa Rica
+        if (!$datos['telefonointernacional']) {
+            if ($datos['tbproveedorprovincia'] === '') {
+                $errores['tbproveedorprovincia'] = 'La provincia es obligatoria.';
+            } elseif (!$this->ubicaciones->existeprovincia($datos['tbproveedorprovincia'])) {
+                $errores['tbproveedorprovincia'] = 'La provincia seleccionada no es válida.';
+            }
 
-        if ($datos['tbproveedorcanton'] === '') {
-            $errores['tbproveedorcanton'] = 'El cantón es obligatorio.';
-        } elseif (!$this->ubicaciones->existecanton($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'])) {
-            $errores['tbproveedorcanton'] = 'El cantón no pertenece a la provincia seleccionada.';
-        }
+            if ($datos['tbproveedorcanton'] === '') {
+                $errores['tbproveedorcanton'] = 'El cantón es obligatorio.';
+            } elseif (!$this->ubicaciones->existecanton($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'])) {
+                $errores['tbproveedorcanton'] = 'El cantón no pertenece a la provincia seleccionada.';
+            }
 
-        if ($datos['tbproveedordistrito'] === '') {
-            $errores['tbproveedordistrito'] = 'El distrito es obligatorio.';
-        } elseif (!$this->ubicaciones->existedistrito($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'], $datos['tbproveedordistrito'])) {
-            $errores['tbproveedordistrito'] = 'El distrito no pertenece al cantón seleccionado.';
+            if ($datos['tbproveedordistrito'] === '') {
+                $errores['tbproveedordistrito'] = 'El distrito es obligatorio.';
+            } elseif (!$this->ubicaciones->existedistrito($datos['tbproveedorprovincia'], $datos['tbproveedorcanton'], $datos['tbproveedordistrito'])) {
+                $errores['tbproveedordistrito'] = 'El distrito no pertenece al cantón seleccionado.';
+            }
         }
 
         if (mb_strlen($datos['tbproveedordireccion']) > 200) {
@@ -371,7 +379,10 @@ class proveedorcontrolador
             $partes[] = (string) $proveedor->getTbproveedordireccion();
         }
 
-        return implode(' / ', $partes);
+        // Los proveedores de otro país no tienen provincia, cantón ni distrito
+        return implode(' / ', array_filter($partes, function ($parte) {
+            return $parte !== '';
+        }));
     }
 
     private function convertirarreglo(Proveedor $proveedor)
