@@ -248,3 +248,150 @@ formularioclave.addEventListener('submit', async (evento) => {
         primero.focus();
     }
 });
+
+
+/* ---------- Paginación de las listas ----------*/
+function paginar(lista, contenedor, esregistro, minimofilas) {
+    const controles = document.createElement('nav');
+    controles.className = 'paginacion';
+    controles.setAttribute('aria-label', 'Páginas de la lista');
+    controles.hidden = true;
+    contenedor.after(controles);
+
+    let pagina = 1;
+
+    const registros = () => Array.from(lista.children).filter(esregistro);
+
+    // Cuántos registros caben en el espacio que queda debajo de la lista
+    function porpagina(todos) {
+        todos.forEach((registro) => {
+            registro.hidden = false;
+        });
+
+        const cajas = todos.map((registro) => registro.getBoundingClientRect());
+        const porfila = cajas.filter((caja) => Math.abs(caja.top - cajas[0].top) < 2).length || 1;
+        const espacio = parseFloat(getComputedStyle(lista).rowGap) || 0;
+        const alto = Math.max(...todos.map((registro, indice) =>
+            cajas[indice].height + (parseFloat(getComputedStyle(registro).marginBottom) || 0))) + espacio;
+
+        const tabla = lista.closest('table');
+        const encabezado = tabla && tabla.tHead ? tabla.tHead.getBoundingClientRect().height : 0;
+        const inicio = contenedor.getBoundingClientRect().top + window.scrollY + encabezado;
+        const relleno = parseFloat(getComputedStyle(contenedor.closest('main')).paddingBottom) || 0;
+        const disponible = window.innerHeight - inicio - relleno - 68;
+
+        const filas = Math.max(minimofilas, Math.floor((disponible + espacio) / alto));
+        return { cantidad: filas * porfila, porfila, minimo: minimofilas * porfila };
+    }
+
+    // La página se pasa del alto de la ventana (por ejemplo, una fila más alta que las otras)
+    function sobrepasa() {
+        return document.documentElement.scrollHeight > window.innerHeight + 1;
+    }
+
+    function boton(texto, destino, etiqueta, actual = false) {
+        return `<button type="button" class="pagina${actual ? ' pagina-actual' : ''}" data-pagina="${destino}"`
+            + ` aria-label="${etiqueta}"${actual ? ' aria-current="page"' : ''}>${texto}</button>`;
+    }
+
+    // Números que se muestran: la primera, la última y las vecinas de la actual
+    function numeros(total) {
+        const salida = [];
+        for (let numero = 1; numero <= total; numero++) {
+            if (numero === 1 || numero === total || Math.abs(numero - pagina) <= 1) {
+                salida.push(numero);
+            } else if (salida[salida.length - 1] !== '…') {
+                salida.push('…');
+            }
+        }
+        return salida;
+    }
+
+    function pintarcontroles(total, desde, hasta, cantidadtotal) {
+        if (total === 1) {
+            controles.hidden = true;
+            return;
+        }
+
+        const botones = numeros(total).map((numero) => (numero === '…'
+            ? '<span class="pagina-puntos" aria-hidden="true">…</span>'
+            : boton(numero, numero, `Página ${numero}`, numero === pagina)));
+
+        controles.innerHTML = `
+            <span class="paginacion-resumen">${desde + 1}–${hasta} de ${cantidadtotal}</span>
+            <div class="paginacion-botones">
+                ${boton('‹', pagina - 1, 'Página anterior')}
+                ${botones.join('')}
+                ${boton('›', pagina + 1, 'Página siguiente')}
+            </div>`;
+        controles.querySelector('[aria-label="Página anterior"]').disabled = pagina === 1;
+        controles.querySelector('[aria-label="Página siguiente"]').disabled = pagina === total;
+        controles.hidden = false;
+    }
+
+    function dibujar() {
+        const todos = registros();
+
+        if (todos.length === 0) {
+            controles.hidden = true;
+            return;
+        }
+
+        const medida = porpagina(todos);
+        let cantidad = medida.cantidad;
+
+        // Muestra la página; si aun así queda scroll, quita una fila y prueba de nuevo
+        do {
+            const total = Math.ceil(todos.length / cantidad);
+            pagina = Math.min(Math.max(1, pagina), total);
+            const desde = (pagina - 1) * cantidad;
+            const hasta = Math.min(desde + cantidad, todos.length);
+
+            todos.forEach((registro, indice) => {
+                registro.hidden = indice < desde || indice >= hasta;
+            });
+            pintarcontroles(total, desde, hasta, todos.length);
+            cantidad -= medida.porfila;
+        } while (sobrepasa() && cantidad >= medida.minimo);
+    }
+
+    controles.addEventListener('click', (evento) => {
+        const destino = evento.target.closest('[data-pagina]');
+        if (destino && !destino.disabled) {
+            pagina = Number(destino.dataset.pagina);
+            dibujar();
+        }
+    });
+
+    // Cuando cambia la lista (cargó, se filtró, se editó algo) se vuelve a dibujar
+    new MutationObserver(dibujar).observe(lista, { childList: true });
+
+    // Si cambia un filtro, se vuelve a la primera página
+    const filtros = document.querySelector('.filtros');
+    if (filtros) {
+        ['input', 'change'].forEach((tipo) => filtros.addEventListener(tipo, () => {
+            pagina = 1;
+        }));
+    }
+
+    let temporizador;
+    window.addEventListener('resize', () => {
+        clearTimeout(temporizador);
+        temporizador = setTimeout(dibujar, 150);
+    });
+
+    dibujar();
+}
+
+document.querySelectorAll('.contenedor > .tabla-contenedor .tabla').forEach((tabla) => {
+    if (tabla.tBodies[0]) {
+        // Al menos 3 filas por página, aunque la pantalla sea muy pequeña
+        paginar(tabla.tBodies[0], tabla.closest('.tabla-contenedor'), (fila) => !fila.querySelector('.vacio'), 3);
+    }
+});
+
+const galeriapaginada = document.querySelector('.contenedor > .galeria');
+if (galeriapaginada) {
+    // En el catálogo, al menos una fila de tarjetas por página
+    paginar(galeriapaginada, galeriapaginada, (tarjeta) => !tarjeta.classList.contains('vacio-galeria'), 1);
+}

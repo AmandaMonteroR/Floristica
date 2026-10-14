@@ -1589,6 +1589,124 @@ h1 {
     gap: 0.5rem;
 }
 
+/* Páginas más compactas: el encabezado y las filas ocupan menos alto,
+   así caben más registros en cada página sin tener que bajar */
+.contenedor {
+    padding-top: 1.25rem;
+    padding-bottom: 1.25rem;
+}
+
+.encabezado {
+    align-items: center;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+h1 {
+    font-size: 1.6rem;
+}
+
+.subtitulo {
+    font-size: 0.925rem;
+}
+
+.pestanas {
+    margin-bottom: 0.75rem;
+}
+
+.filtros {
+    margin-bottom: 0.75rem;
+}
+
+.tabla th,
+.tabla td {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+}
+
+.galeria {
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 1rem;
+}
+
+.tarjeta-arreglo img {
+    aspect-ratio: 16 / 10;
+}
+
+.tarjeta-cuerpo {
+    padding: 0.7rem 0.85rem 0.4rem;
+}
+
+.tarjeta-precio {
+    font-size: 1.15rem;
+}
+
+.tarjeta-costo {
+    font-size: 0.8rem;
+}
+
+/* Paginación debajo de las listas */
+.paginacion {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem 1rem;
+    margin-top: 0.75rem;
+}
+
+.paginacion-resumen {
+    font-size: 0.9rem;
+    color: var(--texto-suave);
+}
+
+.paginacion-botones {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.pagina {
+    min-width: 2.2rem;
+    height: 2.2rem;
+    padding: 0 0.6rem;
+    font: inherit;
+    font-weight: 600;
+    color: var(--principal-oscuro);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.pagina:hover:not(:disabled) {
+    background: var(--rosa-claro);
+    border-color: var(--principal);
+}
+
+.pagina:focus-visible {
+    outline: 2px solid var(--principal);
+    outline-offset: 2px;
+}
+
+.pagina-actual,
+.pagina-actual:hover:not(:disabled) {
+    color: #ffffff;
+    background: var(--principal);
+    border-color: var(--principal);
+}
+
+.pagina:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.pagina-puntos {
+    padding: 0 0.2rem;
+    color: var(--texto-suave);
+}
+
 /* ---------- Celular ----------
    En pantallas angostas todo se hace más compacto y las listas
    se muestran como tarjetas en lugar de tablas anchas. */
