@@ -1624,6 +1624,28 @@ h1 {
     padding-bottom: 0.55rem;
 }
 
+/* Las listas no se salen por la derecha: el texto largo pasa a la siguiente línea */
+.contenedor > .tabla-contenedor .tabla td {
+    white-space: normal;
+}
+
+/* En pantallas medianas (tablet, ventana angosta) las columnas se aprietan un poco más */
+@media (max-width: 860px) {
+    .contenedor > .tabla-contenedor .tabla th {
+        white-space: normal;
+    }
+
+    .contenedor > .tabla-contenedor .tabla th,
+    .contenedor > .tabla-contenedor .tabla td {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .contenedor > .tabla-contenedor .tabla .enlace {
+        padding: 0.2rem 0.25rem;
+    }
+}
+
 .galeria {
     grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
     gap: 1rem;
@@ -1710,7 +1732,7 @@ h1 {
 /* ---------- Celular ----------
    En pantallas angostas todo se hace más compacto y las listas
    se muestran como tarjetas en lugar de tablas anchas. */
-@media (max-width: 600px) {
+@media (max-width: 760px) {
     .contenedor {
         padding: 1rem 0.75rem;
     }

@@ -306,12 +306,8 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
         }
         return salida;
     }
-
+    // La barra siempre se ve, aunque todo quepa en una sola página
     function pintarcontroles(total, desde, hasta, cantidadtotal) {
-        if (total === 1) {
-            controles.hidden = true;
-            return;
-        }
 
         const botones = numeros(total).map((numero) => (numero === '…'
             ? '<span class="pagina-puntos" aria-hidden="true">…</span>'
