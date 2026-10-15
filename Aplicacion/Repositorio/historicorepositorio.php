@@ -15,7 +15,7 @@ class historicorepositorio
         'arreglofloral' => ['nombre', 'precio', 'estado'],
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
         'pedido'        => ['estado'],
-        'solicitudencargo' => ['fechaentrega'],
+        'solicitudencargo' => ['fechaentrega', 'total'],
         'cliente'       => ['nombre', 'telefono', 'direccion', 'estado'],
         'zonaentrega'   => ['nombre', 'precio', 'estado'],
     ];

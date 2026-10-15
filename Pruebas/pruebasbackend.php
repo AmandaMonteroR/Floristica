@@ -544,80 +544,161 @@ $ultimo = end($historial);
 prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') === 'precio' && strpos($ultimo['nuevo'] ?? '', '27 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 
 /* =====================================================================
- * 7. Encargos
+ * 7. Solicitudes de encargo
  * =================================================================== */
-seccion('7. Encargos');
+seccion('7. Solicitudes de encargo');
 
-$encargovalido = [
-    'tbarreglofloralid'     => $idarreglo,
-    'tbempleadoid'          => '',
-    'tbsolicitudencargocantidad'     => 2,
+// Arreglo de la sección 6: 27 000 colones, lleva 6 rosas rojas y 2 de eucalipto
+$base = [
+    'tbclienteid'                    => 2,
+    'tbempleadoid'                   => '',
     'tbsolicitudencargofechaentrega' => $manana,
     'tbsolicitudencargonota'         => 'Prueba',
 ];
+$predefinida = $base + [
+    'tbsolicitudencargotipo'     => 'Predefinido',
+    'tbarreglofloralid'          => $idarreglo,
+    'tbsolicitudencargocantidad' => 2,
+    'insumos'                    => [['tbinventarioid' => 24, 'cantidad' => 1]],   // caja de chocolates, 7 000
+];
 
-$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargofechaentrega' => $ayer] + $encargovalido);
+$r = $lorena->get('encargo', 'opciones');
+$opciones = datos($r);
+prueba('Un empleado recibe clientes, zonas, arreglos y productos para el formulario',
+    exito($r) && count($opciones['clientes'] ?? []) === 8 && count($opciones['zonas'] ?? []) === 6 && count($opciones['productos'] ?? []) > 0);
+prueba('…con el precio de venta de los productos, pero sin el costo',
+    isset($opciones['productos'][0]['tbinventarioprecioventa']) && !isset($opciones['productos'][0]['tbinventariopreciounidad']));
+
+$r = $propietario->post('encargo', 'crear', ['tbclienteid' => ''] + $predefinida);
+prueba('El cliente es obligatorio', tieneerror($r, 'tbclienteid'));
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargotipo' => ''] + $predefinida);
+prueba('Hay que elegir si es predefinido o personalizado', tieneerror($r, 'tbsolicitudencargotipo'));
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargofechaentrega' => $ayer] + $predefinida);
 prueba('La fecha de entrega no puede ser anterior a hoy', tieneerror($r, 'tbsolicitudencargofechaentrega'));
 
-$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargocantidad' => 0] + $encargovalido);
-prueba('La cantidad debe ser de 1 a 99', tieneerror($r, 'tbsolicitudencargocantidad'));
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargocantidad' => 0] + $predefinida);
+prueba('La cantidad de arreglos debe ser de 1 a 99', tieneerror($r, 'tbsolicitudencargocantidad'));
 
-$r = $propietario->post('encargo', 'crear', ['tbempleadoid' => 5] + $encargovalido);
-prueba('No deja asignarlo a una empleada inactiva', tieneerror($r, 'tbempleadoid'));
+$r = $propietario->post('encargo', 'crear', ['tbempleadoid' => 5] + $predefinida);
+prueba('No deja asignarla a una empleada inactiva', tieneerror($r, 'tbempleadoid'));
 
-$r = $lorena->post('encargo', 'crear', ['tbempleadoid' => 3] + $encargovalido);
-prueba('Un empleado no puede crear un encargo asignado a otro', tieneerror($r, 'tbempleadoid'));
+$r = $lorena->post('encargo', 'crear', ['tbempleadoid' => 3] + $predefinida);
+prueba('Un empleado no puede crear una solicitud asignada a otro', tieneerror($r, 'tbempleadoid'));
 
-$r = $propietario->post('encargo', 'crear', $encargovalido);
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargoexpress' => '1'] + $predefinida);
+prueba('Con express pide la zona y la dirección', tieneerror($r, 'tbzonaentregaid') && tieneerror($r, 'tbsolicitudencargodireccionentrega'));
+
+$r = $propietario->post('encargo', 'crear', ['insumos' => [['tbinventarioid' => 999, 'cantidad' => 1]]] + $predefinida);
+prueba('No acepta un producto que no existe', tieneerror($r, 'insumos'));
+
+$conexpress = ['tbsolicitudencargoexpress' => '1', 'tbzonaentregaid' => 4, 'tbsolicitudencargodireccionentrega' => 'Guápiles, barrio La Emilia'];
+$r = $propietario->post('encargo', 'crear', $conexpress + $predefinida);
 $idencargo = datos($r)['tbsolicitudencargoid'] ?? 0;
-prueba('Crea un encargo sin asignar', exito($r) && $idencargo > 0, mensaje($r));
+prueba('Crea una predefinida: 2 arreglos + chocolates + express a Guápiles = 63 500',
+    exito($r) && (float) (datos($r)['total'] ?? 0) === 63500.0, mensaje($r));
 
+$encargo = datos($propietario->get('encargo', 'obtener', ['id' => $idencargo]));
+prueba('Guarda subtotal 61 000, express 2 500 y el precio del adicional',
+    (float) ($encargo['tbsolicitudencargosubtotal'] ?? 0) === 61000.0 && (float) ($encargo['tbsolicitudencargocostoexpress'] ?? 0) === 2500.0
+    && (float) ($encargo['insumos'][0]['preciounitario'] ?? 0) === 7000.0, json_encode(array_intersect_key($encargo, array_flip(['tbsolicitudencargosubtotal', 'tbsolicitudencargocostoexpress'])) + ['insumos' => $encargo['insumos'] ?? []], JSON_UNESCAPED_UNICODE));
+prueba('Los materiales suman el arreglo × 2 y el adicional (12 rosas, 4 eucalipto, 1 caja de chocolates)',
+    array_column($encargo['materiales'] ?? [], 'necesarias', 'tbinventarioid') == [1 => 12, 11 => 4, 24 => 1],
+    json_encode(array_column($encargo['materiales'] ?? [], 'necesarias', 'tbinventarioid')));
+
+// Personalizadas
+$personalizada = $base + ['tbsolicitudencargotipo' => 'Personalizado'];
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargomodalidad' => 'Libre'] + $personalizada);
+prueba('Un arreglo personalizado debe llevar al menos un producto', tieneerror($r, 'insumos'));
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargomodalidad' => 'Presupuesto',
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 2]]] + $personalizada);
+prueba('Con presupuesto pide el monto', tieneerror($r, 'tbsolicitudencargopresupuesto'));
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargomodalidad' => 'Presupuesto', 'tbsolicitudencargopresupuesto' => '10000',
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 12]]] + $personalizada);
+prueba('No deja pasarse del presupuesto (12 rosas = 12 000 > 10 000)', tieneerror($r, 'insumos') && strpos(errores($r)['insumos'], 'presupuesto') !== false, mensaje($r));
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargomodalidad' => 'Presupuesto', 'tbsolicitudencargopresupuesto' => '15000',
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 8], ['tbinventarioid' => 11, 'cantidad' => 3], ['tbinventarioid' => 19, 'cantidad' => 1]]] + $personalizada);
+$idpersonalizada = datos($r)['tbsolicitudencargoid'] ?? 0;
+prueba('Crea una personalizada con presupuesto (8 000 + 1 200 + 400 = 9 600)', exito($r) && (float) (datos($r)['total'] ?? 0) === 9600.0, mensaje($r));
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargomodalidad' => 'Libre',
+    'insumos' => [['tbinventarioid' => 5, 'cantidad' => 2], ['tbinventarioid' => 5, 'cantidad' => 4], ['tbinventarioid' => 24, 'cantidad' => 1]]] + $personalizada);
+$idlibre = datos($r)['tbsolicitudencargoid'] ?? 0;
+$libre = datos($propietario->get('encargo', 'obtener', ['id' => $idlibre]));
+prueba('Libre: calcula el total para cotizar (6 girasoles + chocolates = 14 200)', exito($r) && (float) ($libre['tbsolicitudencargototal'] ?? 0) === 14200.0, mensaje($r));
+prueba('Si un producto se elige dos veces, se suman las cantidades', count($libre['insumos'] ?? []) === 2 && ($libre['insumos'][0]['cantidad'] ?? 0) === 6,
+    json_encode($libre['insumos'] ?? [], JSON_UNESCAPED_UNICODE));
+prueba('La lista dice "Personalizado (libre)"', ($libre['descripcion'] ?? '') === 'Personalizado (libre)', $libre['descripcion'] ?? '');
+
+$r = $propietario->get('encargo', 'listar', ['tipo' => 'Personalizado']);
+prueba('Filtra por tipo (2 de prueba + 2 nuevas personalizadas)', count(datos($r)) === 4, 'Hay ' . count(datos($r)));
+
+// Flujo de la predefinida: asignar, iniciar y terminar
 $r = $propietario->post('encargo', 'iniciar', ['id' => $idencargo]);
-prueba('No deja iniciarlo sin asignar', !exito($r), mensaje($r));
+prueba('No deja iniciarla sin asignar', !exito($r), mensaje($r));
 
 $r = $propietario->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idencargo, 'tbempleadoid' => 2]);
-prueba('El propietario se lo asigna a Lorena', exito($r), mensaje($r));
+prueba('El propietario se la asigna a Lorena', exito($r), mensaje($r));
 $r = $propietario->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idencargo, 'tbempleadoid' => 2]);
-prueba('Asignarlo a la misma persona no duplica el historial', exito($r) && strpos(mensaje($r), 'ya estaba') !== false, mensaje($r));
+prueba('Asignarla a la misma persona no duplica el historial', exito($r) && strpos(mensaje($r), 'ya estaba') !== false, mensaje($r));
 
 $r = $carlos->post('encargo', 'iniciar', ['id' => $idencargo]);
-prueba('Carlos no puede iniciar un encargo de Lorena', !exito($r), mensaje($r));
+prueba('Carlos no puede iniciar una solicitud de Lorena', !exito($r), mensaje($r));
 $r = $carlos->post('encargo', 'asignarme', ['id' => $idencargo]);
-prueba('Carlos no puede quitárselo a Lorena con "Asignármelo"', !exito($r), mensaje($r));
+prueba('Carlos no puede quitársela a Lorena con "Asignármela"', !exito($r), mensaje($r));
 
-prueba('Lorena lo inicia', exito($lorena->post('encargo', 'iniciar', ['id' => $idencargo])));
+prueba('Lorena la inicia', exito($lorena->post('encargo', 'iniciar', ['id' => $idencargo])));
 
 $stockrosa = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
-$stockeucalipto = (int) datos($propietario->get('inventario', 'obtener', ['id' => 11]))['tbinventariostock'];
-prueba('Lorena lo termina', exito($lorena->post('encargo', 'terminar', ['id' => $idencargo])));
+$stockchocolate = (int) datos($propietario->get('inventario', 'obtener', ['id' => 24]))['tbinventariostock'];
+prueba('Lorena la termina', exito($lorena->post('encargo', 'terminar', ['id' => $idencargo])));
 $rosa = datos($propietario->get('inventario', 'obtener', ['id' => 1]));
-$eucalipto = datos($propietario->get('inventario', 'obtener', ['id' => 11]));
+$chocolate = datos($propietario->get('inventario', 'obtener', ['id' => 24]));
 prueba('Descuenta 12 rosas (6 por arreglo × 2)', (int) $rosa['tbinventariostock'] === $stockrosa - 12, "Antes {$stockrosa}, ahora " . $rosa['tbinventariostock']);
-prueba('Descuenta 4 de eucalipto (2 × 2)', (int) $eucalipto['tbinventariostock'] === $stockeucalipto - 4);
+prueba('Descuenta también el adicional (1 caja de chocolates)', (int) $chocolate['tbinventariostock'] === $stockchocolate - 1);
 $ultimomovimiento = end($rosa['movimientos']);
 prueba('Queda la "Salida" con el nombre de Lorena', ($ultimomovimiento['tipo'] ?? '') === 'Salida' && ($ultimomovimiento['hechopor'] ?? '') === 'Lorena Bermúdez Badilla',
     json_encode($ultimomovimiento, JSON_UNESCAPED_UNICODE));
 
 $historial = datos($propietario->get('encargo', 'obtener', ['id' => $idencargo]))['historial'] ?? [];
-prueba('El historial del encargo tiene registro, asignación, inicio y fin', count($historial) === 4, json_encode(array_column($historial, 'texto'), JSON_UNESCAPED_UNICODE));
-prueba('No deja terminarlo dos veces', !exito($lorena->post('encargo', 'terminar', ['id' => $idencargo])));
+prueba('El historial tiene registro, asignación, inicio y fin', count($historial) === 4, json_encode(array_column($historial, 'texto'), JSON_UNESCAPED_UNICODE));
+prueba('No deja terminarla dos veces', !exito($lorena->post('encargo', 'terminar', ['id' => $idencargo])));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idencargo] + $conexpress + $predefinida);
+prueba('No deja editar una solicitud terminada', !exito($r), mensaje($r));
 
-// Encargo N.º 4 de los datos de prueba: 3 ramos de 24 rosas rosadas (72) y hay 48 → no alcanza
+// La personalizada descuenta lo que eligió el cliente
+$propietario->post('encargo', 'asignarme', ['id' => $idpersonalizada]);
+$propietario->post('encargo', 'iniciar', ['id' => $idpersonalizada]);
+$stockrosa = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
+prueba('El propietario termina la personalizada', exito($propietario->post('encargo', 'terminar', ['id' => $idpersonalizada])));
+prueba('…y descuenta las 8 rosas que eligió el cliente', (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'] === $stockrosa - 8);
+
+// Solicitud N.º 4 de los datos de prueba: 3 ramos de 24 rosas rosadas (72) y hay 48 → no alcanza
 $stockrosada = (int) datos($propietario->get('inventario', 'obtener', ['id' => 2]))['tbinventariostock'];
 $carlos->post('encargo', 'iniciar', ['id' => 4]);
 $r = $carlos->post('encargo', 'terminar', ['id' => 4]);
 prueba('Si no alcanza el stock, no deja terminar y dice qué falta', !exito($r) && strpos(mensaje($r), 'Rosa rosada') !== false, mensaje($r));
 prueba('…y el stock no cambia', (int) datos($propietario->get('inventario', 'obtener', ['id' => 2]))['tbinventariostock'] === $stockrosada);
 
-$r = $propietario->post('encargo', 'crear', $encargovalido);
+// Editar: se conserva el precio con que se cotizó aunque cambie el catálogo
+$r = $propietario->post('encargo', 'crear', ['insumos' => []] + $predefinida);
 $idencargo2 = datos($r)['tbsolicitudencargoid'] ?? 0;
+$propietario->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglo, 'tbarreglofloralprecio' => '30000'] + $arreglovalido);
 $fechanueva = date('Y-m-d', strtotime('+5 day'));
-$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idencargo2, 'tbsolicitudencargofechaentrega' => $fechanueva] + $encargovalido);
-prueba('Cambia la fecha de entrega', exito($r), mensaje($r));
-$historial = datos($propietario->get('encargo', 'obtener', ['id' => $idencargo2]))['historial'] ?? [];
-prueba('El cambio de fecha queda en el historial', strpos(end($historial)['texto'] ?? '', 'La fecha de entrega cambió') !== false, json_encode(array_column($historial, 'texto'), JSON_UNESCAPED_UNICODE));
-prueba('Cancela el encargo', exito($propietario->post('encargo', 'cancelar', ['id' => $idencargo2])));
-prueba('No deja cancelarlo dos veces', !exito($propietario->post('encargo', 'cancelar', ['id' => $idencargo2])));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idencargo2, 'tbsolicitudencargofechaentrega' => $fechanueva,
+    'tbsolicitudencargocantidad' => 3, 'insumos' => []] + $predefinida);
+$encargo2 = datos($propietario->get('encargo', 'obtener', ['id' => $idencargo2]));
+prueba('Al editar se conserva el precio cotizado del arreglo (3 × 27 000 = 81 000)', exito($r) && (float) ($encargo2['tbsolicitudencargototal'] ?? 0) === 81000.0,
+    mensaje($r) . ' Total: ' . ($encargo2['tbsolicitudencargototal'] ?? ''));
+$textos = implode(' | ', array_column($encargo2['historial'] ?? [], 'texto'));
+prueba('El cambio de fecha y de total quedan en el historial', strpos($textos, 'La fecha de entrega cambió') !== false && strpos($textos, 'El total cambió') !== false, $textos);
+prueba('Cancela la solicitud', exito($propietario->post('encargo', 'cancelar', ['id' => $idencargo2])));
+prueba('No deja cancelarla dos veces', !exito($propietario->post('encargo', 'cancelar', ['id' => $idencargo2])));
 
 /* =====================================================================
  * 8. Empleados

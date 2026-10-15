@@ -47,8 +47,9 @@ $listaencargos = $espropietario ? $resumen['abiertos'] : $resumen['mios'];
 
 // Accesos rápidos: solo se muestran los que el rol puede abrir
 $accesos = [
-    ['Nuevo encargo', 'encargo', true],
-    ['Ver encargos', 'encargo', false],
+    ['Nueva solicitud', 'encargo', true],
+    ['Ver solicitudes', 'encargo', false],
+    ['Clientes', 'cliente', false],
     ['Catálogo', 'catalogo', false],
     ['Nuevo pedido', 'pedido', true],
     ['Inventario', 'inventario', false],
@@ -119,8 +120,9 @@ $accesos = [
                         <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
                         <li>
                             <span>
-                                <strong><?= (int) $encargo['tbsolicitudencargocantidad'] ?> × <?= e($encargo['tbarreglofloralnombre']) ?></strong>
+                                <strong><?= e($encargo['descripcion']) ?></strong>
                                 <small class="texto-suave">
+                                    <?= e($encargo['tbclientenombre']) ?> ·
                                     <?= e($encargo['tbsolicitudencargoestado']) ?>
                                     <?php if ($espropietario): ?>
                                         · <?= $encargo['tbempleadonombre'] !== '' ? e($encargo['tbempleadonombre']) : 'Sin asignar' ?>

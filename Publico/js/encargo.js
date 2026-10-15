@@ -1,9 +1,20 @@
 const rutabase = 'index.php?modulo=encargo';
 const clavebase = 'floristica.borrador.encargo.';
-const camposformulario = ['tbarreglofloralid', 'tbsolicitudencargocantidad', 'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota'];
+const camposformulario = ['tbclienteid', 'tbsolicitudencargotipo', 'tbarreglofloralid', 'tbsolicitudencargocantidad',
+    'tbsolicitudencargomodalidad', 'tbsolicitudencargopresupuesto', 'tbzonaentregaid', 'tbsolicitudencargodireccionentrega',
+    'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota'];
+const categoriasproducto = [
+    ['Flor', 'Flores y follaje'],
+    ['Envoltura', 'Papel y cintas'],
+    ['Base', 'Bases'],
+    ['Chocolate', 'Chocolates'],
+    ['Peluche', 'Peluches'],
+    ['Tarjeta', 'Tarjetas'],
+];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
 const filtroestado = document.getElementById('filtroestado');
+const filtrotipo = document.getElementById('filtrotipo');
 const filtroempleado = document.getElementById('filtroempleado');
 const aviso = document.getElementById('aviso');
 const dialogoformulario = document.getElementById('dialogoformulario');
@@ -12,7 +23,19 @@ const tituloformulario = document.getElementById('tituloformulario');
 const avisoformulario = document.getElementById('avisoformulario');
 const avisoborrador = document.getElementById('avisoborrador');
 const botonguardar = document.getElementById('botonguardar');
+const seccionpredefinido = document.getElementById('seccionpredefinido');
+const seccionpersonalizado = document.getElementById('seccionpersonalizado');
+const seccionlineas = document.getElementById('seccionlineas');
+const titulolineas = document.getElementById('titulolineas');
+const notalineas = document.getElementById('notalineas');
+const cuerpolineas = document.getElementById('cuerpolineas');
+const restopresupuesto = document.getElementById('restopresupuesto');
+const campopresupuesto = document.getElementById('campopresupuesto');
+const campozona = document.getElementById('campozona');
+const campodireccion = document.getElementById('campodireccion');
+const notaexpress = document.getElementById('notaexpress');
 const campoasignar = document.getElementById('campoasignar');
+const resumentotal = document.getElementById('resumentotal');
 const dialogoasignar = document.getElementById('dialogoasignar');
 const formularioasignar = document.getElementById('formularioasignar');
 const resumenasignar = document.getElementById('resumenasignar');
@@ -22,6 +45,7 @@ const dialogodetalle = document.getElementById('dialogodetalle');
 const fotodetalle = document.getElementById('fotodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
+const cuerpocobro = document.getElementById('cuerpocobro');
 const cuerpodetalle = document.getElementById('cuerpodetalle');
 const cuerpohistorial = document.getElementById('cuerpohistorial');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
@@ -30,6 +54,7 @@ const tituloconfirmacion = document.getElementById('tituloconfirmacion');
 const mensajeconfirmacion = document.getElementById('mensajeconfirmacion');
 const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmacion');
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
+const casillaexpress = formulario.elements.tbsolicitudencargoexpress;
 
 // usuarioactual viene de menu.php
 const espropietario = usuarioactual.rol === 'Propietario';
@@ -37,13 +62,25 @@ const espropietario = usuarioactual.rol === 'Propietario';
 let temporizadoraviso;
 let datosoriginales = {};
 let datosservidor = {};
-let empleados = [];
+let opciones = { arreglos: [], empleados: [], clientes: [], zonas: [], productos: [] };
 let encargos = [];
+let lineas = [];
+
+/* ---------- Ayudas ---------- */
 
 function escapar(texto) {
     const div = document.createElement('div');
     div.textContent = texto ?? '';
     return div.innerHTML;
+}
+
+function formatearmonto(monto) {
+    return '₡' + Number(monto).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// Monto corto para la cotización de WhatsApp: ₡15 000
+function montocorto(monto) {
+    return '₡' + Number(monto).toLocaleString('es-CR', { maximumFractionDigits: 2 });
 }
 
 function formatearfecha(fecha) {
@@ -71,10 +108,20 @@ function hoy() {
     return new Date().toLocaleDateString('en-CA');
 }
 
-async function peticion(accion, opciones = {}, parametros = {}) {
+function filtrardecimal(valor) {
+    const limpio = valor.replace(/,/g, '.').replace(/[^\d.]/g, '');
+    const [entera, ...resto] = limpio.split('.');
+    return resto.length > 0 ? `${entera}.${resto.join('').slice(0, 2)}` : entera;
+}
+
+function buscar(lista, campo, id) {
+    return lista.find((item) => String(item[campo]) === String(id));
+}
+
+async function peticion(accion, opcionespeticion = {}, parametros = {}) {
     const url = `${rutabase}&accion=${accion}&${new URLSearchParams(parametros)}`;
     try {
-        const respuesta = await fetch(url, opciones);
+        const respuesta = await fetch(url, opcionespeticion);
         return await respuesta.json();
     } catch (error) {
         return { exito: false, mensaje: 'No se pudo conectar con el servidor.', datos: [] };
@@ -131,7 +178,7 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
     });
 }
 
-/* ---------- Listas de arreglos y empleados ---------- */
+/* ---------- Listas del formulario ---------- */
 
 function nombreempleado(empleado) {
     return empleado.tbempleadorol === 'Propietario'
@@ -139,30 +186,30 @@ function nombreempleado(empleado) {
         : empleado.tbempleadonombre;
 }
 
-function llenarempleados(select, textovacio) {
-    const valor = select.value;
+function llenarselect(select, textovacio, lista, valor, texto) {
+    const actual = select.value;
     select.innerHTML = '';
     select.add(new Option(textovacio, ''));
-    empleados.forEach((empleado) => {
-        select.add(new Option(nombreempleado(empleado), empleado.tbempleadoid));
-    });
-    select.value = valor;
+    lista.forEach((item) => select.add(new Option(texto(item), item[valor])));
+    select.value = actual;
 }
 
-async function cargarlistas() {
-    const [respuestaarreglos, respuestaempleados] = await Promise.all([consultar('arreglos'), consultar('empleados')]);
+async function cargaropciones() {
+    const respuesta = await consultar('opciones');
+    if (respuesta.exito) {
+        opciones = respuesta.datos;
+    }
 
-    const selectarreglo = formulario.elements.tbarreglofloralid;
-    selectarreglo.innerHTML = '<option value="">Seleccione…</option>';
-    (respuestaarreglos.exito ? respuestaarreglos.datos : []).forEach((arreglo) => {
-        selectarreglo.add(new Option(arreglo.tbarreglofloralnombre, arreglo.tbarreglofloralid));
-    });
+    llenarselect(formulario.elements.tbclienteid, 'Seleccione…', opciones.clientes, 'tbclienteid',
+        (cliente) => `${cliente.tbclientenombre} · ${cliente.tbclientetelefono}`);
+    llenarselect(formulario.elements.tbarreglofloralid, 'Seleccione…', opciones.arreglos, 'tbarreglofloralid',
+        (arreglo) => `${arreglo.tbarreglofloralnombre} · ${montocorto(arreglo.tbarreglofloralprecio)}`);
+    llenarselect(formulario.elements.tbzonaentregaid, 'Seleccione…', opciones.zonas, 'tbzonaentregaid',
+        (zona) => `${zona.tbzonaentreganombre} · ${montocorto(zona.tbzonaentregaprecio)}`);
+    llenarselect(formulario.elements.tbempleadoid, 'Sin asignar por ahora', opciones.empleados, 'tbempleadoid', nombreempleado);
+    llenarselect(formularioasignar.elements.tbempleadoid, 'Seleccione…', opciones.empleados, 'tbempleadoid', nombreempleado);
 
-    empleados = respuestaempleados.exito ? respuestaempleados.datos : [];
-    llenarempleados(formulario.elements.tbempleadoid, 'Sin asignar por ahora');
-    llenarempleados(formularioasignar.elements.tbempleadoid, 'Seleccione…');
-
-    // Un empleado solo puede dejar el encargo libre o asignárselo a sí mismo
+    // Un empleado solo puede dejar la solicitud libre o asignársela a sí mismo
     if (!espropietario) {
         Array.from(formulario.elements.tbempleadoid.options).forEach((opcion) => {
             if (opcion.value !== '' && opcion.value !== String(usuarioactual.id)) {
@@ -172,9 +219,256 @@ async function cargarlistas() {
     }
 
     filtroempleado.innerHTML = '<option value="">Todos</option><option value="sinasignar">Sin asignar</option>';
-    empleados.forEach((empleado) => {
+    opciones.empleados.forEach((empleado) => {
         filtroempleado.add(new Option(nombreempleado(empleado), empleado.tbempleadoid));
     });
+}
+
+// Si la solicitud tiene algo que ya no está activo (cliente, arreglo o zona), se agrega a la lista
+function agregarinactivo(select, id, texto) {
+    if (id && !select.querySelector(`option[value="${id}"]`)) {
+        select.add(new Option(`${texto} (inactivo)`, id));
+    }
+}
+
+/* ---------- Productos (adicionales o los del arreglo personalizado) ---------- */
+
+function lineavacia() {
+    return { tbinventarioid: '', cantidad: '1', nombre: '', precioguardado: null };
+}
+
+// El precio que se cobra: el que quedó guardado en la solicitud o el precio de venta actual
+function preciolinea(linea) {
+    if (linea.precioguardado !== null && linea.precioguardado !== undefined) {
+        return Number(linea.precioguardado);
+    }
+    const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+    return producto ? producto.tbinventarioprecioventa : 0;
+}
+
+function subtotallinea(linea) {
+    return (parseInt(linea.cantidad, 10) || 0) * preciolinea(linea);
+}
+
+function sumaproductos() {
+    return lineas.reduce((suma, linea) => suma + (linea.tbinventarioid ? subtotallinea(linea) : 0), 0);
+}
+
+function presupuesto() {
+    return formulario.elements.tbsolicitudencargomodalidad.value === 'Presupuesto' && esPersonalizado()
+        ? parseFloat(formulario.elements.tbsolicitudencargopresupuesto.value) || 0
+        : null;
+}
+
+function esPersonalizado() {
+    return formulario.elements.tbsolicitudencargotipo.value === 'Personalizado';
+}
+
+function opcionesproducto(linea) {
+    const usados = lineas
+        .filter((otra) => otra !== linea && otra.tbinventarioid !== '')
+        .map((otra) => String(otra.tbinventarioid));
+    // Con presupuesto: lo que queda sin contar esta línea
+    const tope = presupuesto();
+    const disponible = tope !== null ? tope - (sumaproductos() - (linea.tbinventarioid ? subtotallinea(linea) : 0)) : null;
+
+    let html = '<option value="">Seleccione…</option>';
+
+    categoriasproducto.forEach(([categoria, etiqueta]) => {
+        const grupo = opciones.productos.filter((producto) => producto.tbinventariocategoria === categoria);
+        if (grupo.length === 0) {
+            return;
+        }
+
+        html += `<optgroup label="${etiqueta}">`;
+        grupo.forEach((producto) => {
+            const id = String(producto.tbinventarioid);
+            const seleccionado = id === String(linea.tbinventarioid);
+            const nocabe = disponible !== null && !seleccionado && producto.tbinventarioprecioventa > disponible;
+            const desactivado = !seleccionado && (usados.includes(id) || nocabe);
+            const extra = producto.tbinventariostock <= 0 ? ' (sin stock)' : nocabe ? ' (no alcanza)' : '';
+            html += `<option value="${id}"${seleccionado ? ' selected' : ''}${desactivado ? ' disabled' : ''}>`
+                + `${escapar(producto.tbinventarionombre)} · ${montocorto(producto.tbinventarioprecioventa)}${extra}</option>`;
+        });
+        html += '</optgroup>';
+    });
+
+    // Producto guardado que ya no está activo
+    if (linea.tbinventarioid !== '' && !buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid)) {
+        html += `<option value="${linea.tbinventarioid}" selected>${escapar(linea.nombre || 'Producto')} (inactivo)</option>`;
+    }
+
+    return html;
+}
+
+function dibujarlineas() {
+    if (lineas.length === 0) {
+        const texto = esPersonalizado()
+            ? 'Use "Agregar producto" para elegir las flores, el papel, la base y lo demás que quiere el cliente.'
+            : 'Sin adicionales. Use "Agregar producto" si el cliente quiere chocolates, un peluche, una tarjeta…';
+        cuerpolineas.innerHTML = `<tr><td colspan="5" class="vacio">${texto}</td></tr>`;
+    } else {
+        cuerpolineas.innerHTML = lineas.map((linea, indice) => `
+            <tr data-indice="${indice}">
+                <td><select data-campo="tbinventarioid" aria-label="Producto ${indice + 1}">${opcionesproducto(linea)}</select></td>
+                <td>
+                    <div class="contador">
+                        <button type="button" class="boton-contador" data-pasolinea="-1" aria-label="Quitar una unidad del producto ${indice + 1}">−</button>
+                        <input type="text" data-campo="cantidad" inputmode="numeric" maxlength="3" autocomplete="off" value="${escapar(linea.cantidad)}" aria-label="Cantidad del producto ${indice + 1}">
+                        <button type="button" class="boton-contador" data-pasolinea="1" aria-label="Agregar una unidad del producto ${indice + 1}">+</button>
+                    </div>
+                </td>
+                <td class="precio-linea">${linea.tbinventarioid ? formatearmonto(preciolinea(linea)) : '—'}</td>
+                <td class="subtotal-linea">${linea.tbinventarioid ? formatearmonto(subtotallinea(linea)) : '—'}</td>
+                <td><button type="button" class="enlace enlace-peligro" data-quitar="${indice}" aria-label="Quitar producto ${indice + 1}">Quitar</button></td>
+            </tr>`).join('');
+    }
+
+    actualizarresumen();
+}
+
+// Al cambiar una cantidad se actualiza solo esa fila y los totales (así no se pierde el foco)
+function actualizarfila(fila, linea) {
+    fila.querySelector('[data-campo="cantidad"]').value = linea.cantidad;
+    fila.querySelector('.subtotal-linea').textContent = linea.tbinventarioid ? formatearmonto(subtotallinea(linea)) : '—';
+    formulario.querySelector('[data-error="insumos"]').textContent = '';
+    // Con presupuesto, las opciones que alcanzan cambian
+    if (presupuesto() !== null) {
+        cuerpolineas.querySelectorAll('tr[data-indice]').forEach((otrafila) => {
+            const otra = lineas[Number(otrafila.dataset.indice)];
+            otrafila.querySelector('select').innerHTML = opcionesproducto(otra);
+        });
+    }
+    actualizarresumen();
+    guardarborrador();
+}
+
+/* ---------- Secciones que dependen del tipo y del express ---------- */
+
+function actualizarsecciones() {
+    const tipo = formulario.elements.tbsolicitudencargotipo.value;
+    const personalizado = tipo === 'Personalizado';
+    const conpresupuesto = personalizado && formulario.elements.tbsolicitudencargomodalidad.value === 'Presupuesto';
+
+    seccionpredefinido.hidden = tipo !== 'Predefinido';
+    seccionpersonalizado.hidden = !personalizado;
+    seccionlineas.hidden = tipo === '';
+    campopresupuesto.hidden = !conpresupuesto;
+
+    titulolineas.textContent = personalizado ? 'Productos del arreglo *' : 'Adicionales';
+    notalineas.textContent = personalizado
+        ? (conpresupuesto
+            ? 'Elija productos hasta completar el presupuesto. Los que ya no alcanzan aparecen desactivados.'
+            : 'Elija los productos y el sistema calcula el total para cotizárselo al cliente.')
+        : 'Opcional: chocolates, cintas, peluches, tarjetas u otros productos que el cliente quiera agregar al arreglo.';
+
+    const express = casillaexpress.checked;
+    campozona.hidden = !express;
+    campodireccion.hidden = !express;
+    notaexpress.textContent = express ? 'Se cobra el precio de la zona.' : 'Si no, el cliente lo recoge en el local.';
+
+    dibujarlineas();
+}
+
+// Precio del arreglo: el guardado en la solicitud (si es el mismo arreglo) o el del catálogo
+function precioarreglo() {
+    const id = formulario.elements.tbarreglofloralid.value;
+    if (datosservidor.tbarreglofloralid && String(datosservidor.tbarreglofloralid) === id) {
+        return Number(datosservidor.tbsolicitudencargoprecioarreglo);
+    }
+    const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', id);
+    return arreglo ? arreglo.tbarreglofloralprecio : 0;
+}
+
+function costoexpress() {
+    if (!casillaexpress.checked) {
+        return 0;
+    }
+    const id = formulario.elements.tbzonaentregaid.value;
+    if (datosservidor.tbsolicitudencargoexpress === 1 && String(datosservidor.tbzonaentregaid) === id) {
+        return Number(datosservidor.tbsolicitudencargocostoexpress);
+    }
+    const zona = buscar(opciones.zonas, 'tbzonaentregaid', id);
+    return zona ? zona.tbzonaentregaprecio : 0;
+}
+
+// Cuentas de la solicitud para el resumen y la cotización
+function calcular() {
+    const tipo = formulario.elements.tbsolicitudencargotipo.value;
+    const cantidad = parseInt(formulario.elements.tbsolicitudencargocantidad.value, 10) || 0;
+    const arreglo = tipo === 'Predefinido' ? precioarreglo() * cantidad : 0;
+    const productos = sumaproductos();
+    const express = costoexpress();
+
+    return { tipo, cantidad, arreglo, productos, express, subtotal: arreglo + productos, total: arreglo + productos + express };
+}
+
+function actualizarresumen() {
+    const cuentas = calcular();
+    const filas = [];
+
+    if (cuentas.tipo === 'Predefinido') {
+        const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value);
+        const nombre = arreglo ? arreglo.tbarreglofloralnombre : (datosservidor.tbarreglofloralnombre || 'Arreglo');
+        filas.push([formulario.elements.tbarreglofloralid.value ? `${cuentas.cantidad} × ${nombre}` : 'Arreglo', formatearmonto(cuentas.arreglo)]);
+        filas.push(['Adicionales', formatearmonto(cuentas.productos)]);
+    } else if (cuentas.tipo === 'Personalizado') {
+        filas.push(['Productos', formatearmonto(cuentas.productos)]);
+    }
+
+    if (casillaexpress.checked) {
+        const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
+        filas.push([`Express${zona ? ' a ' + zona.tbzonaentreganombre : ''}`, formatearmonto(cuentas.express)]);
+    }
+
+    resumentotal.innerHTML = filas.map(([etiqueta, valor]) => `<div><dt>${escapar(etiqueta)}</dt><dd>${valor}</dd></div>`).join('')
+        + `<div class="resumen-total"><dt>Total a cobrar</dt><dd>${formatearmonto(cuentas.total)}</dd></div>`;
+
+    // Con presupuesto: cuánto queda o cuánto se pasa
+    const tope = presupuesto();
+    restopresupuesto.hidden = tope === null || tope <= 0;
+    if (tope !== null && tope > 0) {
+        const resto = tope - cuentas.productos;
+        restopresupuesto.textContent = resto >= 0
+            ? `Quedan ${formatearmonto(resto)} del presupuesto de ${formatearmonto(tope)}`
+            : `Se pasa del presupuesto por ${formatearmonto(-resto)}`;
+        restopresupuesto.classList.toggle('texto-peligro', resto < 0);
+    }
+}
+
+// Texto para pegar en WhatsApp con el detalle y el total
+function textocotizacion() {
+    const cuentas = calcular();
+    const cliente = buscar(opciones.clientes, 'tbclienteid', formulario.elements.tbclienteid.value);
+    const lineastexto = [];
+
+    lineastexto.push(`Hola${cliente ? ' ' + cliente.tbclientenombre.split(' ')[0] : ''}, esta es la cotización de su arreglo:`);
+
+    if (cuentas.tipo === 'Predefinido') {
+        const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value);
+        if (arreglo) {
+            lineastexto.push(`- ${cuentas.cantidad} × ${arreglo.tbarreglofloralnombre}: ${montocorto(cuentas.arreglo)}`);
+        }
+    }
+
+    lineas.filter((linea) => linea.tbinventarioid).forEach((linea) => {
+        const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+        lineastexto.push(`- ${linea.cantidad} × ${producto ? producto.tbinventarionombre : linea.nombre}: ${montocorto(subtotallinea(linea))}`);
+    });
+
+    if (casillaexpress.checked) {
+        const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
+        lineastexto.push(`- Servicio express${zona ? ' a ' + zona.tbzonaentreganombre : ''}: ${montocorto(cuentas.express)}`);
+    }
+
+    lineastexto.push(`Total: ${montocorto(cuentas.total)}`);
+
+    const fecha = formulario.elements.tbsolicitudencargofechaentrega.value;
+    if (fecha) {
+        lineastexto.push(`Entrega: ${formatearfecha(fecha)}`);
+    }
+
+    return lineastexto.join('\n');
 }
 
 /* ---------- Borrador ---------- */
@@ -189,6 +483,8 @@ function leerformulario() {
     camposformulario.forEach((campo) => {
         datos[campo] = formulario.elements[campo].value;
     });
+    datos.tbsolicitudencargoexpress = casillaexpress.checked ? '1' : '';
+    datos.lineas = lineas.map((linea) => ({ ...linea }));
     return datos;
 }
 
@@ -221,23 +517,38 @@ function asignarcampos(datos) {
     camposformulario.forEach((campo) => {
         formulario.elements[campo].value = datos[campo] ?? '';
     });
+    casillaexpress.checked = datos.tbsolicitudencargoexpress === '1';
+    lineas = (datos.lineas ?? []).map((linea) => ({ ...linea }));
+    actualizarsecciones();
 }
 
 function llenarformulario(datos) {
     formulario.reset();
     formulario.elements.tbsolicitudencargoid.value = datos.tbsolicitudencargoid ?? '';
 
-    const selectarreglo = formulario.elements.tbarreglofloralid;
-    if (datos.tbarreglofloralid && !selectarreglo.querySelector(`option[value="${datos.tbarreglofloralid}"]`)) {
-        selectarreglo.add(new Option(`${datos.tbarreglofloralnombre} (inactivo)`, datos.tbarreglofloralid));
-    }
+    agregarinactivo(formulario.elements.tbclienteid, datos.tbclienteid, datos.tbclientenombre);
+    agregarinactivo(formulario.elements.tbarreglofloralid, datos.tbarreglofloralid, datos.tbarreglofloralnombre);
+    agregarinactivo(formulario.elements.tbzonaentregaid, datos.tbzonaentregaid, datos.tbzonaentreganombre);
 
     asignarcampos({
+        tbclienteid: datos.tbclienteid ? String(datos.tbclienteid) : '',
+        tbsolicitudencargotipo: datos.tbsolicitudencargotipo ?? '',
         tbarreglofloralid: datos.tbarreglofloralid ? String(datos.tbarreglofloralid) : '',
         tbsolicitudencargocantidad: String(datos.tbsolicitudencargocantidad ?? 1),
+        tbsolicitudencargomodalidad: datos.tbsolicitudencargomodalidad ?? '',
+        tbsolicitudencargopresupuesto: datos.tbsolicitudencargopresupuesto ? String(datos.tbsolicitudencargopresupuesto) : '',
+        tbsolicitudencargoexpress: datos.tbsolicitudencargoexpress === 1 ? '1' : '',
+        tbzonaentregaid: datos.tbzonaentregaid ? String(datos.tbzonaentregaid) : '',
+        tbsolicitudencargodireccionentrega: datos.tbsolicitudencargodireccionentrega ?? '',
         tbsolicitudencargofechaentrega: datos.tbsolicitudencargofechaentrega ?? '',
         tbempleadoid: datos.tbempleadoid ? String(datos.tbempleadoid) : '',
         tbsolicitudencargonota: datos.tbsolicitudencargonota ?? '',
+        lineas: (datos.insumos ?? []).map((insumo) => ({
+            tbinventarioid: String(insumo.tbinventarioid),
+            cantidad: String(insumo.cantidad),
+            nombre: insumo.tbinventarionombre,
+            precioguardado: insumo.preciounitario,
+        })),
     });
 
     datosoriginales = leerformulario();
@@ -251,9 +562,7 @@ function aplicarborrador() {
         return;
     }
 
-    const haycambios = camposformulario.some((campo) => (borrador[campo] ?? '') !== (datosoriginales[campo] ?? ''));
-
-    if (!haycambios) {
+    if (JSON.stringify(borrador) === JSON.stringify(datosoriginales)) {
         borrarborrador();
         return;
     }
@@ -282,10 +591,10 @@ function accionesencargo(encargo) {
     const esmio = encargo.tbempleadoid === usuarioactual.id;
     const acciones = [boton('ver', id, 'Ver')];
 
-    // Empleado: tomar encargos libres y mover solo los suyos
+    // Empleado: tomar solicitudes libres y mover solo las suyas
     if (!espropietario) {
         if (encargo.tbsolicitudencargoestado === 'Pendiente' && !encargo.tbempleadoid) {
-            acciones.push(boton('asignarme', id, 'Asignármelo'));
+            acciones.push(boton('asignarme', id, 'Asignármela'));
         } else if (encargo.tbsolicitudencargoestado === 'Pendiente' && esmio) {
             acciones.push(boton('iniciar', id, 'Iniciar'));
         } else if (encargo.tbsolicitudencargoestado === 'En proceso' && esmio) {
@@ -298,7 +607,7 @@ function accionesencargo(encargo) {
         acciones.push(boton('editar', id, 'Editar'));
         acciones.push(boton('asignar', id, encargo.tbempleadoid ? 'Reasignar' : 'Asignar'));
         if (!esmio) {
-            acciones.push(boton('asignarme', id, 'Asignármelo'));
+            acciones.push(boton('asignarme', id, 'Asignármela'));
         }
         if (encargo.tbempleadoid) {
             acciones.push(boton('iniciar', id, 'Iniciar'));
@@ -313,10 +622,17 @@ function accionesencargo(encargo) {
     return acciones.join(' ');
 }
 
+function textoentrega(encargo) {
+    return encargo.tbsolicitudencargoexpress === 1
+        ? `Express · ${encargo.tbzonaentreganombre || 'zona eliminada'}`
+        : 'Recoge en el local';
+}
+
 async function cargarencargos() {
     const respuesta = await consultar('listar', {
         estado: filtroestado.value,
         empleado: filtroempleado.value,
+        tipo: filtrotipo.value,
     });
 
     if (!respuesta.exito) {
@@ -327,10 +643,10 @@ async function cargarencargos() {
     encargos = respuesta.datos;
 
     if (encargos.length === 0) {
-        const sinfiltros = filtroestado.value === '' && filtroempleado.value === '';
+        const sinfiltros = filtroestado.value === '' && filtroempleado.value === '' && filtrotipo.value === '';
         const mensaje = sinfiltros
-            ? 'Aún no hay encargos. Use "Nuevo encargo" para registrar el primero.'
-            : 'No hay encargos que coincidan con el filtro.';
+            ? 'Aún no hay solicitudes. Use "Nueva solicitud" para registrar la primera.'
+            : 'No hay solicitudes que coincidan con el filtro.';
         cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${mensaje}</td></tr>`;
         return;
     }
@@ -339,25 +655,26 @@ async function cargarencargos() {
         const abierto = ['Pendiente', 'En proceso'].includes(encargo.tbsolicitudencargoestado);
         const atrasado = abierto && encargo.tbsolicitudencargofechaentrega < hoy();
         const sinstock = abierto && !encargo.alcanzastock
-            ? '<span class="aviso-stock" title="No alcanza el inventario para prepararlo">Falta stock</span>'
+            ? '<span class="aviso-stock" title="No alcanza el inventario para prepararla">Falta stock</span>'
             : '';
-        const asignado = encargo.tbempleadoid
-            ? escapar(encargo.tbempleadonombre) + (encargo.tbempleadorol === 'Propietario' ? ' <span class="estado estado-propietario">Propietario</span>' : '')
-            : '<span class="texto-suave">Sin asignar</span>';
+        const imagen = encargo.tbarreglofloralfoto
+            ? `<img src="${escapar(encargo.tbarreglofloralfoto)}" alt="">`
+            : '<span class="icono-personalizado" aria-hidden="true">✿</span>';
+        const asignado = encargo.tbempleadoid ? escapar(encargo.tbempleadonombre) : 'Sin asignar';
 
         return `
             <tr class="${abierto ? '' : 'fila-inactiva'}">
                 <td>${encargo.tbsolicitudencargoid}</td>
+                <td>${escapar(encargo.tbclientenombre)}</td>
                 <td>
                     <div class="celda-arreglo">
-                        <img src="${escapar(encargo.tbarreglofloralfoto)}" alt="">
-                        <span>${escapar(encargo.tbarreglofloralnombre)}${sinstock}</span>
+                        ${imagen}
+                        <span>${escapar(encargo.descripcion)}${sinstock}</span>
                     </div>
                 </td>
-                <td>${encargo.tbsolicitudencargocantidad}</td>
-                <td class="${atrasado ? 'texto-peligro' : ''}">${formatearfecha(encargo.tbsolicitudencargofechaentrega)}${atrasado ? '<br><small>Atrasado</small>' : ''}</td>
-                <td>${asignado}</td>
-                <td><span class="estado ${claseestado(encargo.tbsolicitudencargoestado)}">${escapar(encargo.tbsolicitudencargoestado)}</span></td>
+                <td class="${atrasado ? 'texto-peligro' : ''}">${formatearfecha(encargo.tbsolicitudencargofechaentrega)}${atrasado ? ' · Atrasada' : ''}<br><small class="texto-suave">${escapar(textoentrega(encargo))}</small></td>
+                <td>${formatearmonto(encargo.tbsolicitudencargototal)}</td>
+                <td><span class="estado ${claseestado(encargo.tbsolicitudencargoestado)}">${escapar(encargo.tbsolicitudencargoestado)}</span><br><small class="texto-suave">${asignado}</small></td>
                 <td class="columna-acciones">${accionesencargo(encargo)}</td>
             </tr>`;
     }).join('');
@@ -381,33 +698,36 @@ function mostrarerrores(errores, form = formulario) {
         if (error) {
             error.textContent = mensaje;
         }
-        if (form.elements[campo]) {
+        if (form.elements[campo] instanceof Element) {
             form.elements[campo].setAttribute('aria-invalid', 'true');
         }
     });
 
-    const primero = form.querySelector('[aria-invalid="true"]');
+    const primero = form.querySelector('[aria-invalid="true"]') || form.querySelector('[data-error="insumos"]:not(:empty)');
     if (primero) {
-        primero.focus();
+        primero.scrollIntoView({ block: 'center' });
+        if (primero.focus) {
+            primero.focus();
+        }
     }
 }
 
 /* ---------- Abrir formularios ---------- */
 
 async function abrirnuevo() {
-    await listaslistas;
+    await opcioneslistas;
     datosservidor = { tbsolicitudencargofechaentrega: hoy() };
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
     campoasignar.hidden = false;
-    tituloformulario.textContent = 'Nuevo encargo';
-    botonguardar.textContent = 'Guardar encargo';
+    tituloformulario.textContent = 'Nueva solicitud de encargo';
+    botonguardar.textContent = 'Guardar solicitud';
     dialogoformulario.showModal();
 }
 
 async function abrireditar(id) {
-    await listaslistas;
+    await opcioneslistas;
     const respuesta = await consultar('obtener', { id });
 
     if (!respuesta.exito) {
@@ -421,7 +741,7 @@ async function abrireditar(id) {
     aplicarborrador();
     // Al editar, la asignación se cambia con el botón "Reasignar"
     campoasignar.hidden = true;
-    tituloformulario.textContent = `Editar encargo N.º ${id}`;
+    tituloformulario.textContent = `Editar solicitud N.º ${id}`;
     botonguardar.textContent = 'Guardar cambios';
     dialogoformulario.showModal();
 }
@@ -433,7 +753,7 @@ function abrirasignar(id) {
     formularioasignar.elements.tbsolicitudencargoid.value = id;
     formularioasignar.elements.tbempleadoid.value = encargo && encargo.tbempleadoid ? String(encargo.tbempleadoid) : '';
     resumenasignar.textContent = encargo
-        ? `Encargo N.º ${id}: ${encargo.tbsolicitudencargocantidad} × ${encargo.tbarreglofloralnombre}, entrega ${formatearfecha(encargo.tbsolicitudencargofechaentrega)}.`
+        ? `Solicitud N.º ${id} de ${encargo.tbclientenombre}: ${encargo.descripcion}, entrega ${formatearfecha(encargo.tbsolicitudencargofechaentrega)}.`
         : '';
     limpiarerrores(formularioasignar);
     dialogoasignar.showModal();
@@ -449,22 +769,55 @@ async function verdetalle(id) {
 
     const encargo = respuesta.datos;
     const filas = [
-        ['Cantidad', `${encargo.tbsolicitudencargocantidad} arreglo(s)`],
+        ['Cliente', `${encargo.tbclientenombre} · ${encargo.tbclientetelefono}`],
+        ['Tipo', encargo.tbsolicitudencargotipo === 'Personalizado'
+            ? `Personalizado (${encargo.tbsolicitudencargomodalidad === 'Presupuesto' ? 'presupuesto de ' + formatearmonto(encargo.tbsolicitudencargopresupuesto) : 'libre'})`
+            : 'Predefinido (del catálogo)'],
         ['Fecha de entrega', formatearfecha(encargo.tbsolicitudencargofechaentrega)],
+        ['Entrega', encargo.tbsolicitudencargoexpress === 1
+            ? `Express a ${encargo.tbzonaentreganombre}: ${encargo.tbsolicitudencargodireccionentrega}`
+            : 'El cliente lo recoge en el local'],
+        ['Total', formatearmonto(encargo.tbsolicitudencargototal)],
         ['Asignado a', encargo.tbempleadoid ? `${encargo.tbempleadonombre}${encargo.tbempleadorol === 'Propietario' ? ' (Propietario)' : ''}` : 'Sin asignar'],
         ['Estado', encargo.tbsolicitudencargoestado],
-        ['Registrado el', formatearfecha(encargo.tbsolicitudencargofecharegistro)],
+        ['Registrada el', formatearfecha(encargo.tbsolicitudencargofecharegistro)],
         ['Nota', encargo.tbsolicitudencargonota],
     ];
 
-    fotodetalle.src = encargo.tbarreglofloralfoto;
+    fotodetalle.hidden = !encargo.tbarreglofloralfoto;
+    fotodetalle.src = encargo.tbarreglofloralfoto || '';
     fotodetalle.alt = encargo.tbarreglofloralnombre;
-    titulodetalle.textContent = `Encargo N.º ${encargo.tbsolicitudencargoid}: ${encargo.tbarreglofloralnombre}`;
+    titulodetalle.textContent = `Solicitud N.º ${encargo.tbsolicitudencargoid}: ${encargo.descripcion}`;
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
         .join('');
 
-    cuerpodetalle.innerHTML = encargo.materiales.map((material) => `
+    // Lo que se le cobra al cliente
+    const cobro = [];
+    if (encargo.tbsolicitudencargotipo === 'Predefinido') {
+        cobro.push([encargo.tbarreglofloralnombre, encargo.tbsolicitudencargocantidad, encargo.tbsolicitudencargoprecioarreglo,
+            encargo.tbsolicitudencargocantidad * encargo.tbsolicitudencargoprecioarreglo]);
+    }
+    encargo.insumos.forEach((insumo) => {
+        const etiqueta = encargo.tbsolicitudencargotipo === 'Predefinido' ? ' (adicional)' : '';
+        cobro.push([insumo.tbinventarionombre + etiqueta, insumo.cantidad, insumo.preciounitario, insumo.subtotal]);
+    });
+    if (encargo.tbsolicitudencargoexpress === 1) {
+        cobro.push([`Servicio express a ${encargo.tbzonaentreganombre}`, 1, encargo.tbsolicitudencargocostoexpress, encargo.tbsolicitudencargocostoexpress]);
+    }
+
+    cuerpocobro.innerHTML = cobro.map(([concepto, cantidad, precio, subtotal]) => `
+        <tr>
+            <td>${escapar(concepto)}</td>
+            <td>${cantidad}</td>
+            <td>${formatearmonto(precio)}</td>
+            <td>${formatearmonto(subtotal)}</td>
+        </tr>`).join('')
+        + `<tr class="fila-total"><td colspan="3">Total</td><td>${formatearmonto(encargo.tbsolicitudencargototal)}</td></tr>`;
+
+    cuerpodetalle.innerHTML = encargo.materiales.length === 0
+        ? '<tr><td colspan="4" class="vacio">No hay productos registrados.</td></tr>'
+        : encargo.materiales.map((material) => `
         <tr>
             <td>${escapar(material.tbinventarionombre)}</td>
             <td>${material.necesarias}</td>
@@ -472,9 +825,8 @@ async function verdetalle(id) {
             <td>${material.alcanza ? '<span class="estado estado-activo">Sí</span>' : `<span class="estado estado-bajo">Faltan ${material.necesarias - material.stock}</span>`}</td>
         </tr>`).join('');
 
-
     cuerpohistorial.innerHTML = encargo.historial.length === 0
-        ? '<tr><td colspan="3" class="vacio">Este encargo no tiene historial registrado.</td></tr>'
+        ? '<tr><td colspan="3" class="vacio">Esta solicitud no tiene historial registrado.</td></tr>'
         : encargo.historial.map((cambio) => `
             <tr>
                 <td>${formatearfechahora(cambio.fecha)}</td>
@@ -489,28 +841,28 @@ async function verdetalle(id) {
 
 async function ejecutar(accion, id) {
     const encargo = encargos.find((item) => String(item.tbsolicitudencargoid) === String(id));
-    const nombre = encargo ? `${encargo.tbsolicitudencargocantidad} × ${encargo.tbarreglofloralnombre}` : `el encargo N.º ${id}`;
+    const nombre = encargo ? `la solicitud N.º ${id} (${encargo.descripcion})` : `la solicitud N.º ${id}`;
 
     const configuraciones = {
         asignarme: {
-            titulo: '¿Asignártelo a ti?',
+            titulo: '¿Asignártela a ti?',
             mensaje: `Te vas a encargar de preparar ${nombre}.`,
-            textoaceptar: 'Asignármelo',
+            textoaceptar: 'Asignármela',
         },
         iniciar: {
-            titulo: '¿Empezar a prepararlo?',
+            titulo: '¿Empezar a prepararla?',
             mensaje: `${nombre} pasará a "En proceso".`,
             textoaceptar: 'Iniciar',
         },
         terminar: {
-            titulo: '¿Marcar como terminado?',
+            titulo: '¿Marcar como terminada?',
             mensaje: `Se descontarán del inventario los productos que usa ${nombre}.`,
             textoaceptar: 'Terminar',
         },
         cancelar: {
-            titulo: '¿Cancelar el encargo?',
-            mensaje: `${nombre} quedará cancelado y ya no se podrá preparar.`,
-            textoaceptar: 'Cancelar encargo',
+            titulo: '¿Cancelar la solicitud?',
+            mensaje: `${nombre} quedará cancelada y ya no se podrá preparar.`,
+            textoaceptar: 'Cancelar solicitud',
             peligro: true,
         },
     };
@@ -527,34 +879,148 @@ async function ejecutar(accion, id) {
     }
 }
 
-/* ---------- Eventos ---------- */
+/* ---------- Eventos del formulario ---------- */
+
+function limpiarerrorcampo(nombre) {
+    const error = formulario.querySelector(`[data-error="${nombre}"]`);
+    if (error) {
+        error.textContent = '';
+    }
+    if (formulario.elements[nombre] instanceof Element) {
+        formulario.elements[nombre].removeAttribute('aria-invalid');
+    }
+}
 
 formulario.addEventListener('input', (evento) => {
     const campo = evento.target;
 
+    // Cambios dentro de la tabla de productos
+    const fila = campo.closest('tr[data-indice]');
+    if (fila) {
+        const linea = lineas[Number(fila.dataset.indice)];
+        if (campo.dataset.campo === 'cantidad') {
+            linea.cantidad = campo.value.replace(/\D/g, '').slice(0, 3);
+            actualizarfila(fila, linea);
+        }
+        return;
+    }
+
     if (campo.name === 'tbsolicitudencargocantidad') {
         campo.value = campo.value.replace(/\D/g, '');
     }
-
-    const error = formulario.querySelector(`[data-error="${campo.name}"]`);
-    if (error) {
-        error.textContent = '';
+    if (campo.name === 'tbsolicitudencargopresupuesto') {
+        campo.value = filtrardecimal(campo.value);
+        dibujarlineas();
     }
-    campo.removeAttribute('aria-invalid');
+
+    limpiarerrorcampo(campo.name);
+    actualizarresumen();
+    guardarborrador();
+});
+
+formulario.addEventListener('change', (evento) => {
+    const campo = evento.target;
+
+    const fila = campo.closest('tr[data-indice]');
+    if (fila && campo.dataset.campo === 'tbinventarioid') {
+        const linea = lineas[Number(fila.dataset.indice)];
+        linea.tbinventarioid = campo.value;
+        linea.precioguardado = null;
+        const producto = buscar(opciones.productos, 'tbinventarioid', campo.value);
+        linea.nombre = producto ? producto.tbinventarionombre : '';
+        formulario.querySelector('[data-error="insumos"]').textContent = '';
+        dibujarlineas();
+        guardarborrador();
+        return;
+    }
+
+    if (['tbsolicitudencargotipo', 'tbsolicitudencargomodalidad', 'tbsolicitudencargoexpress'].includes(campo.name)) {
+        // Al elegir express, se propone la dirección del cliente
+        if (campo.name === 'tbsolicitudencargoexpress' && casillaexpress.checked
+            && formulario.elements.tbsolicitudencargodireccionentrega.value.trim() === '') {
+            const cliente = buscar(opciones.clientes, 'tbclienteid', formulario.elements.tbclienteid.value);
+            formulario.elements.tbsolicitudencargodireccionentrega.value = cliente ? cliente.tbclientedireccion : '';
+        }
+        limpiarerrorcampo(campo.name);
+        actualizarsecciones();
+    }
+
+    if (campo.name === 'tbclienteid' && casillaexpress.checked
+        && formulario.elements.tbsolicitudencargodireccionentrega.value.trim() === '') {
+        const cliente = buscar(opciones.clientes, 'tbclienteid', campo.value);
+        formulario.elements.tbsolicitudencargodireccionentrega.value = cliente ? cliente.tbclientedireccion : '';
+    }
+
+    actualizarresumen();
     guardarborrador();
 });
 
 formulario.addEventListener('click', (evento) => {
+    // + y − de la cantidad de arreglos
     const paso = evento.target.closest('button[data-paso]');
-    if (!paso) {
+    if (paso) {
+        const campo = formulario.elements.tbsolicitudencargocantidad;
+        const actual = parseInt(campo.value, 10) || 0;
+        campo.value = String(Math.min(99, Math.max(1, actual + Number(paso.dataset.paso))));
+        limpiarerrorcampo('tbsolicitudencargocantidad');
+        actualizarresumen();
+        guardarborrador();
         return;
     }
 
-    const campo = formulario.elements.tbsolicitudencargocantidad;
-    const actual = parseInt(campo.value, 10) || 0;
-    campo.value = String(Math.min(99, Math.max(1, actual + Number(paso.dataset.paso))));
-    formulario.querySelector('[data-error="tbsolicitudencargocantidad"]').textContent = '';
+    // + y − de un producto
+    const pasolinea = evento.target.closest('button[data-pasolinea]');
+    if (pasolinea) {
+        const fila = pasolinea.closest('tr[data-indice]');
+        const linea = lineas[Number(fila.dataset.indice)];
+        const actual = parseInt(linea.cantidad, 10) || 0;
+        let nueva = Math.min(999, Math.max(1, actual + Number(pasolinea.dataset.pasolinea)));
+
+        // Con presupuesto, no deja subir si ya no alcanza
+        const tope = presupuesto();
+        if (tope !== null && nueva > actual && linea.tbinventarioid
+            && sumaproductos() + preciolinea(linea) > tope) {
+            nueva = actual;
+            restopresupuesto.textContent = 'No alcanza el presupuesto para agregar otra unidad.';
+            restopresupuesto.classList.add('texto-peligro');
+            return;
+        }
+
+        linea.cantidad = String(nueva);
+        actualizarfila(fila, linea);
+        return;
+    }
+
+    const quitar = evento.target.closest('button[data-quitar]');
+    if (quitar) {
+        lineas.splice(Number(quitar.dataset.quitar), 1);
+        dibujarlineas();
+        guardarborrador();
+    }
+});
+
+document.getElementById('botonagregarlinea').addEventListener('click', () => {
+    lineas.push(lineavacia());
+    formulario.querySelector('[data-error="insumos"]').textContent = '';
+    dibujarlineas();
+    const selects = cuerpolineas.querySelectorAll('select');
+    if (selects.length > 0) {
+        selects[selects.length - 1].focus();
+    }
     guardarborrador();
+});
+
+document.getElementById('botoncopiar').addEventListener('click', async (evento) => {
+    const botoncopiar = evento.currentTarget;
+    try {
+        await navigator.clipboard.writeText(textocotizacion());
+        botoncopiar.textContent = '¡Copiada! Péguela en WhatsApp';
+    } catch (error) {
+        botoncopiar.textContent = 'No se pudo copiar';
+    }
+    setTimeout(() => {
+        botoncopiar.textContent = 'Copiar cotización para WhatsApp';
+    }, 2500);
 });
 
 formulario.addEventListener('submit', async (evento) => {
@@ -565,7 +1031,7 @@ formulario.addEventListener('submit', async (evento) => {
     if (esedicion) {
         const aceptado = await confirmar({
             titulo: '¿Guardar los cambios?',
-            mensaje: `Se actualizará el encargo N.º ${formulario.elements.tbsolicitudencargoid.value}.`,
+            mensaje: `Se actualizará la solicitud N.º ${formulario.elements.tbsolicitudencargoid.value}. Total: ${formatearmonto(calcular().total)}.`,
             textoaceptar: 'Guardar cambios',
         });
 
@@ -575,11 +1041,16 @@ formulario.addEventListener('submit', async (evento) => {
     }
 
     const clave = claveborrador();
+    const datos = new FormData(formulario);
+    lineas.forEach((linea, indice) => {
+        datos.append(`insumos[${indice}][tbinventarioid]`, linea.tbinventarioid);
+        datos.append(`insumos[${indice}][cantidad]`, linea.cantidad);
+    });
 
     limpiarerrores();
     botonguardar.disabled = true;
 
-    const respuesta = await enviar(esedicion ? 'actualizar' : 'crear', new FormData(formulario));
+    const respuesta = await enviar(esedicion ? 'actualizar' : 'crear', datos);
 
     botonguardar.disabled = false;
 
@@ -588,6 +1059,7 @@ formulario.addEventListener('submit', async (evento) => {
         avisoborrador.hidden = true;
         dialogoformulario.close();
         mostraraviso(respuesta.mensaje, 'exito');
+        cargaropciones();
         cargarencargos();
         return;
     }
@@ -599,6 +1071,8 @@ formulario.addEventListener('submit', async (evento) => {
     avisoformulario.textContent = respuesta.mensaje;
     avisoformulario.hidden = false;
 });
+
+/* ---------- Asignar ---------- */
 
 formularioasignar.addEventListener('submit', async (evento) => {
     evento.preventDefault();
@@ -667,6 +1141,7 @@ cuerpotabla.addEventListener('click', (evento) => {
 });
 
 filtroestado.addEventListener('change', cargarencargos);
+filtrotipo.addEventListener('change', cargarencargos);
 filtroempleado.addEventListener('change', cargarencargos);
 document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
@@ -681,11 +1156,11 @@ document.getElementById('botondescartarborrador').addEventListener('click', () =
 
 formulario.elements.tbsolicitudencargofechaentrega.min = hoy();
 
-const listaslistas = cargarlistas();
+const opcioneslistas = cargaropciones();
 
 // El filtro "Asignado a" se llena con los empleados, así que se espera a que estén cargados
-listaslistas.finally(() => {
-    filtrosdesdeurl({ estado: filtroestado, empleado: filtroempleado });
+opcioneslistas.finally(() => {
+    filtrosdesdeurl({ estado: filtroestado, tipo: filtrotipo, empleado: filtroempleado });
     cargarencargos();
 });
 abrirformulariosipide(abrirnuevo);

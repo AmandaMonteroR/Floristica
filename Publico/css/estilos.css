@@ -1970,3 +1970,81 @@ h1 {
     color: var(--principal-oscuro);
     white-space: nowrap;
 }
+
+/* Solicitudes de encargo */
+.icono-personalizado {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    background: var(--rosa-claro);
+    color: var(--principal);
+    font-size: 1.4rem;
+}
+
+#seccionlineas {
+    margin-top: 0.5rem;
+}
+
+.resto-presupuesto {
+    font-weight: 600;
+    color: var(--verde);
+}
+
+.resto-presupuesto.texto-peligro {
+    color: var(--peligro);
+}
+
+.resumen-solicitud {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    background: var(--rosa-claro);
+    border-radius: var(--radio);
+}
+
+.resumen-solicitud dl {
+    margin: 0;
+    min-width: 240px;
+}
+
+.resumen-solicitud dl div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1.5rem;
+    font-size: 0.92rem;
+}
+
+.resumen-solicitud dd {
+    margin: 0;
+    font-weight: 600;
+}
+
+.resumen-solicitud .resumen-total {
+    margin-top: 0.3rem;
+    padding-top: 0.3rem;
+    border-top: 1px solid var(--borde);
+    font-size: 1.05rem;
+    color: var(--principal-oscuro);
+}
+
+.fila-total td {
+    font-weight: 700;
+}
+
+/* En la lista de solicitudes, quién la tiene va en una sola línea y las acciones tienen más espacio */
+@media (min-width: 761px) {
+    .tabla-encargos td:nth-child(6) small {
+        white-space: nowrap;
+    }
+
+    .tabla-encargos .columna-acciones {
+        min-width: 250px;
+    }
+}

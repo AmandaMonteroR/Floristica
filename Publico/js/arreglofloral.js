@@ -213,7 +213,7 @@ function opcionesproducto(linea) {
 
     let opciones = '<option value="">Seleccione…</option>';
 
-    ['Flor', 'Base', 'Adorno', 'Extra'].forEach((categoria) => {
+    ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta'].forEach((categoria) => {
         const grupo = productos.filter((producto) => producto.tbinventariocategoria === categoria);
         if (grupo.length === 0) {
             return;
@@ -239,7 +239,7 @@ function opcionesproducto(linea) {
 
 function dibujarlineas() {
     if (lineas.length === 0) {
-        cuerpolineas.innerHTML = '<tr><td colspan="5" class="vacio">Use "Agregar producto" para elegir las flores, bases, adornos o extras del arreglo.</td></tr>';
+        cuerpolineas.innerHTML = '<tr><td colspan="5" class="vacio">Use "Agregar producto" para elegir las flores, el papel, las cintas, la base y lo demás del arreglo.</td></tr>';
         actualizartotales();
         return;
     }

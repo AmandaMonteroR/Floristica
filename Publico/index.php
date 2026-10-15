@@ -289,16 +289,13 @@ try {
 
             switch ($accion) {
                 case 'listar':
-                    $respuesta = $controlador->listar($_GET['estado'] ?? '', $_GET['empleado'] ?? '');
+                    $respuesta = $controlador->listar($_GET['estado'] ?? '', $_GET['empleado'] ?? '', $_GET['tipo'] ?? '');
                     break;
                 case 'obtener':
                     $respuesta = $controlador->obtener($_GET['id'] ?? 0);
                     break;
-                case 'arreglos':
-                    $respuesta = $controlador->arreglos();
-                    break;
-                case 'empleados':
-                    $respuesta = $controlador->empleados();
+                case 'opciones':
+                    $respuesta = $controlador->opciones();
                     break;
                 case 'crear':
                     $respuesta = $controlador->crear($_POST, $usuarioactual);
