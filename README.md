@@ -1,6 +1,6 @@
 # Florística
 
-Sistema web para la gestión de una floristería: proveedores, inventario, pedidos de compra, catálogo de arreglos florales, encargos y empleados, con inicio de sesión por roles. Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
+Sistema web para la gestión de una floristería ubicada en El Humo de Roxana, Cariari (Limón): proveedores, inventario, pedidos de compra, catálogo de arreglos florales, clientes, solicitudes de encargo (con servicio express por zonas) y empleados, con inicio de sesión por roles. Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
 
 ## Requisitos
 
@@ -72,7 +72,13 @@ Los crea `datosprueba.sql`:
 
 Si la base se crea sin datos de prueba, la primera vez que se abre el sistema aparece un formulario para crear la cuenta del propietario.
 
-Los datos de prueba también traen 8 proveedores, 24 productos de inventario, 7 arreglos con foto (en `Publico/imagenes/muestras/`), 4 pedidos y 9 encargos en distintos estados.
+Los datos de prueba también traen:
+
+- 8 proveedores y 32 productos de inventario de las 6 categorías;
+- 7 arreglos con foto (en `Publico/imagenes/muestras/`);
+- 4 pedidos y 8 clientes;
+- 6 zonas de entrega, de El Humo de Roxana (₡1 000) a Limón centro (₡6 000);
+- 12 solicitudes de encargo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express.
 
 ## Configuración
 
@@ -103,6 +109,7 @@ Floristica/
 │   └── DatosIniciales/ # datosprueba.sql y ubicaciones de Costa Rica
 ├── Configuracion/    # Conexión, países y seguridad (sesión y permisos)
 ├── Documentacion/
+├── Pruebas/          # pruebasbackend.php (pruebas automáticas del backend)
 └── Publico/          # index.php (punto de entrada), css, js e imágenes
 ```
 
@@ -120,11 +127,13 @@ Floristica/
 | Ver el inicio | ✓ | ✓ |
 | Ver el catálogo (sin costos ni ganancias) | ✓ | ✓ |
 | Crear, editar o inactivar arreglos | ✓ | |
-| Registrar encargos | ✓ | ✓ (sin asignar o para sí mismo) |
-| Asignar o reasignar encargos a cualquiera | ✓ | |
-| Asignarse un encargo libre | ✓ | ✓ |
-| Iniciar y terminar encargos | ✓ (todos) | ✓ (solo los suyos) |
-| Cancelar o editar encargos | ✓ | |
+| Registrar, editar e inactivar clientes | ✓ | ✓ |
+| Registrar solicitudes de encargo | ✓ | ✓ (sin asignar o para sí mismo) |
+| Asignar o reasignar solicitudes a cualquiera | ✓ | |
+| Asignarse una solicitud libre | ✓ | ✓ |
+| Iniciar y terminar solicitudes | ✓ (todas) | ✓ (solo las suyas) |
+| Cancelar o editar solicitudes | ✓ | |
+| Zonas de entrega y precios del express | ✓ | |
 | Proveedores, inventario, pedidos y empleados | ✓ | |
 
 ## Módulos
@@ -133,8 +142,8 @@ Floristica/
 
 Resumen según el rol:
 
-- **Propietario:** encargos abiertos y atrasados, productos con stock bajo y pedidos sin recibir.
-- **Empleado:** sus encargos y los que puede tomar.
+- **Propietario:** solicitudes abiertas y atrasadas, productos con stock bajo y pedidos sin recibir.
+- **Empleado:** sus solicitudes y las que puede tomar.
 
 ### Proveedores
 
@@ -150,14 +159,24 @@ Resumen según el rol:
 
 ### Inventario
 
-- **Categorías:**
-  - **Flor:** tipo, color, largo del tallo y días de duración.
-  - **Base:** caja o base; plástico o madera; color, forma y medida.
-  - **Adorno:** cinta, papel o tarjeta; en las tarjetas el diseño es obligatorio.
-  - **Extra:** peluche, chocolate, maquillaje o juguete. Chocolates y maquillaje piden fecha de vencimiento, y no puede ser anterior a hoy.
+Cada producto tiene los datos generales en `tbinventario` y sus atributos en la tabla de su categoría (`tbinventariocategoria<categoría>`):
+
+| Categoría | Atributos |
+|-----------|-----------|
+| Flor | Tipo (flor o follaje), variedad, color, largo del tallo y días de duración |
+| Envoltura | Papel o cinta, tipo, color, diseño, medida y material. El papel lleva acabado y la cinta indica si es personalizable |
+| Base | Tipo, material, color, forma, medidas y diseño |
+| Chocolate | Tipo, marca, presentación, peso, sabor y fecha de vencimiento (no anterior a hoy) |
+| Peluche | Tipo, tamaño, color, diseño y material |
+| Tarjeta | Tipo, temática, color, material, medidas, si es personalizable y elaboración (hecha en el negocio o comprada) |
+
+- **Listas:** las opciones de cada lista están en `inventariocontrolador::opciones()`. La pantalla y la validación usan las mismas.
 - **Medidas:** en centímetros, con formato `20` o `20 x 30`.
 - **Nombre:** no puede repetirse para el mismo proveedor.
-- **Precio:** el del paquete es mayor que 0, con máximo 2 decimales. El precio por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
+- **Precios:**
+  - El precio del paquete debe ser mayor que 0, con máximo 2 decimales.
+  - El costo por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
+  - El **precio de venta** por unidad es el que se le cobra al cliente en un arreglo personalizado o como adicional. No puede ser menor que el costo, y la pantalla muestra la ganancia.
 - **Nivel de stock**, con un círculo de color:
   - Rojo: igual o por debajo del mínimo.
   - Amarillo: hasta 1,5 veces el mínimo.
@@ -178,16 +197,39 @@ Resumen según el rol:
 - **Foto:** obligatoria; JPG, PNG o WEBP de máximo 2 MB.
 - **Nombre:** no puede repetirse.
 - **Precio:** mayor que 0.
-- **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades.
+- **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades (tabla `tbarreglofloralinsumo`).
 - **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo el propietario los ve.
 
-### Encargos
+### Clientes
 
-- **Qué es:** un arreglo del catálogo que hay que preparar, con cantidad (1 a 99), fecha de entrega (no anterior a hoy) y nota opcional.
+- **Nombre:** obligatorio, solo letras.
+- **Teléfono (WhatsApp):** obligatorio, 8 dígitos y no se repite. En la lista se puede tocar para abrir WhatsApp.
+- **Correo y dirección:** opcionales. La dirección se propone como dirección de entrega cuando se pide express.
+- **Búsqueda:** por nombre o por teléfono, con o sin guion.
+- **Inactivar:** no se puede si el cliente tiene solicitudes pendientes o en proceso.
+
+### Zonas de entrega (servicio express)
+
+- **Quién:** solo el propietario las crea y les cambia el precio. Cada cambio de precio queda en el historial.
+- **Nombre:** obligatorio y no se repite.
+- **Precio:** mayor que 0.
+- **Orden:** la lista va de la zona más barata (la más cercana) a la más cara.
+- **Inactivar:** no se puede si hay solicitudes abiertas con entrega a esa zona.
+
+### Solicitudes de encargo
+
+- **Datos de toda solicitud:** cliente, tipo, fecha de entrega (no anterior a hoy), nota opcional y, si se quiere, a quién se asigna.
+- **Predefinida:** un arreglo del catálogo (el que el cliente eligió del catálogo de WhatsApp) por la cantidad (1 a 99), más **adicionales** opcionales: chocolates, cintas, peluches, tarjetas u otros productos, cada uno a su precio de venta.
+- **Personalizada:** el cliente elige los productos.
+  - **Con presupuesto:** los productos no pueden pasarse del monto que dio el cliente. La pantalla muestra cuánto queda y desactiva los productos que ya no alcanzan.
+  - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo.
+- **Servicio express:** se elige la zona y se cobra su precio. La dirección de entrega es obligatoria.
+- **Total:** arreglo × cantidad + productos + express. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
+- **Precios guardados:** se guardan los precios del momento. Si después cambian en el catálogo, el inventario o las zonas, las solicitudes ya registradas no cambian, ni siquiera al editarlas.
 - **Estados:** Pendiente → En proceso → Terminado; también puede pasar a Cancelado.
-  - Para iniciarlo, debe estar asignado a alguien.
-  - **Terminar:** descuenta del inventario los productos del arreglo multiplicados por la cantidad. Si no alcanza el stock, no deja terminarlo y dice qué falta.
-- **Listado:** los encargos atrasados se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
+  - Para iniciarla, debe estar asignada a alguien.
+  - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.
+- **Listado:** se filtra por estado, tipo y persona asignada. Las atrasadas se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
 
 ### Empleados
 
@@ -204,40 +246,43 @@ Resumen según el rol:
 
 ## Históricos
 
-Todo se registra en PHP. Cada tabla de histórico guarda el valor, **quién hizo el cambio** (`tbempleadoid`) y la fecha y hora. Se registra al crear y cada vez que el dato cambia de verdad. Los historiales se muestran del más antiguo al más reciente, con la columna "Hecho por":
+Todo se registra en PHP. La base de datos solo guarda la información.
 
-- En proveedores, inventario, catálogo y pedidos: botón **Ver historial** dentro de **Ver**.
-- En empleados: botón **Historial** de cada fila.
-- En encargos: sección **Historial** dentro de **Ver**.
+### Proveedores
 
-Casi todas las tablas nuevas se manejan con un solo repositorio (`historicorepositorio.php`) y un ayudante (`historicocontrolador.php`). La ventana del historial es `Publico/js/historial.js`.
+Al crear un proveedor, y cada vez que cambia uno de estos datos, se guarda el nuevo valor con fecha y hora:
 
-| Módulo | Dato | Tabla |
-|--------|------|-------|
-| Proveedores | Nombre de la empresa | `tbproveedornombreempresahistorico` |
-| | Nombre del contacto | `tbproveedornombrecontactohistorico` |
-| | Teléfono | `tbproveedortelefonohistorico` |
-| | Correo | `tbproveedorcorreohistorico` |
-| | Ubicación (provincia / cantón / distrito / dirección) | `tbproveedorubicacionhistorico` |
-| | Estado | `tbproveedorestadohistorico` |
-| Inventario | Nombre | `tbinventarionombrehistorico` |
-| | Proveedor | `tbinventarioproveedorhistorico` |
-| | Precio del paquete y unidades (ej. `12000.00 / 24`) | `tbinventariopreciohistorico` |
-| | Stock mínimo | `tbinventariostockminimohistorico` |
-| | Estado | `tbinventarioestadohistorico` |
-| Catálogo | Nombre | `tbarreglofloralnombrehistorico` |
-| | Precio de venta | `tbarreglofloralpreciohistorico` |
-| | Estado | `tbarreglofloralestadohistorico` |
-| Empleados | Nombre, teléfono, rol, usuario y estado | `tbempleado<dato>historico` |
-| | Contraseña (solo "Asignada" o "Cambiada", **nunca** el valor) | `tbempleadoclavehistorico` |
-| Pedidos | Estado (Pendiente, Confirmado, Recibido) | `tbpedidoestadohistorico` |
-| Encargos | Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbsolicitudencargoestadohistorico` |
-| | Empleado asignado | `tbsolicitudencargoempleadohistorico` |
-| | Fecha de entrega | `tbsolicitudencargofechaentregahistorico` |
+| Dato | Tabla |
+|------|-------|
+| Nombre de la empresa | `tbproveedornombreempresahistorico` |
+| Nombre del contacto | `tbproveedornombrecontactohistorico` |
+| Teléfono | `tbproveedortelefonohistorico` |
+| Correo | `tbproveedorcorreohistorico` |
+| Ubicación (provincia / cantón / distrito / dirección) | `tbproveedorubicacionhistorico` |
+| Estado (activo / inactivo) | `tbproveedorestadohistorico` |
 
-En los históricos de empleado, `tbempleadoid` es el empleado al que se le hizo el cambio, y quien lo hizo va en `tbempleadoidresponsable`.
+### Inventario, catálogo, empleados, clientes y zonas
 
-**No llevan histórico:** `tbpedidodetalle` y `tbarreglofloralinsumo` (son parte de su pedido o arreglo), `tbconfirmacioncompra` (ya registra algo que pasó una vez), las tablas de categoría del inventario, las descripciones y las notas.
+Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valor anterior, el nuevo, la fecha y quién hizo el cambio:
+
+| Módulo | Datos con histórico |
+|--------|---------------------|
+| Inventario | Nombre, proveedor, precio del paquete, precio de venta, stock mínimo y estado |
+| Catálogo | Nombre, precio y estado |
+| Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
+| Clientes | Nombre, teléfono, dirección y estado |
+| Zonas de entrega | Nombre, precio y estado |
+
+### Solicitudes de encargo
+
+Se ven en **Ver** de cada solicitud, con fecha, hora y quién hizo el cambio:
+
+| Dato | Tabla |
+|------|-------|
+| Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbsolicitudencargoestadohistorico` |
+| Empleado asignado | `tbsolicitudencargoempleadohistorico` |
+| Fecha de entrega | `tbsolicitudencargofechaentregahistorico` |
+| Total | `tbsolicitudencargototalhistorico` |
 
 ### Movimientos de inventario
 
@@ -247,8 +292,22 @@ Cada cambio de stock queda en `tbinventariomovimiento`: el motivo, la cantidad (
 |------|--------|
 | Inicial | Al registrar el producto |
 | Entrada | Al recibir un pedido |
-| Salida | Al terminar un encargo |
+| Salida | Al terminar una solicitud de encargo |
 | Ajuste | Al corregir el stock a mano editando el producto |
+
+## Pruebas automáticas
+
+`Pruebas/pruebasbackend.php` revisa el backend con peticiones reales al servidor: sesión, permisos por rol, validaciones, cambios de estado, stock e históricos de todos los módulos.
+
+1. Cargue la base limpia (paso 3 de la instalación).
+2. Encienda el servidor en otra terminal (paso 4).
+3. Desde la carpeta raíz, corra:
+
+```bash
+   php Pruebas/pruebasbackend.php
+```
+
+Al final muestra cuántas pruebas pasaron. Las pruebas crean datos, así que después hay que volver a cargar la base.
 
 ## Solución de problemas
 
