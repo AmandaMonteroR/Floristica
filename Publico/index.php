@@ -6,6 +6,8 @@ require_once __DIR__ . '/../Aplicacion/Controlador/pedidocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/arreglofloralcontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/empleadocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/encargocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/clientecontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/sesioncontrolador.php';
 require_once __DIR__ . '/../Configuracion/Seguridad.php';
 
@@ -90,6 +92,8 @@ if ($accion === '') {
         'catalogo'   => 'arreglofloralvista.php',
         'encargo'    => 'encargovista.php',
         'empleado'   => 'empleadovista.php',
+        'cliente'    => 'clientevista.php',
+        'zonaentrega' => 'zonaentregavista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -321,6 +325,38 @@ try {
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
             }
             break;
+        // Clientes y zonas de entrega tienen las mismas acciones
+        case 'cliente':
+        case 'zonaentrega':
+            $controlador = $modulo === 'cliente' ? new clientecontrolador() : new zonaentregacontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['estado'] ?? null);
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
+                    break;
+                case 'inactivar':
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'reactivar':
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
         // Cuenta del usuario conectado: cada uno cambia solo su propia contraseña
         case 'cuenta':
             $controlador = new empleadocontrolador();

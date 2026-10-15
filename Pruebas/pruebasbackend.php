@@ -679,6 +679,107 @@ $r = $sofia->get('encargo', 'listar');
 prueba('Al inactivarlo, su sesión abierta se cierra (401)', $r['codigo'] === 401, 'HTTP ' . $r['codigo']);
 
 /* =====================================================================
+ * 9. Clientes
+ * =================================================================== */
+seccion('9. Clientes');
+
+$clientevalido = [
+    'tbclientenombre'    => 'Valeria Prueba Mora',
+    'tbclientetelefono'  => '88887777',
+    'tbclientecorreo'    => 'Valeria.Prueba@Gmail.com',
+    'tbclientedireccion' => 'Cariari, barrio Palermo',
+];
+
+$r = $lorena->get('cliente', 'listar');
+prueba('Un empleado sí puede ver los clientes (8 de prueba)', exito($r) && count(datos($r)) === 8, 'Hay ' . count(datos($r)));
+
+$r = $lorena->post('cliente', 'crear', []);
+prueba('Formulario vacío pide nombre y teléfono', isset(errores($r)['tbclientenombre'], errores($r)['tbclientetelefono']), mensaje($r));
+
+$r = $lorena->post('cliente', 'crear', ['tbclientetelefono' => '8701-2233'] + $clientevalido);
+prueba('No deja repetir el teléfono de otro cliente', tieneerror($r, 'tbclientetelefono'));
+
+$r = $lorena->post('cliente', 'crear', ['tbclientetelefono' => '1234-5678'] + $clientevalido);
+prueba('El teléfono debe ser un número de Costa Rica válido', tieneerror($r, 'tbclientetelefono'));
+
+$r = $lorena->post('cliente', 'crear', ['tbclientenombre' => 'Valeria 2'] + $clientevalido);
+prueba('El nombre no acepta números', tieneerror($r, 'tbclientenombre'));
+
+$r = $lorena->post('cliente', 'crear', ['tbclientecorreo' => 'correo-malo'] + $clientevalido);
+prueba('Correo con formato inválido', tieneerror($r, 'tbclientecorreo'));
+
+$r = $lorena->post('cliente', 'crear', $clientevalido);
+$idcliente = datos($r)['tbclienteid'] ?? 0;
+prueba('Un empleado registra un cliente nuevo', exito($r) && $idcliente > 0, mensaje($r));
+
+$cliente = datos($lorena->get('cliente', 'obtener', ['id' => $idcliente]));
+prueba('Guarda el teléfono como 8888-7777 y el correo en minúscula',
+    ($cliente['tbclientetelefono'] ?? '') === '8888-7777' && ($cliente['tbclientecorreo'] ?? '') === 'valeria.prueba@gmail.com',
+    json_encode($cliente, JSON_UNESCAPED_UNICODE));
+
+$r = $lorena->get('cliente', 'listar', ['texto' => '88887777']);
+prueba('Se puede buscar por teléfono sin guion', count(datos($r)) === 1, 'Hay ' . count(datos($r)));
+
+$historial = datos($lorena->get('cliente', 'historial', ['id' => $idcliente]));
+prueba('El historial tiene los 4 datos iniciales, hechos por Lorena',
+    count($historial) === 4 && ($historial[0]['hechopor'] ?? '') === 'Lorena Bermúdez Badilla', json_encode($historial, JSON_UNESCAPED_UNICODE));
+
+$r = $lorena->post('cliente', 'actualizar', ['tbclienteid' => $idcliente, 'tbclientedireccion' => 'Cariari, barrio Palermo, casa 12'] + $clientevalido);
+prueba('Actualiza la dirección', exito($r), mensaje($r));
+$historial = datos($lorena->get('cliente', 'historial', ['id' => $idcliente]));
+$ultimo = end($historial);
+prueba('El cambio de dirección queda en el historial', count($historial) === 5 && ($ultimo['campo'] ?? '') === 'direccion', json_encode($ultimo, JSON_UNESCAPED_UNICODE));
+
+$r = $propietario->post('cliente', 'inactivar', ['id' => 1]);
+prueba('No deja inactivar a un cliente con solicitudes abiertas', !exito($r) && strpos(mensaje($r), 'solicitud') !== false, mensaje($r));
+
+prueba('Inactiva el cliente nuevo', exito($propietario->post('cliente', 'inactivar', ['id' => $idcliente])));
+prueba('No deja inactivarlo dos veces', !exito($propietario->post('cliente', 'inactivar', ['id' => $idcliente])));
+prueba('Lo reactiva', exito($propietario->post('cliente', 'reactivar', ['id' => $idcliente])));
+
+/* =====================================================================
+ * 10. Zonas de entrega (servicio express)
+ * =================================================================== */
+seccion('10. Zonas de entrega');
+
+$r = $lorena->get('zonaentrega', 'listar');
+prueba('Un empleado no puede administrar las zonas (403)', $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
+$r = $lorena->post('zonaentrega', 'actualizar', ['tbzonaentregaid' => 1, 'tbzonaentreganombre' => 'El Humo de Roxana', 'tbzonaentregaprecio' => '1']);
+prueba('…ni cambiarles el precio (403)', $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
+
+$r = $propietario->get('zonaentrega', 'listar');
+$zonas = datos($r);
+prueba('Lista las 6 zonas de prueba, de la más barata a la más cara',
+    count($zonas) === 6 && ($zonas[0]['tbzonaentreganombre'] ?? '') === 'El Humo de Roxana' && ($zonas[5]['tbzonaentreganombre'] ?? '') === 'Limón centro',
+    json_encode(array_column($zonas, 'tbzonaentreganombre'), JSON_UNESCAPED_UNICODE));
+
+$zonavalida = ['tbzonaentreganombre' => 'Pococí rural', 'tbzonaentregadescripcion' => 'Fincas y pueblos alejados', 'tbzonaentregaprecio' => '3000'];
+
+$r = $propietario->post('zonaentrega', 'crear', ['tbzonaentregaprecio' => '0'] + $zonavalida);
+prueba('El precio del express debe ser mayor que 0', tieneerror($r, 'tbzonaentregaprecio'));
+
+$r = $propietario->post('zonaentrega', 'crear', ['tbzonaentreganombre' => 'guápiles'] + $zonavalida);
+prueba('No deja repetir el nombre de una zona (sin importar mayúsculas)', tieneerror($r, 'tbzonaentreganombre'));
+
+$r = $propietario->post('zonaentrega', 'crear', $zonavalida);
+$idzona = datos($r)['tbzonaentregaid'] ?? 0;
+prueba('Crea una zona nueva', exito($r) && $idzona > 0, mensaje($r));
+prueba('El historial tiene nombre, precio y estado', count(datos($propietario->get('zonaentrega', 'historial', ['id' => $idzona]))) === 3);
+
+$r = $propietario->post('zonaentrega', 'actualizar', ['tbzonaentregaid' => $idzona, 'tbzonaentregaprecio' => '3500'] + $zonavalida);
+prueba('El propietario le cambia el precio', exito($r), mensaje($r));
+$historial = datos($propietario->get('zonaentrega', 'historial', ['id' => $idzona]));
+$ultimo = end($historial);
+prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') === 'precio' && strpos($ultimo['nuevo'] ?? '', '3 500') !== false
+    && strpos($ultimo['anterior'] ?? '', '3 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
+
+$r = $propietario->post('zonaentrega', 'inactivar', ['id' => 1]);
+prueba('No deja inactivar una zona con solicitudes abiertas', !exito($r) && strpos(mensaje($r), 'solicitud') !== false, mensaje($r));
+
+prueba('Inactiva la zona nueva', exito($propietario->post('zonaentrega', 'inactivar', ['id' => $idzona])));
+prueba('La reactiva', exito($propietario->post('zonaentrega', 'reactivar', ['id' => $idzona])));
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

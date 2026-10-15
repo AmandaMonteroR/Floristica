@@ -16,6 +16,8 @@ class historicorepositorio
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
         'pedido'        => ['estado'],
         'solicitudencargo' => ['fechaentrega'],
+        'cliente'       => ['nombre', 'telefono', 'direccion', 'estado'],
+        'zonaentrega'   => ['nombre', 'precio', 'estado'],
     ];
 
     public function __construct()

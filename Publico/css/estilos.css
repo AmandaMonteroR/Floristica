@@ -1963,3 +1963,10 @@ h1 {
     }
 }
 
+
+/* Teléfono del cliente: abre WhatsApp y no se parte en dos líneas */
+.enlace-telefono {
+    font-weight: 600;
+    color: var(--principal-oscuro);
+    white-space: nowrap;
+}

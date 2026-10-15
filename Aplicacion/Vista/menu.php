@@ -19,6 +19,7 @@ $opcionesmenu = [
         ['texto' => 'Cotizaciones', 'modulo' => 'cotizacion'],
         ['texto' => 'Catálogo de arreglos', 'modulo' => 'catalogo'],
         ['texto' => 'Encargos', 'modulo' => 'encargo'],
+        ['texto' => 'Zonas de entrega (express)', 'modulo' => 'zonaentrega'],
     ]],
     ['texto' => 'Compras', 'hijos' => [
         ['texto' => 'Proveedores', 'hijos' => [
