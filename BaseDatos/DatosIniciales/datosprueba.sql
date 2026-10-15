@@ -116,13 +116,13 @@ INSERT INTO `tbinventariocategoriaflor` VALUES (15,26,'Flor','Gypson','Blanco',5
 INSERT INTO `tbinventariocategoriaflor` VALUES (16,27,'Follaje','Helecho','Verde',60,15);
 
 -- Papel y cinta
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (1,17,'Papel','Coreano','Rosado','Liso','60 x 60','Papel','Mate');
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (2,18,'Papel','Coreano','Crema','Liso','60 x 60','Papel','Mate');
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (3,19,'Papel','Kraft','Café','Liso','50 x 70','Papel','Mate');
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (4,20,'Cinta','Satín','Rojo','Lisa','2.5','Poliéster',NULL);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (5,21,'Cinta','Satín','Rosado','Lisa','2.5','Poliéster',NULL);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (6,29,'Papel','Celofán','Transparente','Liso','70 x 100','Plástico','Transparente');
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (7,30,'Cinta','Organza','Dorado','Con brillo','4','Tela',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (1,17,'Papel','Coreano','Rosado','Liso','60 x 60','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (2,18,'Papel','Coreano','Crema','Liso','60 x 60','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (3,19,'Papel','Kraft','Café','Liso','50 x 70','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (4,20,'Cinta','Satín','Rojo','Lisa','2.5','Poliéster',NULL,1);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (5,21,'Cinta','Satín','Rosado','Lisa','2.5','Poliéster',NULL,1);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (6,29,'Papel','Celofán','Transparente','Liso','70 x 100','Plástico','Transparente',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (7,30,'Cinta','Organza','Dorado','Con brillo','4','Tela',NULL,0);
 
 -- Bases
 INSERT INTO `tbinventariocategoriabase` VALUES (1,14,'Florero','Plástico','Transparente','Cilíndrica','12 x 25','Liso');
@@ -139,7 +139,7 @@ INSERT INTO `tbinventariocategoriapeluche` VALUES (1,23,'Oso',20,'Café','Osito 
 INSERT INTO `tbinventariocategoriapeluche` VALUES (2,31,'Conejo',25,'Blanco','Conejo con moño','Felpa');
 
 -- Tarjetas
-INSERT INTO `tbinventariocategoriatarjeta` VALUES (1,22,'Cumpleaños','Globos y confeti','Blanco','10 x 7');
+INSERT INTO `tbinventariocategoriatarjeta` VALUES (1,22,'Felicitación','Cumpleaños','Blanco','Cartulina','10 x 7',1,'Comprada');
 
 -- Pedidos a proveedores
 INSERT INTO `tbpedido` VALUES (1,1,'2026-10-01','Recibido');

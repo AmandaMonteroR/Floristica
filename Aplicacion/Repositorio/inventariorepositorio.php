@@ -24,8 +24,8 @@ class inventariorepositorio
 
         $sql = 'INSERT INTO tbinventario (tbinventarioid, tbproveedorid, tbinventarionombre, tbinventariocategoria,
                 tbinventariopreciopaquete, tbinventariounidadespaquete, tbinventariopreciounidad,
-                tbinventariostock, tbinventariostockminimo, tbinventarioestado)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                tbinventarioprecioventa, tbinventariostock, tbinventariostockminimo, tbinventarioestado)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute([
@@ -36,6 +36,7 @@ class inventariorepositorio
             $inventario->getTbinventariopreciopaquete(),
             $inventario->getTbinventariounidadespaquete(),
             $inventario->getTbinventariopreciounidad(),
+            $inventario->getTbinventarioprecioventa(),
             $inventario->getTbinventariostock(),
             $inventario->getTbinventariostockminimo(),
             $inventario->getTbinventarioestado(),
@@ -48,7 +49,7 @@ class inventariorepositorio
     {
         $sql = 'UPDATE tbinventario SET tbproveedorid = ?, tbinventarionombre = ?, tbinventariocategoria = ?,
                 tbinventariopreciopaquete = ?, tbinventariounidadespaquete = ?, tbinventariopreciounidad = ?,
-                tbinventariostock = ?, tbinventariostockminimo = ?
+                tbinventarioprecioventa = ?, tbinventariostock = ?, tbinventariostockminimo = ?
                 WHERE tbinventarioid = ?';
 
         $sentencia = $this->conexion->prepare($sql);
@@ -59,6 +60,7 @@ class inventariorepositorio
             $inventario->getTbinventariopreciopaquete(),
             $inventario->getTbinventariounidadespaquete(),
             $inventario->getTbinventariopreciounidad(),
+            $inventario->getTbinventarioprecioventa(),
             $inventario->getTbinventariostock(),
             $inventario->getTbinventariostockminimo(),
             $inventario->getTbinventarioid(),

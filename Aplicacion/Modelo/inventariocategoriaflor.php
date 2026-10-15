@@ -5,6 +5,7 @@ class Inventariocategoriaflor
     private $tbinventariocategoriaflorid;
     private $tbinventarioid;
     private $tbinventariocategoriaflortipo;
+    private $tbinventariocategoriaflorvariedad;
     private $tbinventariocategoriaflorcolor;
     private $tbinventariocategoriaflorlargotallo;
     private $tbinventariocategoriaflordiasduracion;
@@ -14,6 +15,7 @@ class Inventariocategoriaflor
         $this->tbinventariocategoriaflorid           = $datos['tbinventariocategoriaflorid'] ?? null;
         $this->tbinventarioid                        = $datos['tbinventarioid'] ?? 0;
         $this->tbinventariocategoriaflortipo         = $datos['tbinventariocategoriaflortipo'] ?? '';
+        $this->tbinventariocategoriaflorvariedad     = $datos['tbinventariocategoriaflorvariedad'] ?? '';
         $this->tbinventariocategoriaflorcolor        = $datos['tbinventariocategoriaflorcolor'] ?? '';
         $this->tbinventariocategoriaflorlargotallo   = $datos['tbinventariocategoriaflorlargotallo'] ?? 0;
         $this->tbinventariocategoriaflordiasduracion = $datos['tbinventariocategoriaflordiasduracion'] ?? 0;
@@ -36,6 +38,12 @@ class Inventariocategoriaflor
 
     public function setTbinventariocategoriaflortipo($valor) { 
         $this->tbinventariocategoriaflortipo = $valor; }
+
+    public function getTbinventariocategoriaflorvariedad() { 
+        return $this->tbinventariocategoriaflorvariedad; }
+
+    public function setTbinventariocategoriaflorvariedad($valor) { 
+        $this->tbinventariocategoriaflorvariedad = $valor; }
 
     public function getTbinventariocategoriaflorcolor() { 
         return $this->tbinventariocategoriaflorcolor; }

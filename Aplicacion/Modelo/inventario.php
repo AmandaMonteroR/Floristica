@@ -9,6 +9,7 @@ class Inventario
     private $tbinventariopreciopaquete;
     private $tbinventariounidadespaquete;
     private $tbinventariopreciounidad;
+    private $tbinventarioprecioventa;
     private $tbinventariostock;
     private $tbinventariostockminimo;
     private $tbinventarioestado;
@@ -22,6 +23,7 @@ class Inventario
         $this->tbinventariopreciopaquete   = $datos['tbinventariopreciopaquete'] ?? 0;
         $this->tbinventariounidadespaquete = $datos['tbinventariounidadespaquete'] ?? 0;
         $this->tbinventariopreciounidad    = $datos['tbinventariopreciounidad'] ?? 0;
+        $this->tbinventarioprecioventa     = $datos['tbinventarioprecioventa'] ?? 0;
         $this->tbinventariostock           = $datos['tbinventariostock'] ?? 0;
         $this->tbinventariostockminimo     = $datos['tbinventariostockminimo'] ?? 0;
         $this->tbinventarioestado          = $datos['tbinventarioestado'] ?? 1;
@@ -68,6 +70,12 @@ class Inventario
 
     public function setTbinventariopreciounidad($valor) { 
         $this->tbinventariopreciounidad = $valor; }
+
+    public function getTbinventarioprecioventa() { 
+        return $this->tbinventarioprecioventa; }
+
+    public function setTbinventarioprecioventa($valor) { 
+        $this->tbinventarioprecioventa = $valor; }
 
     public function getTbinventariostock() { 
         return $this->tbinventariostock; }

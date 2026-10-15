@@ -113,6 +113,8 @@ CREATE TABLE tbinventariocategoriaflor (
 -- Tipo de papel: Coreano, Kraft, Seda, Celofán, Encerado; tipo de cinta: Satín, Organza, Yute, Raso, Papel.
 -- Medida en cm: el papel lleva ancho x largo del pliego ("60 x 60"); la cinta, solo el ancho ("2.5").
 -- Acabado (Mate, Brillante, Metalizado, Transparente) solo aplica al papel; en la cinta queda NULL.
+-- Personalizable (1 = sí, 0 = no: si se le puede imprimir un nombre o mensaje) solo aplica a la cinta;
+-- en el papel queda NULL.
 CREATE TABLE tbinventariocategoriaenvoltura (
     tbinventariocategoriaenvolturaid INT,
     tbinventarioid INT,
@@ -123,6 +125,7 @@ CREATE TABLE tbinventariocategoriaenvoltura (
     tbinventariocategoriaenvolturamedida VARCHAR(30),
     tbinventariocategoriaenvolturamaterial VARCHAR(30),
     tbinventariocategoriaenvolturaacabado VARCHAR(30),
+    tbinventariocategoriaenvolturapersonalizable TINYINT(1),
     PRIMARY KEY (tbinventariocategoriaenvolturaid)
 );
 
@@ -167,15 +170,22 @@ CREATE TABLE tbinventariocategoriapeluche (
     PRIMARY KEY (tbinventariocategoriapelucheid)
 );
 
--- Ocasión: Cumpleaños, Amor, Aniversario, Condolencias, Agradecimiento...
--- Medida en cm ("10 x 7")
+-- Tipo: Felicitación, Dedicatoria, Mensaje, Etiqueta colgante...
+-- Temática: Cumpleaños, Amor, Aniversario, Graduación, Condolencias...
+-- Material: Cartulina, Papel kraft, Papel perlado, Opalina...
+-- Medida en cm: ancho x largo ("10 x 7").
+-- Personalizable: 1 si se le puede escribir o imprimir un mensaje, 0 si no.
+-- Elaboración: Hecha en el negocio o Comprada.
 CREATE TABLE tbinventariocategoriatarjeta (
     tbinventariocategoriatarjetaid INT,
     tbinventarioid INT,
-    tbinventariocategoriatarjetaocasion VARCHAR(30),
-    tbinventariocategoriatarjetadiseno VARCHAR(50),
+    tbinventariocategoriatarjetatipo VARCHAR(30),
+    tbinventariocategoriatarjetatematica VARCHAR(30),
     tbinventariocategoriatarjetacolor VARCHAR(30),
+    tbinventariocategoriatarjetamaterial VARCHAR(30),
     tbinventariocategoriatarjetamedida VARCHAR(30),
+    tbinventariocategoriatarjetapersonalizable TINYINT(1),
+    tbinventariocategoriatarjetaelaboracion VARCHAR(30),
     PRIMARY KEY (tbinventariocategoriatarjetaid)
 );
 

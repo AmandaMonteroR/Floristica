@@ -2,13 +2,16 @@
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 
 // Repositorio único para los históricos nuevos.
+// Cada tabla se llama tb<entidad><campo>historico y tiene:
+// id, tb<entidad>id, valor, tbempleadoid (quién hizo el cambio) y fecha.
+// En los de empleado, quién hizo el cambio va en tbempleadoidresponsable.
 class historicorepositorio
 {
     private $conexion;
 
     // Entidades y datos que llevan histórico. Solo se aceptan estos nombres.
     private $campos = [
-        'inventario'    => ['nombre', 'proveedor', 'precio', 'stockminimo', 'estado'],
+        'inventario'    => ['nombre', 'proveedor', 'precio', 'precioventa', 'stockminimo', 'estado'],
         'arreglofloral' => ['nombre', 'precio', 'estado'],
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
         'pedido'        => ['estado'],

@@ -1,6 +1,5 @@
 const rutabase = 'index.php?modulo=inventario';
 const clavebase = 'floristica.borrador.inventario.';
-const extrasconvencimiento = ['Chocolate', 'Maquillaje'];
 const filtros = {
     letras: (valor) => valor.replace(/[^\p{L}\s]/gu, ''),
     nombre: (valor) => valor.replace(/[^\p{L}\d\s.,'&()-]/gu, ''),
@@ -13,34 +12,56 @@ const filtros = {
         return resto.length > 0 ? `${entera}.${resto.join('').slice(0, 2)}` : entera;
     },
 };
+// Nombre de cada atributo de la categoría, para mostrarlo en "Ver"
 const etiquetascategoria = {
     Flor: {
-        tbinventariocategoriaflortipo: 'Tipo de flor',
+        tbinventariocategoriaflortipo: 'Tipo',
+        tbinventariocategoriaflorvariedad: 'Variedad',
         tbinventariocategoriaflorcolor: 'Color',
         tbinventariocategoriaflorlargotallo: 'Largo del tallo (cm)',
         tbinventariocategoriaflordiasduracion: 'Días de duración',
+    },
+    Envoltura: {
+        tbinventariocategoriaenvolturaclase: 'Papel o cinta',
+        tbinventariocategoriaenvolturatipo: 'Tipo',
+        tbinventariocategoriaenvolturacolor: 'Color',
+        tbinventariocategoriaenvolturadiseno: 'Diseño',
+        tbinventariocategoriaenvolturamedida: 'Medida (cm)',
+        tbinventariocategoriaenvolturamaterial: 'Material',
+        tbinventariocategoriaenvolturaacabado: 'Acabado',
+        tbinventariocategoriaenvolturapersonalizable: 'Personalizable',
     },
     Base: {
         tbinventariocategoriabasetipo: 'Tipo',
         tbinventariocategoriabasematerial: 'Material',
         tbinventariocategoriabasecolor: 'Color',
         tbinventariocategoriabaseforma: 'Forma',
-        tbinventariocategoriabasemedida: 'Medida (cm)',
+        tbinventariocategoriabasemedida: 'Medidas (cm)',
+        tbinventariocategoriabasediseno: 'Diseño',
     },
-    Adorno: {
-        tbinventariocategoriaadornotipo: 'Tipo',
-        tbinventariocategoriaadornomaterial: 'Material',
-        tbinventariocategoriaadornocolor: 'Color',
-        tbinventariocategoriaadornomedida: 'Medida (cm)',
-        tbinventariocategoriaadornodiseno: 'Diseño u ocasión',
+    Chocolate: {
+        tbinventariocategoriachocolatetipo: 'Tipo',
+        tbinventariocategoriachocolatemarca: 'Marca',
+        tbinventariocategoriachocolatepresentacion: 'Presentación',
+        tbinventariocategoriachocolatepeso: 'Peso (g)',
+        tbinventariocategoriachocolatesabor: 'Sabor',
+        tbinventariocategoriachocolatefechavencimiento: 'Fecha de vencimiento',
     },
-    Extra: {
-        tbinventariocategoriaextratipo: 'Tipo',
-        tbinventariocategoriaextramarca: 'Marca',
-        tbinventariocategoriaextratamano: 'Tamaño',
-        tbinventariocategoriaextracolor: 'Color',
-        tbinventariocategoriaextracontenido: 'Contenido',
-        tbinventariocategoriaextrafechavencimiento: 'Fecha de vencimiento',
+    Peluche: {
+        tbinventariocategoriapeluchetipo: 'Tipo',
+        tbinventariocategoriapeluchetamano: 'Tamaño (cm)',
+        tbinventariocategoriapeluchecolor: 'Color',
+        tbinventariocategoriapeluchediseno: 'Diseño',
+        tbinventariocategoriapeluchematerial: 'Material',
+    },
+    Tarjeta: {
+        tbinventariocategoriatarjetatipo: 'Tipo de tarjeta',
+        tbinventariocategoriatarjetatematica: 'Temática',
+        tbinventariocategoriatarjetacolor: 'Color',
+        tbinventariocategoriatarjetamaterial: 'Material',
+        tbinventariocategoriatarjetamedida: 'Medidas (cm)',
+        tbinventariocategoriatarjetapersonalizable: 'Personalizable',
+        tbinventariocategoriatarjetaelaboracion: 'Elaboración',
     },
 };
 
@@ -57,8 +78,12 @@ const avisoformulario = document.getElementById('avisoformulario');
 const avisoborrador = document.getElementById('avisoborrador');
 const botonguardar = document.getElementById('botonguardar');
 const preciounidad = document.getElementById('preciounidad');
-const campovencimiento = document.getElementById('campovencimiento');
-const etiquetadiseno = document.getElementById('etiquetadiseno');
+const gananciaunidad = document.getElementById('gananciaunidad');
+const campoacabado = document.getElementById('campoacabado');
+const campopersonalizable = document.getElementById('campopersonalizable');
+const etiquetatipoenvoltura = document.getElementById('etiquetatipoenvoltura');
+const etiquetamedidaenvoltura = document.getElementById('etiquetamedidaenvoltura');
+const listavariedades = document.getElementById('listavariedades');
 const dialogodetalle = document.getElementById('dialogodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
@@ -181,25 +206,49 @@ function mostrarseccioncategoria() {
     formulario.querySelectorAll('.seccion-categoria').forEach((seccion) => {
         seccion.hidden = seccion.dataset.categoria !== selectcategoria.value;
     });
-    actualizarvencimiento();
-    actualizardiseno();
+    actualizarvariedades();
+    actualizarenvoltura();
 }
 
-function actualizarvencimiento() {
-    const tipo = formulario.elements.tbinventariocategoriaextratipo.value;
-    campovencimiento.hidden = !extrasconvencimiento.includes(tipo);
+// Sugerencias de variedad según sea flor o follaje
+function actualizarvariedades() {
+    const tipo = formulario.elements.tbinventariocategoriaflortipo.value;
+    const lista = variedadesflor[tipo] ?? [...variedadesflor.Flor, ...variedadesflor.Follaje];
+    listavariedades.innerHTML = lista.map((variedad) => `<option value="${escapar(variedad)}">`).join('');
 }
 
-function actualizardiseno() {
-    const estarjeta = formulario.elements.tbinventariocategoriaadornotipo.value === 'Tarjeta';
-    etiquetadiseno.textContent = estarjeta ? 'Diseño u ocasión *' : 'Diseño u ocasión';
+// Los tipos cambian si es papel o cinta; el acabado solo aplica al papel y "personalizable" solo a la cinta
+function actualizarenvoltura(tipoelegido = formulario.elements.tbinventariocategoriaenvolturatipo.value) {
+    const clase = formulario.elements.tbinventariocategoriaenvolturaclase.value;
+    const selecttipo = formulario.elements.tbinventariocategoriaenvolturatipo;
+    const tipos = JSON.parse(selecttipo.dataset.opciones)[clase] ?? [];
+
+    selecttipo.innerHTML = '';
+    selecttipo.add(new Option(clase ? 'Seleccione…' : 'Primero elija papel o cinta', ''));
+    tipos.forEach((tipo) => selecttipo.add(new Option(tipo, tipo)));
+    selecttipo.value = tipos.includes(tipoelegido) ? tipoelegido : '';
+
+    etiquetatipoenvoltura.textContent = clase === 'Cinta' ? 'Tipo de cinta *' : clase === 'Papel' ? 'Tipo de papel *' : 'Tipo *';
+    campoacabado.hidden = clase !== 'Papel';
+    campopersonalizable.hidden = clase !== 'Cinta';
+    etiquetamedidaenvoltura.textContent = clase === 'Cinta' ? 'Ancho (cm)' : 'Medida del pliego (cm)';
+    formulario.elements.tbinventariocategoriaenvolturamedida.placeholder = clase === 'Cinta' ? '2.5' : '60 x 60';
 }
 
+function numero(valor) {
+    return parseFloat(String(valor).replace(',', '.'));
+}
+
+// Costo por unidad = precio del paquete ÷ unidades; ganancia = precio de venta − costo
 function calcularpreciounidad() {
-    const precio = parseFloat(formulario.elements.tbinventariopreciopaquete.value.replace(',', '.'));
+    const precio = numero(formulario.elements.tbinventariopreciopaquete.value);
     const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
+    const venta = numero(formulario.elements.tbinventarioprecioventa.value);
+    const costo = precio > 0 && unidades > 0 ? precio / unidades : null;
 
-    preciounidad.textContent = precio > 0 && unidades > 0 ? formatearmonto(precio / unidades) : '—';
+    preciounidad.textContent = costo !== null ? formatearmonto(costo) : '—';
+    gananciaunidad.textContent = costo !== null && venta > 0 ? formatearmonto(venta - costo) : '—';
+    gananciaunidad.classList.toggle('texto-peligro', costo !== null && venta > 0 && venta < costo);
 }
 
 function claveborrador() {
@@ -250,6 +299,8 @@ function asignarcampos(datos) {
     });
 
     mostrarseccioncategoria();
+    // El tipo de papel o cinta se asigna después de cargar sus opciones
+    actualizarenvoltura(datos.tbinventariocategoriaenvolturatipo ?? '');
     calcularpreciounidad();
 }
 
@@ -267,6 +318,7 @@ function llenarformulario(datos) {
         tbinventariocategoria: datos.tbinventariocategoria,
         tbinventariopreciopaquete: datos.tbinventariopreciopaquete,
         tbinventariounidadespaquete: datos.tbinventariounidadespaquete,
+        tbinventarioprecioventa: datos.tbinventarioprecioventa,
         tbinventariostock: datos.tbinventariostock,
         tbinventariostockminimo: datos.tbinventariostockminimo,
         ...(datos.categoria ?? {}),
@@ -303,6 +355,7 @@ function descartarborrador() {
     avisoborrador.hidden = true;
 }
 
+// Rojo: en el mínimo o por debajo. Amarillo: hasta 50 % por encima del mínimo. Verde: suficiente.
 function nivelstock(producto) {
     const stock = producto.tbinventariostock;
     const minimo = producto.tbinventariostockminimo;
@@ -324,11 +377,11 @@ async function cargarinventario() {
     });
 
     if (!respuesta.exito) {
-        cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
+        cuerpotabla.innerHTML = `<tr><td colspan="8" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
         return;
     }
 
-    // El nivel de stock se filtra aquí
+    // El nivel de stock se filtra aquí, con el mismo cálculo del círculo de color
     const productos = filtrostock.value === ''
         ? respuesta.datos
         : respuesta.datos.filter((producto) => nivelstock(producto).clase === `stock-${filtrostock.value}`);
@@ -339,7 +392,7 @@ async function cargarinventario() {
         const mensaje = sinfiltros
             ? 'Aún no hay productos registrados. Use "Nuevo producto" para agregar el primero.'
             : 'No hay productos que coincidan con la búsqueda.';
-        cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${mensaje}</td></tr>`;
+        cuerpotabla.innerHTML = `<tr><td colspan="8" class="vacio">${mensaje}</td></tr>`;
         return;
     }
 
@@ -356,6 +409,7 @@ async function cargarinventario() {
                 <td>${escapar(producto.tbinventariocategoria)}</td>
                 <td>${escapar(producto.tbproveedornombreempresa)}</td>
                 <td>${formatearmonto(producto.tbinventariopreciounidad)}</td>
+                <td>${formatearmonto(producto.tbinventarioprecioventa)}</td>
                 <td><span class="stock ${nivel.clase}" title="${nivel.texto} (mínimo: ${producto.tbinventariostockminimo})">${producto.tbinventariostock}</span></td>
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
@@ -438,7 +492,9 @@ async function verdetalle(id) {
         ['Proveedor', producto.tbproveedornombreempresa],
         ['Precio del paquete', formatearmonto(producto.tbinventariopreciopaquete)],
         ['Unidades por paquete', String(producto.tbinventariounidadespaquete)],
-        ['Precio por unidad', formatearmonto(producto.tbinventariopreciounidad)],
+        ['Costo por unidad', formatearmonto(producto.tbinventariopreciounidad)],
+        ['Precio de venta por unidad', formatearmonto(producto.tbinventarioprecioventa)],
+        ['Ganancia por unidad', formatearmonto(producto.tbinventarioprecioventa - producto.tbinventariopreciounidad)],
         ['Stock actual', `${producto.tbinventariostock} (${nivelstock(producto).texto.toLowerCase()})`],
         ['Stock mínimo', String(producto.tbinventariostockminimo)],
     ];
@@ -446,8 +502,16 @@ async function verdetalle(id) {
     const etiquetas = etiquetascategoria[producto.tbinventariocategoria] ?? {};
     Object.entries(etiquetas).forEach(([campo, etiqueta]) => {
         let valor = producto.categoria[campo];
-        if (campo === 'tbinventariocategoriaextrafechavencimiento') {
+        // El acabado (solo papel) y "personalizable" (solo cinta) no se muestran donde no aplican
+        if (producto.tbinventariocategoria === 'Envoltura' && valor === null
+            && (campo.endsWith('acabado') || campo.endsWith('personalizable'))) {
+            return;
+        }
+        if (campo === 'tbinventariocategoriachocolatefechavencimiento') {
             valor = formatearfecha(valor);
+        }
+        if (campo.endsWith('personalizable') && valor !== null && valor !== undefined) {
+            valor = Number(valor) === 1 ? 'Sí' : 'No';
         }
         filas.push([etiqueta, valor === null || valor === undefined ? '' : String(valor)]);
     });
@@ -548,12 +612,12 @@ formulario.addEventListener('click', (evento) => {
     // Avisa del cambio para que se limpie el error, se guarde el borrador y se recalcule el precio por unidad
     campo.dispatchEvent(new Event('input', { bubbles: true }));
 });
-
 selectcategoria.addEventListener('change', mostrarseccioncategoria);
-formulario.elements.tbinventariocategoriaextratipo.addEventListener('change', actualizarvencimiento);
-formulario.elements.tbinventariocategoriaadornotipo.addEventListener('change', actualizardiseno);
+formulario.elements.tbinventariocategoriaflortipo.addEventListener('change', actualizarvariedades);
+formulario.elements.tbinventariocategoriaenvolturaclase.addEventListener('change', () => actualizarenvoltura());
 formulario.elements.tbinventariopreciopaquete.addEventListener('input', calcularpreciounidad);
 formulario.elements.tbinventariounidadespaquete.addEventListener('input', calcularpreciounidad);
+formulario.elements.tbinventarioprecioventa.addEventListener('input', calcularpreciounidad);
 
 formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
@@ -640,15 +704,13 @@ const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {
     botonverhistorial.addEventListener('click', () => ventanahistorial.mostrar('inventario', iddetalle, titulodetalle.textContent));
 }
-
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
-formulario.elements.tbinventariocategoriaextrafechavencimiento.min = new Date().toLocaleDateString('en-CA');
+formulario.elements.tbinventariocategoriachocolatefechavencimiento.min = new Date().toLocaleDateString('en-CA');
 
 const proveedoreslistos = cargarproveedores();
 filtrosdesdeurl({ categoria: filtrocategoria, estado: filtroestado, stock: filtrostock });
 cargarinventario();
-
 
 // Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
 abrirformulariosipide(abrirnuevo);

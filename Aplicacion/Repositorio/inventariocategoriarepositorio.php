@@ -1,18 +1,23 @@
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 require_once __DIR__ . '/../Modelo/inventariocategoriaflor.php';
+require_once __DIR__ . '/../Modelo/inventariocategoriaenvoltura.php';
 require_once __DIR__ . '/../Modelo/inventariocategoriabase.php';
-require_once __DIR__ . '/../Modelo/inventariocategoriaadorno.php';
-require_once __DIR__ . '/../Modelo/inventariocategoriaextra.php';
+require_once __DIR__ . '/../Modelo/inventariocategoriachocolate.php';
+require_once __DIR__ . '/../Modelo/inventariocategoriapeluche.php';
+require_once __DIR__ . '/../Modelo/inventariocategoriatarjeta.php';
 
 class inventariocategoriarepositorio
 {
     private $conexion;
+    // Cada categoría guarda sus propios atributos en tbinventariocategoria<categoría>
     private $categorias = [
-        'Flor'   => ['clase' => 'Inventariocategoriaflor', 'campos' => ['tipo', 'color', 'largotallo', 'diasduracion']],
-        'Base'   => ['clase' => 'Inventariocategoriabase', 'campos' => ['tipo', 'material', 'color', 'forma', 'medida']],
-        'Adorno' => ['clase' => 'Inventariocategoriaadorno', 'campos' => ['tipo', 'material', 'color', 'medida', 'diseno']],
-        'Extra'  => ['clase' => 'Inventariocategoriaextra', 'campos' => ['tipo', 'marca', 'tamano', 'color', 'contenido', 'fechavencimiento']],
+        'Flor'      => ['clase' => 'Inventariocategoriaflor', 'campos' => ['tipo', 'variedad', 'color', 'largotallo', 'diasduracion']],
+        'Envoltura' => ['clase' => 'Inventariocategoriaenvoltura', 'campos' => ['clase', 'tipo', 'color', 'diseno', 'medida', 'material', 'acabado', 'personalizable']],
+        'Base'      => ['clase' => 'Inventariocategoriabase', 'campos' => ['tipo', 'material', 'color', 'forma', 'medida', 'diseno']],
+        'Chocolate' => ['clase' => 'Inventariocategoriachocolate', 'campos' => ['tipo', 'marca', 'presentacion', 'peso', 'sabor', 'fechavencimiento']],
+        'Peluche'   => ['clase' => 'Inventariocategoriapeluche', 'campos' => ['tipo', 'tamano', 'color', 'diseno', 'material']],
+        'Tarjeta'   => ['clase' => 'Inventariocategoriatarjeta', 'campos' => ['tipo', 'tematica', 'color', 'material', 'medida', 'personalizable', 'elaboracion']],
     ];
 
     public function __construct()

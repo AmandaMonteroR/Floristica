@@ -12,12 +12,38 @@ class inventariocontrolador
     private $proveedores;
     private $movimientos;
     private $historico;
-    private $categorias = ['Flor', 'Base', 'Adorno', 'Extra'];
-    private $tiposbase = ['Caja', 'Base'];
-    private $materialesbase = ['Plástico', 'Madera'];
-    private $tiposadorno = ['Cinta', 'Papel', 'Tarjeta'];
-    private $tiposextra = ['Peluche', 'Chocolate', 'Maquillaje', 'Juguete'];
-    private $extrasconvencimiento = ['Chocolate', 'Maquillaje'];
+    private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta'];
+
+    // Opciones de las listas de cada categoría. La vista las usa para llenar los select
+    // y el controlador para validar, así las dos siempre coinciden.
+    public static function opciones()
+    {
+        return [
+            'tiposflor'               => ['Flor', 'Follaje'],
+            'variedades'              => [
+                'Flor'    => ['Rosa', 'Gerbera', 'Girasol', 'Clavel', 'Lirio', 'Lisianthus', 'Dragón', 'Popis', 'Fully', 'Áster', 'Gypson'],
+                'Follaje' => ['Eucalipto', 'Helecho', 'Baby eucalipto'],
+            ],
+            'clasesenvoltura'         => ['Papel', 'Cinta'],
+            'tiposenvoltura'          => [
+                'Papel' => ['Coreano', 'Kraft', 'Seda', 'Celofán', 'Encerado'],
+                'Cinta' => ['Satín', 'Organza', 'Yute', 'Raso', 'Papel'],
+            ],
+            'acabadospapel'           => ['Mate', 'Brillante', 'Metalizado', 'Transparente'],
+            'tiposbase'               => ['Plástica', 'Canasta', 'Caja', 'Florero', 'Madera', 'Espuma floral'],
+            'materialesbase'          => ['Plástico', 'Madera', 'Vidrio', 'Cerámica', 'Cartón', 'Mimbre'],
+            'tiposchocolate'          => ['Con leche', 'Oscuro', 'Blanco', 'Relleno'],
+            'presentacioneschocolate' => ['Barra', 'Bombón', 'Trufa', 'Caja de chocolates'],
+            'tipospeluche'            => ['Oso', 'Conejo', 'Perro', 'Corazón'],
+            'materialespeluche'       => ['Felpa', 'Algodón', 'Poliéster'],
+            'tipostarjeta'            => ['Felicitación', 'Dedicatoria', 'Mensaje', 'Etiqueta colgante'],
+            'tematicastarjeta'        => ['Cumpleaños', 'Amor', 'Aniversario', 'Graduación', 'Condolencias', 'Agradecimiento', 'Otra'],
+            'materialestarjeta'       => ['Cartulina', 'Papel kraft', 'Papel perlado', 'Opalina'],
+            'elaboracionestarjeta'    => ['Hecha en el negocio', 'Comprada'],
+            // Personalizable (cinta y tarjeta): 1 = sí, 0 = no
+            'personalizable'          => ['1' => 'Sí', '0' => 'No'],
+        ];
+    }
 
     public function __construct()
     {
@@ -110,12 +136,14 @@ class inventariocontrolador
 
         $stockanterior = (int) $inventario->getTbinventariostock();
         $anteriores = $this->datoshistorico($inventario);
+
         $inventario->setTbproveedorid($datos['tbproveedorid']);
         $inventario->setTbinventarionombre($datos['tbinventarionombre']);
         $inventario->setTbinventariocategoria($datos['tbinventariocategoria']);
         $inventario->setTbinventariopreciopaquete($datos['tbinventariopreciopaquete']);
         $inventario->setTbinventariounidadespaquete($datos['tbinventariounidadespaquete']);
         $inventario->setTbinventariopreciounidad($this->calcularpreciounidad($datos));
+        $inventario->setTbinventarioprecioventa($datos['tbinventarioprecioventa']);
         $inventario->setTbinventariostock($datos['tbinventariostock']);
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
@@ -189,6 +217,7 @@ class inventariocontrolador
             'nombre'      => 'Nombre',
             'proveedor'   => 'Proveedor',
             'precio'      => 'Precio del paquete',
+            'precioventa' => 'Precio de venta',
             'stockminimo' => 'Stock mínimo',
             'estado'      => 'Estado',
         ];
@@ -202,6 +231,8 @@ class inventariocontrolador
                 case 'precio':
                     [$precio, $unidades] = array_map('trim', explode('/', $valor) + [1 => '']);
                     return historicocontrolador::monto($precio) . ' por ' . $unidades . ' unidades';
+                case 'precioventa':
+                    return historicocontrolador::monto($valor) . ' por unidad';
                 case 'estado':
                     return historicocontrolador::estado($valor);
                 default:
@@ -220,6 +251,7 @@ class inventariocontrolador
             'proveedor'   => (int) $inventario->getTbproveedorid(),
             'precio'      => number_format((float) $inventario->getTbinventariopreciopaquete(), 2, '.', '')
                 . ' / ' . (int) $inventario->getTbinventariounidadespaquete(),
+            'precioventa' => number_format((float) $inventario->getTbinventarioprecioventa(), 2, '.', ''),
             'stockminimo' => (int) $inventario->getTbinventariostockminimo(),
             'estado'      => (int) $inventario->getTbinventarioestado(),
         ];
@@ -239,7 +271,9 @@ class inventariocontrolador
     private function convertirmovimientos($idinventario)
     {
         $lista = [];
-        foreach (array_reverse($this->movimientos->listar($idinventario)) as $fila) {            switch ($fila['tbinventariomovimientotipo']) {
+        // Se piden los 20 más recientes y se muestran del más viejo al más nuevo
+        foreach (array_reverse($this->movimientos->listar($idinventario)) as $fila) {
+            switch ($fila['tbinventariomovimientotipo']) {
                 case 'Inicial':
                     $motivo = 'Stock inicial al registrar el producto';
                     break;
@@ -247,7 +281,7 @@ class inventariocontrolador
                     $motivo = 'Pedido N.º ' . $fila['tbpedidoid'] . ' recibido';
                     break;
                 case 'Salida':
-                    $motivo = 'Encargo N.º ' . $fila['tbsolicitudencargoid'] . ' terminado';
+                    $motivo = 'Solicitud de encargo N.º ' . $fila['tbsolicitudencargoid'] . ' terminada';
                     break;
                 default:
                     $motivo = 'Ajuste manual al editar el producto';
@@ -294,6 +328,7 @@ class inventariocontrolador
             'tbinventariocategoria',
             'tbinventariopreciopaquete',
             'tbinventariounidadespaquete',
+            'tbinventarioprecioventa',
             'tbinventariostock',
             'tbinventariostockminimo',
         ];
@@ -304,6 +339,7 @@ class inventariocontrolador
         }
 
         $limpios['tbinventariopreciopaquete'] = str_replace(',', '.', $limpios['tbinventariopreciopaquete']);
+        $limpios['tbinventarioprecioventa'] = str_replace(',', '.', $limpios['tbinventarioprecioventa']);
 
         if (in_array($limpios['tbinventariocategoria'], $this->categorias, true)) {
             foreach ($this->atributos->campos($limpios['tbinventariocategoria']) as $campo) {
@@ -312,19 +348,27 @@ class inventariocontrolador
         }
 
         // Las medidas se guardan con el formato "20 x 30"
-        foreach (['tbinventariocategoriabasemedida', 'tbinventariocategoriaadornomedida'] as $campo) {
+        $medidas = ['tbinventariocategoriabasemedida', 'tbinventariocategoriaenvolturamedida', 'tbinventariocategoriatarjetamedida'];
+        foreach ($medidas as $campo) {
             if (isset($limpios[$campo])) {
                 $limpios[$campo] = preg_replace('/\s*[xX×]\s*/u', ' x ', $limpios[$campo]);
             }
         }
 
-        if ($limpios['tbinventariocategoria'] === 'Extra'
-            && !in_array($limpios['tbinventariocategoriaextratipo'], $this->extrasconvencimiento, true)) {
-            $limpios['tbinventariocategoriaextrafechavencimiento'] = '';
+        // El acabado solo aplica al papel y "personalizable" solo a la cinta; lo que no aplica queda vacío (NULL)
+        if (isset($limpios['tbinventariocategoriaenvolturaclase'])) {
+            $clase = $limpios['tbinventariocategoriaenvolturaclase'];
+
+            if ($clase !== 'Papel' || $limpios['tbinventariocategoriaenvolturaacabado'] === '') {
+                $limpios['tbinventariocategoriaenvolturaacabado'] = null;
+            }
+            if ($clase !== 'Cinta') {
+                $limpios['tbinventariocategoriaenvolturapersonalizable'] = null;
+            }
         }
 
-        if (($limpios['tbinventariocategoriaextrafechavencimiento'] ?? null) === '') {
-            $limpios['tbinventariocategoriaextrafechavencimiento'] = null;
+        if (($limpios['tbinventariocategoriachocolatefechavencimiento'] ?? null) === '') {
+            $limpios['tbinventariocategoriachocolatefechavencimiento'] = null;
         }
 
         return $limpios;
@@ -380,6 +424,18 @@ class inventariocontrolador
             'Las unidades por paquete son obligatorias.',
             'Las unidades por paquete deben ser un número entero entre 1 y 10000.');
 
+        // El precio de venta por unidad no puede quedar por debajo de lo que cuesta la unidad
+        if ($datos['tbinventarioprecioventa'] === '') {
+            $errores['tbinventarioprecioventa'] = 'El precio de venta es obligatorio.';
+        } elseif (!preg_match('/^\d{1,8}(\.\d{1,2})?$/', $datos['tbinventarioprecioventa'])
+            || (float) $datos['tbinventarioprecioventa'] <= 0) {
+            $errores['tbinventarioprecioventa'] = 'El precio de venta debe ser un monto mayor que 0, con máximo 2 decimales.';
+        } elseif (!isset($errores['tbinventariopreciopaquete']) && !isset($errores['tbinventariounidadespaquete'])
+            && (float) $datos['tbinventarioprecioventa'] < $this->calcularpreciounidad($datos)) {
+            $errores['tbinventarioprecioventa'] = 'El precio de venta no puede ser menor que el costo por unidad ('
+                . historicocontrolador::monto($this->calcularpreciounidad($datos)) . ').';
+        }
+
         $this->validarentero($errores, $datos, 'tbinventariostock', 0, 999999,
             'El stock es obligatorio.',
             'El stock debe ser un número entero entre 0 y 999999.');
@@ -392,14 +448,20 @@ class inventariocontrolador
             case 'Flor':
                 $errores += $this->validarflor($datos);
                 break;
+            case 'Envoltura':
+                $errores += $this->validarenvoltura($datos);
+                break;
             case 'Base':
                 $errores += $this->validarbase($datos);
                 break;
-            case 'Adorno':
-                $errores += $this->validaradorno($datos);
+            case 'Chocolate':
+                $errores += $this->validarchocolate($datos);
                 break;
-            case 'Extra':
-                $errores += $this->validarextra($datos);
+            case 'Peluche':
+                $errores += $this->validarpeluche($datos);
+                break;
+            case 'Tarjeta':
+                $errores += $this->validartarjeta($datos);
                 break;
         }
 
@@ -461,11 +523,27 @@ class inventariocontrolador
         }
     }
 
+    // Revisa que el valor sea una de las opciones de la lista
+    private function validarlista(&$errores, $datos, $campo, $nombre, $lista, $obligatorio = true)
+    {
+        $valor = $datos[$campo];
+
+        if ($valor === '' || $valor === null) {
+            if ($obligatorio) {
+                $errores[$campo] = $nombre . ' es obligatorio.';
+            }
+        } elseif (!in_array($valor, $lista, true)) {
+            $errores[$campo] = $nombre . ' seleccionado no es válido.';
+        }
+    }
+
     private function validarflor($datos)
     {
         $errores = [];
+        $opciones = self::opciones();
 
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaflortipo', 'El tipo de flor', 50, true);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriaflortipo', 'El tipo', $opciones['tiposflor']);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaflorvariedad', 'La variedad', 50, true);
         $this->validarletras($errores, $datos, 'tbinventariocategoriaflorcolor', 'El color', 30, true);
 
         $this->validarentero($errores, $datos, 'tbinventariocategoriaflorlargotallo', 1, 300,
@@ -479,79 +557,112 @@ class inventariocontrolador
         return $errores;
     }
 
+    // Papel o cinta
+    private function validarenvoltura($datos)
+    {
+        $errores = [];
+        $opciones = self::opciones();
+        $clase = $datos['tbinventariocategoriaenvolturaclase'];
+
+        $this->validarlista($errores, $datos, 'tbinventariocategoriaenvolturaclase', 'Si es papel o cinta', $opciones['clasesenvoltura']);
+
+        if (!isset($errores['tbinventariocategoriaenvolturaclase'])) {
+            $this->validarlista($errores, $datos, 'tbinventariocategoriaenvolturatipo',
+                $clase === 'Papel' ? 'El tipo de papel' : 'El tipo de cinta', $opciones['tiposenvoltura'][$clase]);
+        }
+
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaenvolturacolor', 'El color', 30, true);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaenvolturadiseno', 'El diseño', 50, false);
+        $this->validarmedida($errores, $datos, 'tbinventariocategoriaenvolturamedida');
+        $this->validarletras($errores, $datos, 'tbinventariocategoriaenvolturamaterial', 'El material', 30, false);
+
+        if ($clase === 'Papel') {
+            $this->validarlista($errores, $datos, 'tbinventariocategoriaenvolturaacabado', 'El acabado', $opciones['acabadospapel'], false);
+        }
+
+        if ($clase === 'Cinta') {
+            $this->validarlista($errores, $datos, 'tbinventariocategoriaenvolturapersonalizable',
+                'Si es personalizable', array_map('strval', array_keys($opciones['personalizable'])));
+        }
+
+        return $errores;
+    }
+
     private function validarbase($datos)
     {
         $errores = [];
+        $opciones = self::opciones();
 
-        if ($datos['tbinventariocategoriabasetipo'] === '') {
-            $errores['tbinventariocategoriabasetipo'] = 'El tipo de base es obligatorio.';
-        } elseif (!in_array($datos['tbinventariocategoriabasetipo'], $this->tiposbase, true)) {
-            $errores['tbinventariocategoriabasetipo'] = 'El tipo de base seleccionado no es válido.';
-        }
-
-        if ($datos['tbinventariocategoriabasematerial'] === '') {
-            $errores['tbinventariocategoriabasematerial'] = 'El material es obligatorio.';
-        } elseif (!in_array($datos['tbinventariocategoriabasematerial'], $this->materialesbase, true)) {
-            $errores['tbinventariocategoriabasematerial'] = 'El material seleccionado no es válido.';
-        }
-
+        $this->validarlista($errores, $datos, 'tbinventariocategoriabasetipo', 'El tipo de base', $opciones['tiposbase']);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriabasematerial', 'El material', $opciones['materialesbase']);
         $this->validarletras($errores, $datos, 'tbinventariocategoriabasecolor', 'El color', 30, true);
         $this->validarletras($errores, $datos, 'tbinventariocategoriabaseforma', 'La forma', 30, false);
         $this->validarmedida($errores, $datos, 'tbinventariocategoriabasemedida');
+        $this->validarletras($errores, $datos, 'tbinventariocategoriabasediseno', 'El diseño', 50, false);
 
         return $errores;
     }
 
-    private function validaradorno($datos)
+    private function validarchocolate($datos)
     {
         $errores = [];
+        $opciones = self::opciones();
 
-        if ($datos['tbinventariocategoriaadornotipo'] === '') {
-            $errores['tbinventariocategoriaadornotipo'] = 'El tipo de adorno es obligatorio.';
-        } elseif (!in_array($datos['tbinventariocategoriaadornotipo'], $this->tiposadorno, true)) {
-            $errores['tbinventariocategoriaadornotipo'] = 'El tipo de adorno seleccionado no es válido.';
-        }
+        $this->validarlista($errores, $datos, 'tbinventariocategoriachocolatetipo', 'El tipo de chocolate', $opciones['tiposchocolate']);
+        $this->validartexto($errores, $datos, 'tbinventariocategoriachocolatemarca', 'La marca', 50);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriachocolatepresentacion', 'La presentación', $opciones['presentacioneschocolate']);
 
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaadornomaterial', 'El material', 50, false);
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaadornocolor', 'El color', 30, false);
-        $this->validarmedida($errores, $datos, 'tbinventariocategoriaadornomedida');
+        $this->validarentero($errores, $datos, 'tbinventariocategoriachocolatepeso', 1, 5000,
+            'El peso es obligatorio.',
+            'El peso debe ser un número entero entre 1 y 5000 gramos.');
 
-        if ($datos['tbinventariocategoriaadornotipo'] === 'Tarjeta' && $datos['tbinventariocategoriaadornodiseno'] === '') {
-            $errores['tbinventariocategoriaadornodiseno'] = 'En las tarjetas, el diseño u ocasión es obligatorio.';
-        } else {
-            $this->validartexto($errores, $datos, 'tbinventariocategoriaadornodiseno', 'El diseño', 50);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriachocolatesabor', 'El sabor', 30, false);
+
+        $valor = $datos['tbinventariocategoriachocolatefechavencimiento'];
+        $fecha = DateTime::createFromFormat('Y-m-d', (string) $valor);
+
+        if ($valor === null) {
+            $errores['tbinventariocategoriachocolatefechavencimiento'] = 'La fecha de vencimiento es obligatoria.';
+        } elseif (!$fecha || $fecha->format('Y-m-d') !== $valor) {
+            $errores['tbinventariocategoriachocolatefechavencimiento'] = 'La fecha de vencimiento no es válida.';
+        } elseif ($valor < date('Y-m-d')) {
+            $errores['tbinventariocategoriachocolatefechavencimiento'] = 'La fecha de vencimiento no puede ser anterior a hoy.';
         }
 
         return $errores;
     }
 
-    private function validarextra($datos)
+    private function validarpeluche($datos)
     {
         $errores = [];
+        $opciones = self::opciones();
 
-        if ($datos['tbinventariocategoriaextratipo'] === '') {
-            $errores['tbinventariocategoriaextratipo'] = 'El tipo de extra es obligatorio.';
-        } elseif (!in_array($datos['tbinventariocategoriaextratipo'], $this->tiposextra, true)) {
-            $errores['tbinventariocategoriaextratipo'] = 'El tipo de extra seleccionado no es válido.';
-        }
+        $this->validarletras($errores, $datos, 'tbinventariocategoriapeluchetipo', 'El tipo de peluche', 30, true);
 
-        $this->validartexto($errores, $datos, 'tbinventariocategoriaextramarca', 'La marca', 50);
-        $this->validartexto($errores, $datos, 'tbinventariocategoriaextratamano', 'El tamaño', 30);
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaextracolor', 'El color', 30, false);
-        $this->validartexto($errores, $datos, 'tbinventariocategoriaextracontenido', 'El contenido', 30);
+        $this->validarentero($errores, $datos, 'tbinventariocategoriapeluchetamano', 1, 200,
+            'El tamaño es obligatorio.',
+            'El tamaño debe ser un número entero entre 1 y 200 cm.');
 
-        if (in_array($datos['tbinventariocategoriaextratipo'], $this->extrasconvencimiento, true)) {
-            $valor = $datos['tbinventariocategoriaextrafechavencimiento'];
-            $fecha = DateTime::createFromFormat('Y-m-d', (string) $valor);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriapeluchecolor', 'El color', 30, true);
+        $this->validartexto($errores, $datos, 'tbinventariocategoriapeluchediseno', 'El diseño', 50);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriapeluchematerial', 'El material', $opciones['materialespeluche'], false);
 
-            if ($valor === null) {
-                $errores['tbinventariocategoriaextrafechavencimiento'] = 'La fecha de vencimiento es obligatoria en chocolates y maquillaje.';
-            } elseif (!$fecha || $fecha->format('Y-m-d') !== $valor) {
-                $errores['tbinventariocategoriaextrafechavencimiento'] = 'La fecha de vencimiento no es válida.';
-            } elseif ($valor < date('Y-m-d')) {
-                $errores['tbinventariocategoriaextrafechavencimiento'] = 'La fecha de vencimiento no puede ser anterior a hoy.';
-            }
-        }
+        return $errores;
+    }
+
+    private function validartarjeta($datos)
+    {
+        $errores = [];
+        $opciones = self::opciones();
+
+        $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetatipo', 'El tipo de tarjeta', $opciones['tipostarjeta']);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetatematica', 'La temática', $opciones['tematicastarjeta']);
+        $this->validarletras($errores, $datos, 'tbinventariocategoriatarjetacolor', 'El color', 30, true);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetamaterial', 'El material', $opciones['materialestarjeta']);
+        $this->validarmedida($errores, $datos, 'tbinventariocategoriatarjetamedida');
+        $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetapersonalizable',
+            'Si es personalizable', array_map('strval', array_keys($opciones['personalizable'])));
+        $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetaelaboracion', 'La elaboración', $opciones['elaboracionestarjeta']);
 
         return $errores;
     }
@@ -585,6 +696,7 @@ class inventariocontrolador
             'tbinventariopreciopaquete'   => (float) $inventario->getTbinventariopreciopaquete(),
             'tbinventariounidadespaquete' => (int) $inventario->getTbinventariounidadespaquete(),
             'tbinventariopreciounidad'    => (float) $inventario->getTbinventariopreciounidad(),
+            'tbinventarioprecioventa'     => (float) $inventario->getTbinventarioprecioventa(),
             'tbinventariostock'           => (int) $inventario->getTbinventariostock(),
             'tbinventariostockminimo'     => (int) $inventario->getTbinventariostockminimo(),
             'tbinventarioestado'          => (int) $inventario->getTbinventarioestado(),

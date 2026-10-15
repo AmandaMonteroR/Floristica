@@ -9,6 +9,7 @@ class Inventariocategoriabase
     private $tbinventariocategoriabasecolor;
     private $tbinventariocategoriabaseforma;
     private $tbinventariocategoriabasemedida;
+    private $tbinventariocategoriabasediseno;
 
     public function __construct($datos = [])
     {
@@ -19,6 +20,7 @@ class Inventariocategoriabase
         $this->tbinventariocategoriabasecolor    = $datos['tbinventariocategoriabasecolor'] ?? '';
         $this->tbinventariocategoriabaseforma    = $datos['tbinventariocategoriabaseforma'] ?? '';
         $this->tbinventariocategoriabasemedida   = $datos['tbinventariocategoriabasemedida'] ?? '';
+        $this->tbinventariocategoriabasediseno   = $datos['tbinventariocategoriabasediseno'] ?? '';
     }
 
     public function getTbinventariocategoriabaseid() { 
@@ -62,4 +64,10 @@ class Inventariocategoriabase
 
     public function setTbinventariocategoriabasemedida($valor) { 
         $this->tbinventariocategoriabasemedida = $valor; }
+
+    public function getTbinventariocategoriabasediseno() { 
+        return $this->tbinventariocategoriabasediseno; }
+
+    public function setTbinventariocategoriabasediseno($valor) { 
+        $this->tbinventariocategoriabasediseno = $valor; }
 }

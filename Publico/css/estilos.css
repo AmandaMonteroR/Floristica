@@ -584,6 +584,16 @@ h1 {
     color: var(--texto);
 }
 
+/* Ganancia por unidad, al lado del precio de venta */
+.precio-ganancia {
+    align-self: center;
+    margin: 0;
+}
+
+.precio-unidad strong.texto-peligro {
+    color: var(--peligro);
+}
+
 .seccion-categoria {
     margin: 0.5rem 0 0;
     padding: 0.75rem 1rem 0.25rem;

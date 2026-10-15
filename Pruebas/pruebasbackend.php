@@ -346,9 +346,11 @@ $florvalida = [
     'tbinventariocategoria'                 => 'Flor',
     'tbinventariopreciopaquete'             => '10000',
     'tbinventariounidadespaquete'           => 20,
+    'tbinventarioprecioventa'               => '1000',
     'tbinventariostock'                     => 40,
     'tbinventariostockminimo'               => 10,
-    'tbinventariocategoriaflortipo'         => 'Tulipán',
+    'tbinventariocategoriaflortipo'         => 'Flor',
+    'tbinventariocategoriaflorvariedad'     => 'Tulipán',
     'tbinventariocategoriaflorcolor'        => 'Amarillo',
     'tbinventariocategoriaflorlargotallo'   => 40,
     'tbinventariocategoriaflordiasduracion' => 7,
@@ -369,21 +371,64 @@ prueba('El precio solo acepta 2 decimales', tieneerror($r, 'tbinventariopreciopa
 $r = $propietario->post('inventario', 'crear', ['tbinventariopreciopaquete' => '0'] + $florvalida);
 prueba('El precio debe ser mayor que 0', tieneerror($r, 'tbinventariopreciopaquete'));
 
+$r = $propietario->post('inventario', 'crear', ['tbinventarioprecioventa' => '400'] + $florvalida);
+prueba('El precio de venta no puede ser menor que el costo por unidad (500)', tieneerror($r, 'tbinventarioprecioventa'), mensaje($r));
+
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoriaflortipo' => 'Árbol'] + $florvalida);
+prueba('El tipo de flor solo puede ser Flor o Follaje', tieneerror($r, 'tbinventariocategoriaflortipo'));
+
+$cintavalida = [
+    'tbproveedorid' => 3, 'tbinventarionombre' => 'Cinta de prueba', 'tbinventariocategoria' => 'Envoltura',
+    'tbinventariopreciopaquete' => '3000', 'tbinventariounidadespaquete' => 10, 'tbinventarioprecioventa' => '600',
+    'tbinventariostock' => 10, 'tbinventariostockminimo' => 2,
+    'tbinventariocategoriaenvolturaclase' => 'Cinta', 'tbinventariocategoriaenvolturatipo' => 'Satín',
+    'tbinventariocategoriaenvolturacolor' => 'Azul', 'tbinventariocategoriaenvolturadiseno' => 'Lisa',
+    'tbinventariocategoriaenvolturamedida' => '2.5', 'tbinventariocategoriaenvolturamaterial' => 'Tela',
+    'tbinventariocategoriaenvolturaacabado' => 'Brillante', 'tbinventariocategoriaenvolturapersonalizable' => '1',
+];
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoriaenvolturapersonalizable' => ''] + $cintavalida);
+prueba('La cinta pide si es personalizable', tieneerror($r, 'tbinventariocategoriaenvolturapersonalizable'));
+
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoriaenvolturaclase' => 'Papel'] + $cintavalida);
+prueba('Satín no es un tipo de papel', tieneerror($r, 'tbinventariocategoriaenvolturatipo'));
+
+$r = $propietario->post('inventario', 'crear', $cintavalida);
+$idcinta = datos($r)['tbinventarioid'] ?? 0;
+$cinta = datos($propietario->get('inventario', 'obtener', ['id' => $idcinta]));
+prueba('Crea una cinta personalizable; el acabado solo es del papel y en la cinta queda vacío',
+    exito($r) && array_key_exists('tbinventariocategoriaenvolturaacabado', $cinta['categoria'] ?? [])
+    && $cinta['categoria']['tbinventariocategoriaenvolturaacabado'] === null
+    && (int) $cinta['categoria']['tbinventariocategoriaenvolturapersonalizable'] === 1, json_encode($cinta['categoria'] ?? null, JSON_UNESCAPED_UNICODE));
+
 $r = $propietario->post('inventario', 'crear', [
     'tbproveedorid' => 6, 'tbinventarionombre' => 'Caja prueba', 'tbinventariocategoria' => 'Base',
-    'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
+    'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventarioprecioventa' => '2000',
+    'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
     'tbinventariocategoriabasetipo' => 'Caja', 'tbinventariocategoriabasematerial' => 'Madera', 'tbinventariocategoriabasecolor' => 'Café',
     'tbinventariocategoriabaseforma' => 'Cuadrada', 'tbinventariocategoriabasemedida' => 'grande',
 ]);
 prueba('La medida debe ir en centímetros (ej. 20 x 30)', tieneerror($r, 'tbinventariocategoriabasemedida'));
 
 $r = $propietario->post('inventario', 'crear', [
-    'tbproveedorid' => 6, 'tbinventarionombre' => 'Chocolate prueba', 'tbinventariocategoria' => 'Extra',
-    'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
-    'tbinventariocategoriaextratipo' => 'Chocolate', 'tbinventariocategoriaextramarca' => 'Prueba', 'tbinventariocategoriaextratamano' => 'Mediano',
-    'tbinventariocategoriaextracolor' => 'Café', 'tbinventariocategoriaextracontenido' => '10 unidades', 'tbinventariocategoriaextrafechavencimiento' => '',
+    'tbproveedorid' => 6, 'tbinventarionombre' => 'Chocolate prueba', 'tbinventariocategoria' => 'Chocolate',
+    'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventarioprecioventa' => '2000',
+    'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
+    'tbinventariocategoriachocolatetipo' => 'Oscuro', 'tbinventariocategoriachocolatemarca' => 'Prueba',
+    'tbinventariocategoriachocolatepresentacion' => 'Barra', 'tbinventariocategoriachocolatepeso' => 100,
+    'tbinventariocategoriachocolatesabor' => 'Menta', 'tbinventariocategoriachocolatefechavencimiento' => '',
 ]);
-prueba('Los chocolates piden fecha de vencimiento', tieneerror($r, 'tbinventariocategoriaextrafechavencimiento'));
+prueba('Los chocolates piden fecha de vencimiento', tieneerror($r, 'tbinventariocategoriachocolatefechavencimiento'));
+
+$r = $propietario->post('inventario', 'crear', [
+    'tbproveedorid' => 3, 'tbinventarionombre' => 'Tarjeta de prueba', 'tbinventariocategoria' => 'Tarjeta',
+    'tbinventariopreciopaquete' => '2000', 'tbinventariounidadespaquete' => 20, 'tbinventarioprecioventa' => '500',
+    'tbinventariostock' => 20, 'tbinventariostockminimo' => 5,
+    'tbinventariocategoriatarjetatipo' => 'Dedicatoria', 'tbinventariocategoriatarjetatematica' => 'Amor',
+    'tbinventariocategoriatarjetacolor' => 'Rojo', 'tbinventariocategoriatarjetamaterial' => 'Opalina',
+    'tbinventariocategoriatarjetamedida' => '8 x 5', 'tbinventariocategoriatarjetapersonalizable' => '1',
+    'tbinventariocategoriatarjetaelaboracion' => 'Hecha en el negocio',
+]);
+prueba('Crea una tarjeta con tipo, temática, material, personalizable y elaboración', exito($r), mensaje($r));
 
 $r = $propietario->post('inventario', 'crear', $florvalida);
 $idproducto = datos($r)['tbinventarioid'] ?? 0;
@@ -392,11 +437,12 @@ prueba('Crea un producto válido', exito($r) && $idproducto > 0, mensaje($r));
 $producto = datos($propietario->get('inventario', 'obtener', ['id' => $idproducto]));
 prueba('Calcula el precio por unidad (10000 / 20 = 500)', (float) ($producto['tbinventariopreciounidad'] ?? 0) === 500.0, json_encode($producto['tbinventariopreciounidad'] ?? null));
 prueba('Registra el movimiento "Inicial" de 40', ($producto['movimientos'][0]['tipo'] ?? '') === 'Inicial' && ($producto['movimientos'][0]['cantidad'] ?? 0) === 40);
-prueba('El historial tiene los 5 datos iniciales', count(datos($propietario->get('inventario', 'historial', ['id' => $idproducto]))) === 5);
+prueba('El historial tiene los 6 datos iniciales (con el precio de venta)', count(datos($propietario->get('inventario', 'historial', ['id' => $idproducto]))) === 6);
 
 $cambio = $florvalida + ['tbinventarioid' => $idproducto];
 $cambio['tbinventariostock'] = 35;
 $cambio['tbinventariopreciopaquete'] = '12000';
+$cambio['tbinventarioprecioventa'] = '1200';
 $r = $propietario->post('inventario', 'actualizar', $cambio);
 prueba('Actualiza stock y precio', exito($r), mensaje($r));
 
@@ -406,7 +452,9 @@ prueba('Corregir el stock a mano queda como "Ajuste" de −5', ($ultimomovimient
     json_encode($ultimomovimiento, JSON_UNESCAPED_UNICODE));
 $historial = datos($propietario->get('inventario', 'historial', ['id' => $idproducto]));
 $ultimo = end($historial);
-prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') === 'precio' && strpos($ultimo['nuevo'] ?? '', '12 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
+$camposcambiados = array_column(array_slice($historial, -2), 'campo');
+prueba('El cambio de precio y de precio de venta quedan en el historial',
+    in_array('precio', $camposcambiados, true) && in_array('precioventa', $camposcambiados, true), json_encode(array_slice($historial, -2), JSON_UNESCAPED_UNICODE));
 
 prueba('Inactiva el producto', exito($propietario->post('inventario', 'inactivar', ['id' => $idproducto])));
 prueba('Lo reactiva', exito($propietario->post('inventario', 'reactivar', ['id' => $idproducto])));

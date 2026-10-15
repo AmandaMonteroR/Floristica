@@ -1,3 +1,31 @@
+<?php
+// Opciones de las listas de cada categoría: son las mismas que valida el controlador
+$opciones = inventariocontrolador::opciones();
+
+function opcionesinventario($lista)
+{
+    foreach ($lista as $valor) {
+        echo '<option value="' . e($valor) . '">' . e($valor) . '</option>';
+    }
+}
+
+// Para "Personalizable": el valor que se guarda (1 o 0) y el texto que se ve (Sí o No)
+function opcionespersonalizable($lista)
+{
+    foreach ($lista as $valor => $texto) {
+        echo '<option value="' . e($valor) . '">' . e($texto) . '</option>';
+    }
+}
+
+$categoriasinventario = [
+    'Flor'      => 'Flor o follaje',
+    'Envoltura' => 'Envoltura (papel o cinta)',
+    'Base'      => 'Base',
+    'Chocolate' => 'Chocolate',
+    'Peluche'   => 'Peluche',
+    'Tarjeta'   => 'Tarjeta',
+];
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,7 +42,7 @@
     <header class="encabezado">
         <div>
             <h1>Inventario</h1>
-            <p class="subtitulo">Flores, bases, adornos y extras disponibles en la floristería.</p>
+            <p class="subtitulo">Flores, papel, cintas, bases, chocolates, peluches y tarjetas de la floristería.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo producto</button>
     </header>
@@ -28,10 +56,9 @@
             <span>Categoría</span>
             <select id="filtrocategoria">
                 <option value="">Todas</option>
-                <option value="Flor">Flor</option>
-                <option value="Base">Base</option>
-                <option value="Adorno">Adorno</option>
-                <option value="Extra">Extra</option>
+                <?php foreach ($categoriasinventario as $valor => $texto): ?>
+                    <option value="<?= e($valor) ?>"><?= e($texto) ?></option>
+                <?php endforeach; ?>
             </select>
         </label>
         <label class="campo">
@@ -62,14 +89,15 @@
                     <th>Producto</th>
                     <th>Categoría</th>
                     <th>Proveedor</th>
-                    <th>Precio unidad</th>
+                    <th>Costo unidad</th>
+                    <th>Precio venta</th>
                     <th>Stock</th>
                     <th>Estado</th>
                     <th class="columna-acciones">Acciones</th>
                 </tr>
             </thead>
             <tbody id="cuerpotabla">
-                <tr><td colspan="7" class="vacio">Cargando inventario…</td></tr>
+                <tr><td colspan="8" class="vacio">Cargando inventario…</td></tr>
             </tbody>
         </table>
     </div>
@@ -111,10 +139,9 @@
                 <span>Categoría *</span>
                 <select name="tbinventariocategoria">
                     <option value="">Seleccione…</option>
-                    <option value="Flor">Flor</option>
-                    <option value="Base">Base</option>
-                    <option value="Adorno">Adorno</option>
-                    <option value="Extra">Extra</option>
+                    <?php foreach ($categoriasinventario as $valor => $texto): ?>
+                        <option value="<?= e($valor) ?>"><?= e($texto) ?></option>
+                    <?php endforeach; ?>
                 </select>
                 <small class="error" data-error="tbinventariocategoria"></small>
             </label>
@@ -132,7 +159,14 @@
                 </div>
                 <small class="error" data-error="tbinventariounidadespaquete"></small>
             </div>
-            <p class="campo-completo precio-unidad">Precio por unidad: <strong id="preciounidad">—</strong></p>
+            <p class="campo-completo precio-unidad">Costo por unidad: <strong id="preciounidad">—</strong></p>
+            <label class="campo">
+                <span>Precio de venta por unidad (₡) *</span>
+                <input type="text" name="tbinventarioprecioventa" inputmode="decimal" maxlength="11" placeholder="1000" autocomplete="off" data-filtro="decimal">
+                <small class="error" data-error="tbinventarioprecioventa"></small>
+            </label>
+            <p class="campo precio-unidad precio-ganancia">Ganancia por unidad: <strong id="gananciaunidad">—</strong><br>
+                <small class="texto-suave">Es lo que se le cobra a la clienta por unidad en un arreglo personalizado o como adicional.</small></p>
             <div class="campo">
                 <span>Stock actual (unidades) *</span>
                 <div class="contador">
@@ -154,12 +188,21 @@
         </div>
 
         <fieldset class="seccion-categoria" data-categoria="Flor" hidden>
-            <legend>Datos de la flor</legend>
+            <legend>Datos de la flor o follaje</legend>
             <div class="rejilla">
                 <label class="campo">
-                    <span>Tipo de flor *</span>
-                    <input type="text" name="tbinventariocategoriaflortipo" maxlength="50" data-filtro="letras" placeholder="Rosa, girasol…">
+                    <span>Tipo *</span>
+                    <select name="tbinventariocategoriaflortipo">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['tiposflor']); ?>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriaflortipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Variedad *</span>
+                    <input type="text" name="tbinventariocategoriaflorvariedad" maxlength="50" data-filtro="letras" list="listavariedades" placeholder="Rosa, girasol, eucalipto…">
+                    <datalist id="listavariedades"></datalist>
+                    <small class="error" data-error="tbinventariocategoriaflorvariedad"></small>
                 </label>
                 <label class="campo">
                     <span>Color *</span>
@@ -179,6 +222,65 @@
             </div>
         </fieldset>
 
+        <fieldset class="seccion-categoria" data-categoria="Envoltura" hidden>
+            <legend>Datos del papel o la cinta</legend>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>¿Papel o cinta? *</span>
+                    <select name="tbinventariocategoriaenvolturaclase">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['clasesenvoltura']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriaenvolturaclase"></small>
+                </label>
+                <label class="campo">
+                    <span id="etiquetatipoenvoltura">Tipo *</span>
+                    <select name="tbinventariocategoriaenvolturatipo"
+                            data-opciones="<?= e(json_encode($opciones['tiposenvoltura'], JSON_UNESCAPED_UNICODE)) ?>">
+                        <option value="">Primero elija papel o cinta</option>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriaenvolturatipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Color *</span>
+                    <input type="text" name="tbinventariocategoriaenvolturacolor" maxlength="30" data-filtro="letras">
+                    <small class="error" data-error="tbinventariocategoriaenvolturacolor"></small>
+                </label>
+                <label class="campo">
+                    <span>Diseño</span>
+                    <input type="text" name="tbinventariocategoriaenvolturadiseno" maxlength="50" data-filtro="letras" placeholder="Liso, estampado, con brillo…">
+                    <small class="error" data-error="tbinventariocategoriaenvolturadiseno"></small>
+                </label>
+                <label class="campo">
+                    <span id="etiquetamedidaenvoltura">Medida (cm)</span>
+                    <input type="text" name="tbinventariocategoriaenvolturamedida" maxlength="30" placeholder="60 x 60" autocomplete="off" data-filtro="medida">
+                    <small class="error" data-error="tbinventariocategoriaenvolturamedida"></small>
+                </label>
+                <label class="campo">
+                    <span>Material</span>
+                    <input type="text" name="tbinventariocategoriaenvolturamaterial" maxlength="30" data-filtro="letras" placeholder="Papel, plástico, tela…">
+                    <small class="error" data-error="tbinventariocategoriaenvolturamaterial"></small>
+                </label>
+                <label class="campo" id="campopersonalizable" hidden>
+                    <span>¿Personalizable? *</span>
+                    <select name="tbinventariocategoriaenvolturapersonalizable">
+                        <option value="">Seleccione…</option>
+                        <?php opcionespersonalizable($opciones['personalizable']); ?>
+                    </select>
+                    <small class="nota-campo texto-suave">Si se le puede imprimir un nombre o mensaje.</small>
+                    <small class="error" data-error="tbinventariocategoriaenvolturapersonalizable"></small>
+                </label>
+                <label class="campo" id="campoacabado" hidden>
+                    <span>Acabado</span>
+                    <select name="tbinventariocategoriaenvolturaacabado">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['acabadospapel']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriaenvolturaacabado"></small>
+                </label>
+            </div>
+        </fieldset>
+
         <fieldset class="seccion-categoria" data-categoria="Base" hidden>
             <legend>Datos de la base</legend>
             <div class="rejilla">
@@ -186,8 +288,7 @@
                     <span>Tipo *</span>
                     <select name="tbinventariocategoriabasetipo">
                         <option value="">Seleccione…</option>
-                        <option value="Caja">Caja</option>
-                        <option value="Base">Base</option>
+                        <?php opcionesinventario($opciones['tiposbase']); ?>
                     </select>
                     <small class="error" data-error="tbinventariocategoriabasetipo"></small>
                 </label>
@@ -195,8 +296,7 @@
                     <span>Material *</span>
                     <select name="tbinventariocategoriabasematerial">
                         <option value="">Seleccione…</option>
-                        <option value="Plástico">Plástico</option>
-                        <option value="Madera">Madera</option>
+                        <?php opcionesinventario($opciones['materialesbase']); ?>
                     </select>
                     <small class="error" data-error="tbinventariocategoriabasematerial"></small>
                 </label>
@@ -207,91 +307,154 @@
                 </label>
                 <label class="campo">
                     <span>Forma</span>
-                    <input type="text" name="tbinventariocategoriabaseforma" maxlength="30" data-filtro="letras" placeholder="Redonda, cuadrada…">
+                    <input type="text" name="tbinventariocategoriabaseforma" maxlength="30" data-filtro="letras" placeholder="Redonda, cuadrada, corazón…">
                     <small class="error" data-error="tbinventariocategoriabaseforma"></small>
                 </label>
                 <label class="campo">
-                    <span>Medida (cm)</span>
-                    <input type="text" name="tbinventariocategoriabasemedida" maxlength="30" placeholder="20 x 20" autocomplete="off" data-filtro="medida">
+                    <span>Medidas (cm)</span>
+                    <input type="text" name="tbinventariocategoriabasemedida" maxlength="30" placeholder="20 x 20 x 15" autocomplete="off" data-filtro="medida">
                     <small class="error" data-error="tbinventariocategoriabasemedida"></small>
                 </label>
-            </div>
-        </fieldset>
-
-        <fieldset class="seccion-categoria" data-categoria="Adorno" hidden>
-            <legend>Datos del adorno</legend>
-            <div class="rejilla">
                 <label class="campo">
-                    <span>Tipo *</span>
-                    <select name="tbinventariocategoriaadornotipo">
-                        <option value="">Seleccione…</option>
-                        <option value="Cinta">Cinta</option>
-                        <option value="Papel">Papel</option>
-                        <option value="Tarjeta">Tarjeta</option>
-                    </select>
-                    <small class="error" data-error="tbinventariocategoriaadornotipo"></small>
-                </label>
-                <label class="campo">
-                    <span>Material</span>
-                    <input type="text" name="tbinventariocategoriaadornomaterial" maxlength="50" data-filtro="letras">
-                    <small class="error" data-error="tbinventariocategoriaadornomaterial"></small>
-                </label>
-                <label class="campo">
-                    <span>Color</span>
-                    <input type="text" name="tbinventariocategoriaadornocolor" maxlength="30" data-filtro="letras">
-                    <small class="error" data-error="tbinventariocategoriaadornocolor"></small>
-                </label>
-                <label class="campo">
-                    <span>Medida (cm)</span>
-                    <input type="text" name="tbinventariocategoriaadornomedida" maxlength="30" placeholder="2 x 300" autocomplete="off" data-filtro="medida">
-                    <small class="error" data-error="tbinventariocategoriaadornomedida"></small>
-                </label>
-                <label class="campo campo-completo">
-                    <span id="etiquetadiseno">Diseño u ocasión</span>
-                    <input type="text" name="tbinventariocategoriaadornodiseno" maxlength="50" data-filtro="texto" placeholder="Cumpleaños, aniversario…">
-                    <small class="error" data-error="tbinventariocategoriaadornodiseno"></small>
+                    <span>Diseño</span>
+                    <input type="text" name="tbinventariocategoriabasediseno" maxlength="50" data-filtro="letras" placeholder="Liso, decorado, estampado…">
+                    <small class="error" data-error="tbinventariocategoriabasediseno"></small>
                 </label>
             </div>
         </fieldset>
 
-        <fieldset class="seccion-categoria" data-categoria="Extra" hidden>
-            <legend>Datos del extra</legend>
+        <fieldset class="seccion-categoria" data-categoria="Chocolate" hidden>
+            <legend>Datos del chocolate</legend>
             <div class="rejilla">
                 <label class="campo">
                     <span>Tipo *</span>
-                    <select name="tbinventariocategoriaextratipo">
+                    <select name="tbinventariocategoriachocolatetipo">
                         <option value="">Seleccione…</option>
-                        <option value="Peluche">Peluche</option>
-                        <option value="Chocolate">Chocolate</option>
-                        <option value="Maquillaje">Maquillaje</option>
-                        <option value="Juguete">Juguete</option>
+                        <?php opcionesinventario($opciones['tiposchocolate']); ?>
                     </select>
-                    <small class="error" data-error="tbinventariocategoriaextratipo"></small>
+                    <small class="error" data-error="tbinventariocategoriachocolatetipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Presentación *</span>
+                    <select name="tbinventariocategoriachocolatepresentacion">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['presentacioneschocolate']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriachocolatepresentacion"></small>
                 </label>
                 <label class="campo">
                     <span>Marca</span>
-                    <input type="text" name="tbinventariocategoriaextramarca" maxlength="50" data-filtro="texto">
-                    <small class="error" data-error="tbinventariocategoriaextramarca"></small>
+                    <input type="text" name="tbinventariocategoriachocolatemarca" maxlength="50" data-filtro="texto">
+                    <small class="error" data-error="tbinventariocategoriachocolatemarca"></small>
                 </label>
                 <label class="campo">
-                    <span>Tamaño</span>
-                    <input type="text" name="tbinventariocategoriaextratamano" maxlength="30" placeholder="Pequeño, mediano…" data-filtro="texto">
-                    <small class="error" data-error="tbinventariocategoriaextratamano"></small>
+                    <span>Peso (g) *</span>
+                    <input type="text" name="tbinventariocategoriachocolatepeso" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="100" data-filtro="entero">
+                    <small class="error" data-error="tbinventariocategoriachocolatepeso"></small>
                 </label>
                 <label class="campo">
-                    <span>Color</span>
-                    <input type="text" name="tbinventariocategoriaextracolor" maxlength="30" data-filtro="letras">
-                    <small class="error" data-error="tbinventariocategoriaextracolor"></small>
+                    <span>Sabor</span>
+                    <input type="text" name="tbinventariocategoriachocolatesabor" maxlength="30" data-filtro="letras" placeholder="Fresa, caramelo, menta…">
+                    <small class="error" data-error="tbinventariocategoriachocolatesabor"></small>
                 </label>
                 <label class="campo">
-                    <span>Contenido</span>
-                    <input type="text" name="tbinventariocategoriaextracontenido" maxlength="30" data-filtro="texto" placeholder="12 unidades, 250 g…">
-                    <small class="error" data-error="tbinventariocategoriaextracontenido"></small>
-                </label>
-                <label class="campo" id="campovencimiento" hidden>
                     <span>Fecha de vencimiento *</span>
-                    <input type="date" name="tbinventariocategoriaextrafechavencimiento">
-                    <small class="error" data-error="tbinventariocategoriaextrafechavencimiento"></small>
+                    <input type="date" name="tbinventariocategoriachocolatefechavencimiento">
+                    <small class="error" data-error="tbinventariocategoriachocolatefechavencimiento"></small>
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset class="seccion-categoria" data-categoria="Peluche" hidden>
+            <legend>Datos del peluche</legend>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>Tipo *</span>
+                    <input type="text" name="tbinventariocategoriapeluchetipo" maxlength="30" data-filtro="letras" list="listatipospeluche" placeholder="Oso, conejo, corazón…">
+                    <datalist id="listatipospeluche">
+                        <?php opcionesinventario($opciones['tipospeluche']); ?>
+                    </datalist>
+                    <small class="error" data-error="tbinventariocategoriapeluchetipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Tamaño (cm de alto) *</span>
+                    <input type="text" name="tbinventariocategoriapeluchetamano" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="25" data-filtro="entero">
+                    <small class="error" data-error="tbinventariocategoriapeluchetamano"></small>
+                </label>
+                <label class="campo">
+                    <span>Color *</span>
+                    <input type="text" name="tbinventariocategoriapeluchecolor" maxlength="30" data-filtro="letras">
+                    <small class="error" data-error="tbinventariocategoriapeluchecolor"></small>
+                </label>
+                <label class="campo">
+                    <span>Material</span>
+                    <select name="tbinventariocategoriapeluchematerial">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['materialespeluche']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriapeluchematerial"></small>
+                </label>
+                <label class="campo campo-completo">
+                    <span>Diseño</span>
+                    <input type="text" name="tbinventariocategoriapeluchediseno" maxlength="50" data-filtro="texto" placeholder="Personaje, animal o diseño decorativo">
+                    <small class="error" data-error="tbinventariocategoriapeluchediseno"></small>
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset class="seccion-categoria" data-categoria="Tarjeta" hidden>
+            <legend>Datos de la tarjeta</legend>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>Tipo de tarjeta *</span>
+                    <select name="tbinventariocategoriatarjetatipo">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['tipostarjeta']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriatarjetatipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Temática *</span>
+                    <select name="tbinventariocategoriatarjetatematica">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['tematicastarjeta']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriatarjetatematica"></small>
+                </label>
+                <label class="campo">
+                    <span>Color *</span>
+                    <input type="text" name="tbinventariocategoriatarjetacolor" maxlength="30" data-filtro="letras">
+                    <small class="error" data-error="tbinventariocategoriatarjetacolor"></small>
+                </label>
+                <label class="campo">
+                    <span>Material *</span>
+                    <select name="tbinventariocategoriatarjetamaterial">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['materialestarjeta']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriatarjetamaterial"></small>
+                </label>
+                <label class="campo">
+                    <span>Medidas (cm)</span>
+                    <input type="text" name="tbinventariocategoriatarjetamedida" maxlength="30" placeholder="10 x 7" autocomplete="off" data-filtro="medida">
+                    <small class="error" data-error="tbinventariocategoriatarjetamedida"></small>
+                </label>
+                <label class="campo">
+                    <span>¿Personalizable? *</span>
+                    <select name="tbinventariocategoriatarjetapersonalizable">
+                        <option value="">Seleccione…</option>
+                        <?php opcionespersonalizable($opciones['personalizable']); ?>
+                    </select>
+                    <small class="nota-campo texto-suave">Si se le puede escribir o imprimir un mensaje.</small>
+                    <small class="error" data-error="tbinventariocategoriatarjetapersonalizable"></small>
+                </label>
+                <label class="campo">
+                    <span>Elaboración *</span>
+                    <select name="tbinventariocategoriatarjetaelaboracion">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['elaboracionestarjeta']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriatarjetaelaboracion"></small>
                 </label>
             </div>
         </fieldset>
@@ -362,6 +525,10 @@
 
 <script src="js/menu.js"></script>
 <script src="js/historial.js"></script>
+<script>
+    // Sugerencias de variedad según el tipo (flor o follaje)
+    const variedadesflor = <?= json_encode($opciones['variedades'], JSON_UNESCAPED_UNICODE) ?>;
+</script>
 <script src="js/inventario.js"></script>
 </body>
 </html>
