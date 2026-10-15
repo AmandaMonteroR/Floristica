@@ -73,8 +73,8 @@ class Empleado
         return (int) $this->tbempleadoestado === 1;
     }
 
-    public function esDuena()
+    public function esPropietario()
     {
-        return $this->tbempleadorol === 'Dueña';
+        return $this->tbempleadorol === 'Propietario';
     }
 }

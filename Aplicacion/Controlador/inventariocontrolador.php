@@ -247,7 +247,7 @@ class inventariocontrolador
                     $motivo = 'Pedido N.º ' . $fila['tbpedidoid'] . ' recibido';
                     break;
                 case 'Salida':
-                    $motivo = 'Encargo N.º ' . $fila['tbencargoid'] . ' terminado';
+                    $motivo = 'Encargo N.º ' . $fila['tbsolicitudencargoid'] . ' terminado';
                     break;
                 default:
                     $motivo = 'Ajuste manual al editar el producto';

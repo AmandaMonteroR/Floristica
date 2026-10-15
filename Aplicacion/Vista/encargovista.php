@@ -79,7 +79,7 @@
         </div>
 
         <p id="avisoformulario" class="aviso aviso-error" role="alert" hidden></p>
-        <input type="hidden" name="tbencargoid">
+        <input type="hidden" name="tbsolicitudencargoid">
 
         <div class="rejilla">
             <label class="campo campo-completo">
@@ -93,15 +93,15 @@
                 <span>Cantidad de arreglos *</span>
                 <div class="contador">
                     <button type="button" class="boton-contador" data-paso="-1" aria-label="Quitar uno">−</button>
-                    <input type="text" name="tbencargocantidad" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="Cantidad de arreglos">
+                    <input type="text" name="tbsolicitudencargocantidad" inputmode="numeric" maxlength="2" autocomplete="off" aria-label="Cantidad de arreglos">
                     <button type="button" class="boton-contador" data-paso="1" aria-label="Agregar uno">+</button>
                 </div>
-                <small class="error" data-error="tbencargocantidad"></small>
+                <small class="error" data-error="tbsolicitudencargocantidad"></small>
             </div>
             <label class="campo">
                 <span>Fecha de entrega *</span>
-                <input type="date" name="tbencargofechaentrega">
-                <small class="error" data-error="tbencargofechaentrega"></small>
+                <input type="date" name="tbsolicitudencargofechaentrega">
+                <small class="error" data-error="tbsolicitudencargofechaentrega"></small>
             </label>
             <label class="campo campo-completo" id="campoasignar">
                 <span>Asignar a</span>
@@ -112,8 +112,8 @@
             </label>
             <label class="campo campo-completo">
                 <span>Nota</span>
-                <textarea name="tbencargonota" maxlength="255" placeholder="Para la señora Rodríguez, tarjeta de cumpleaños…"></textarea>
-                <small class="error" data-error="tbencargonota"></small>
+                <textarea name="tbsolicitudencargonota" maxlength="255" placeholder="Para la señora Rodríguez, tarjeta de cumpleaños…"></textarea>
+                <small class="error" data-error="tbsolicitudencargonota"></small>
             </label>
         </div>
 
@@ -129,7 +129,7 @@
         <h2>Asignar encargo</h2>
         <p class="nota" id="resumenasignar"></p>
         <p id="avisoasignar" class="aviso aviso-error" role="alert" hidden></p>
-        <input type="hidden" name="tbencargoid">
+        <input type="hidden" name="tbsolicitudencargoid">
 
         <label class="campo">
             <span>¿Quién lo prepara? *</span>

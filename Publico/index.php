@@ -41,8 +41,8 @@ if ($modulo === 'sesion') {
             case 'ingresar':
                 responderjson($sesion->ingresar($_POST));
                 break;
-            case 'registrarduena':
-                responderjson($sesion->registrarduena($_POST));
+            case 'registrarpropietario':
+                responderjson($sesion->registrarpropietario($_POST));
                 break;
             default:
                 responderjson(['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []], 404);
@@ -345,7 +345,7 @@ try {
 }
 
 // Las empleadas no reciben los costos ni las ganancias de los arreglos
-if ($modulo === 'catalogo' && !Seguridad::esduena() && !empty($respuesta['datos'])) {
+if ($modulo === 'catalogo' && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
     $quitarcostos = function ($arreglo) {
         unset($arreglo['costo']);
         foreach ($arreglo['detalles'] ?? [] as $indice => $detalle) {

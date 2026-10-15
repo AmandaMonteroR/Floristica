@@ -64,13 +64,13 @@ Los crea `datosprueba.sql`:
 
 | Usuario | Contraseña | Nombre | Rol |
 |---------|------------|--------|-----|
-| `duenia` | `duenia123` | Patricia Mora Solano | Dueña |
+| `propietario` | `propietario1` | Patricia Mora Solano | Propietario |
 | `empleado1` | `empleado1` | Lorena Bermúdez Badilla | Empleado |
 | `empleado2` | `empleado2` | Carlos Jiménez Rojas | Empleado |
 | `empleado3` | `empleado3` | Valeria Castro Núñez | Empleado |
 | `empleado4` | `empleado4` | Andrea Solís Vega | Empleado (inactiva: no puede entrar) |
 
-Si la base se crea sin datos de prueba, la primera vez que se abre el sistema aparece un formulario para crear la cuenta de la dueña.
+Si la base se crea sin datos de prueba, la primera vez que se abre el sistema aparece un formulario para crear la cuenta del propietario.
 
 Los datos de prueba también traen 8 proveedores, 24 productos de inventario, 7 arreglos con foto (en `Publico/imagenes/muestras/`), 4 pedidos y 9 encargos en distintos estados.
 
@@ -113,9 +113,9 @@ Floristica/
 - Las contraseñas se guardan cifradas con `password_hash`.
 - Después de 5 intentos fallidos, el ingreso se bloquea 60 segundos.
 - Los permisos se revisan en el servidor en cada petición. Ocultar un botón en la pantalla no es la única protección.
-- Si la dueña inactiva a un empleado, este pierde el acceso de inmediato.
+- Si el propietario inactiva a un empleado, este pierde el acceso de inmediato.
 
-| Puede… | Dueña | Empleado |
+| Puede… | Propietario | Empleado |
 |--------|:-----:|:--------:|
 | Ver el inicio | ✓ | ✓ |
 | Ver el catálogo (sin costos ni ganancias) | ✓ | ✓ |
@@ -133,7 +133,7 @@ Floristica/
 
 Resumen según el rol:
 
-- **Dueña:** encargos abiertos y atrasados, productos con stock bajo y pedidos sin recibir.
+- **Propietario:** encargos abiertos y atrasados, productos con stock bajo y pedidos sin recibir.
 - **Empleado:** sus encargos y los que puede tomar.
 
 ### Proveedores
@@ -179,7 +179,7 @@ Resumen según el rol:
 - **Nombre:** no puede repetirse.
 - **Precio:** mayor que 0.
 - **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades.
-- **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo la dueña los ve.
+- **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo el propietario los ve.
 
 ### Encargos
 
@@ -195,7 +195,7 @@ Resumen según el rol:
 - **Teléfono:** 8 dígitos, no se repite.
 - **Usuario:** de 4 a 30 caracteres (letras sin tildes, números, punto o guion bajo); no se repite.
 - **Contraseña:** de 8 a 72 caracteres, con al menos una letra y un número. Al editar, se puede dejar vacía para conservar la anterior.
-- **Dueña:** solo puede haber una dueña activa. La dueña no puede inactivarse a sí misma ni quitarse el rol.
+- **Propietario:** solo puede haber un propietario activo. El propietario no puede inactivarse a sí mismo ni quitarse el rol.
 
 ## Borradores y confirmaciones
 
@@ -231,13 +231,13 @@ Casi todas las tablas nuevas se manejan con un solo repositorio (`historicorepos
 | Empleados | Nombre, teléfono, rol, usuario y estado | `tbempleado<dato>historico` |
 | | Contraseña (solo "Asignada" o "Cambiada", **nunca** el valor) | `tbempleadoclavehistorico` |
 | Pedidos | Estado (Pendiente, Confirmado, Recibido) | `tbpedidoestadohistorico` |
-| Encargos | Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbencargoestadohistorico` |
-| | Empleado asignado | `tbencargoempleadohistorico` |
-| | Fecha de entrega | `tbencargofechaentregahistorico` |
+| Encargos | Estado (Pendiente, En proceso, Terminado, Cancelado) | `tbsolicitudencargoestadohistorico` |
+| | Empleado asignado | `tbsolicitudencargoempleadohistorico` |
+| | Fecha de entrega | `tbsolicitudencargofechaentregahistorico` |
 
 En los históricos de empleado, `tbempleadoid` es el empleado al que se le hizo el cambio, y quien lo hizo va en `tbempleadoidresponsable`.
 
-**No llevan histórico:** `tbpedidodetalle` y `tbarreglofloraldetalle` (son parte de su pedido o arreglo), `tbconfirmacioncompra` (ya registra algo que pasó una vez), las tablas de categoría del inventario, las descripciones y las notas.
+**No llevan histórico:** `tbpedidodetalle` y `tbarreglofloralinsumo` (son parte de su pedido o arreglo), `tbconfirmacioncompra` (ya registra algo que pasó una vez), las tablas de categoría del inventario, las descripciones y las notas.
 
 ### Movimientos de inventario
 

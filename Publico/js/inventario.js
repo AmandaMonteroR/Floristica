@@ -634,7 +634,7 @@ document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 
-// "Ver historial" del producto que está abierto en el detalle (solo existe para la dueña)
+// "Ver historial" del producto que está abierto en el detalle (solo existe para el propietario)
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {

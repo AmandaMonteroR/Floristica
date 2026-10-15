@@ -1,6 +1,6 @@
 const rutabase = 'index.php?modulo=encargo';
 const clavebase = 'floristica.borrador.encargo.';
-const camposformulario = ['tbarreglofloralid', 'tbencargocantidad', 'tbencargofechaentrega', 'tbempleadoid', 'tbencargonota'];
+const camposformulario = ['tbarreglofloralid', 'tbsolicitudencargocantidad', 'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota'];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
 const filtroestado = document.getElementById('filtroestado');
@@ -32,7 +32,7 @@ const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmaci
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 
 // usuarioactual viene de menu.php
-const esduena = usuarioactual.rol === 'Dueña';
+const espropietario = usuarioactual.rol === 'Propietario';
 
 let temporizadoraviso;
 let datosoriginales = {};
@@ -134,8 +134,8 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
 /* ---------- Listas de arreglos y empleados ---------- */
 
 function nombreempleado(empleado) {
-    return empleado.tbempleadorol === 'Dueña'
-        ? `${empleado.tbempleadonombre} (Dueña)`
+    return empleado.tbempleadorol === 'Propietario'
+        ? `${empleado.tbempleadonombre} (Propietario)`
         : empleado.tbempleadonombre;
 }
 
@@ -163,7 +163,7 @@ async function cargarlistas() {
     llenarempleados(formularioasignar.elements.tbempleadoid, 'Seleccione…');
 
     // Un empleado solo puede dejar el encargo libre o asignárselo a sí mismo
-    if (!esduena) {
+    if (!espropietario) {
         Array.from(formulario.elements.tbempleadoid.options).forEach((opcion) => {
             if (opcion.value !== '' && opcion.value !== String(usuarioactual.id)) {
                 opcion.remove();
@@ -180,7 +180,7 @@ async function cargarlistas() {
 /* ---------- Borrador ---------- */
 
 function claveborrador() {
-    const id = formulario.elements.tbencargoid.value;
+    const id = formulario.elements.tbsolicitudencargoid.value;
     return clavebase + (id !== '' ? id : 'nuevo');
 }
 
@@ -225,7 +225,7 @@ function asignarcampos(datos) {
 
 function llenarformulario(datos) {
     formulario.reset();
-    formulario.elements.tbencargoid.value = datos.tbencargoid ?? '';
+    formulario.elements.tbsolicitudencargoid.value = datos.tbsolicitudencargoid ?? '';
 
     const selectarreglo = formulario.elements.tbarreglofloralid;
     if (datos.tbarreglofloralid && !selectarreglo.querySelector(`option[value="${datos.tbarreglofloralid}"]`)) {
@@ -234,10 +234,10 @@ function llenarformulario(datos) {
 
     asignarcampos({
         tbarreglofloralid: datos.tbarreglofloralid ? String(datos.tbarreglofloralid) : '',
-        tbencargocantidad: String(datos.tbencargocantidad ?? 1),
-        tbencargofechaentrega: datos.tbencargofechaentrega ?? '',
+        tbsolicitudencargocantidad: String(datos.tbsolicitudencargocantidad ?? 1),
+        tbsolicitudencargofechaentrega: datos.tbsolicitudencargofechaentrega ?? '',
         tbempleadoid: datos.tbempleadoid ? String(datos.tbempleadoid) : '',
-        tbencargonota: datos.tbencargonota ?? '',
+        tbsolicitudencargonota: datos.tbsolicitudencargonota ?? '',
     });
 
     datosoriginales = leerformulario();
@@ -278,23 +278,23 @@ function boton(accion, id, texto, peligro = false) {
 }
 
 function accionesencargo(encargo) {
-    const id = encargo.tbencargoid;
+    const id = encargo.tbsolicitudencargoid;
     const esmio = encargo.tbempleadoid === usuarioactual.id;
     const acciones = [boton('ver', id, 'Ver')];
 
     // Empleado: tomar encargos libres y mover solo los suyos
-    if (!esduena) {
-        if (encargo.tbencargoestado === 'Pendiente' && !encargo.tbempleadoid) {
+    if (!espropietario) {
+        if (encargo.tbsolicitudencargoestado === 'Pendiente' && !encargo.tbempleadoid) {
             acciones.push(boton('asignarme', id, 'Asignármelo'));
-        } else if (encargo.tbencargoestado === 'Pendiente' && esmio) {
+        } else if (encargo.tbsolicitudencargoestado === 'Pendiente' && esmio) {
             acciones.push(boton('iniciar', id, 'Iniciar'));
-        } else if (encargo.tbencargoestado === 'En proceso' && esmio) {
+        } else if (encargo.tbsolicitudencargoestado === 'En proceso' && esmio) {
             acciones.push(boton('terminar', id, 'Terminar'));
         }
         return acciones.join(' ');
     }
 
-    if (encargo.tbencargoestado === 'Pendiente') {
+    if (encargo.tbsolicitudencargoestado === 'Pendiente') {
         acciones.push(boton('editar', id, 'Editar'));
         acciones.push(boton('asignar', id, encargo.tbempleadoid ? 'Reasignar' : 'Asignar'));
         if (!esmio) {
@@ -304,7 +304,7 @@ function accionesencargo(encargo) {
             acciones.push(boton('iniciar', id, 'Iniciar'));
         }
         acciones.push(boton('cancelar', id, 'Cancelar', true));
-    } else if (encargo.tbencargoestado === 'En proceso') {
+    } else if (encargo.tbsolicitudencargoestado === 'En proceso') {
         acciones.push(boton('asignar', id, 'Reasignar'));
         acciones.push(boton('terminar', id, 'Terminar'));
         acciones.push(boton('cancelar', id, 'Cancelar', true));
@@ -336,28 +336,28 @@ async function cargarencargos() {
     }
 
     cuerpotabla.innerHTML = encargos.map((encargo) => {
-        const abierto = ['Pendiente', 'En proceso'].includes(encargo.tbencargoestado);
-        const atrasado = abierto && encargo.tbencargofechaentrega < hoy();
+        const abierto = ['Pendiente', 'En proceso'].includes(encargo.tbsolicitudencargoestado);
+        const atrasado = abierto && encargo.tbsolicitudencargofechaentrega < hoy();
         const sinstock = abierto && !encargo.alcanzastock
             ? '<span class="aviso-stock" title="No alcanza el inventario para prepararlo">Falta stock</span>'
             : '';
         const asignado = encargo.tbempleadoid
-            ? escapar(encargo.tbempleadonombre) + (encargo.tbempleadorol === 'Dueña' ? ' <span class="estado estado-duena">Dueña</span>' : '')
+            ? escapar(encargo.tbempleadonombre) + (encargo.tbempleadorol === 'Propietario' ? ' <span class="estado estado-propietario">Propietario</span>' : '')
             : '<span class="texto-suave">Sin asignar</span>';
 
         return `
             <tr class="${abierto ? '' : 'fila-inactiva'}">
-                <td>${encargo.tbencargoid}</td>
+                <td>${encargo.tbsolicitudencargoid}</td>
                 <td>
                     <div class="celda-arreglo">
                         <img src="${escapar(encargo.tbarreglofloralfoto)}" alt="">
                         <span>${escapar(encargo.tbarreglofloralnombre)}${sinstock}</span>
                     </div>
                 </td>
-                <td>${encargo.tbencargocantidad}</td>
-                <td class="${atrasado ? 'texto-peligro' : ''}">${formatearfecha(encargo.tbencargofechaentrega)}${atrasado ? '<br><small>Atrasado</small>' : ''}</td>
+                <td>${encargo.tbsolicitudencargocantidad}</td>
+                <td class="${atrasado ? 'texto-peligro' : ''}">${formatearfecha(encargo.tbsolicitudencargofechaentrega)}${atrasado ? '<br><small>Atrasado</small>' : ''}</td>
                 <td>${asignado}</td>
-                <td><span class="estado ${claseestado(encargo.tbencargoestado)}">${escapar(encargo.tbencargoestado)}</span></td>
+                <td><span class="estado ${claseestado(encargo.tbsolicitudencargoestado)}">${escapar(encargo.tbsolicitudencargoestado)}</span></td>
                 <td class="columna-acciones">${accionesencargo(encargo)}</td>
             </tr>`;
     }).join('');
@@ -396,7 +396,7 @@ function mostrarerrores(errores, form = formulario) {
 
 async function abrirnuevo() {
     await listaslistas;
-    datosservidor = { tbencargofechaentrega: hoy() };
+    datosservidor = { tbsolicitudencargofechaentrega: hoy() };
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
@@ -427,13 +427,13 @@ async function abrireditar(id) {
 }
 
 function abrirasignar(id) {
-    const encargo = encargos.find((item) => String(item.tbencargoid) === String(id));
+    const encargo = encargos.find((item) => String(item.tbsolicitudencargoid) === String(id));
 
     formularioasignar.reset();
-    formularioasignar.elements.tbencargoid.value = id;
+    formularioasignar.elements.tbsolicitudencargoid.value = id;
     formularioasignar.elements.tbempleadoid.value = encargo && encargo.tbempleadoid ? String(encargo.tbempleadoid) : '';
     resumenasignar.textContent = encargo
-        ? `Encargo N.º ${id}: ${encargo.tbencargocantidad} × ${encargo.tbarreglofloralnombre}, entrega ${formatearfecha(encargo.tbencargofechaentrega)}.`
+        ? `Encargo N.º ${id}: ${encargo.tbsolicitudencargocantidad} × ${encargo.tbarreglofloralnombre}, entrega ${formatearfecha(encargo.tbsolicitudencargofechaentrega)}.`
         : '';
     limpiarerrores(formularioasignar);
     dialogoasignar.showModal();
@@ -449,17 +449,17 @@ async function verdetalle(id) {
 
     const encargo = respuesta.datos;
     const filas = [
-        ['Cantidad', `${encargo.tbencargocantidad} arreglo(s)`],
-        ['Fecha de entrega', formatearfecha(encargo.tbencargofechaentrega)],
-        ['Asignado a', encargo.tbempleadoid ? `${encargo.tbempleadonombre}${encargo.tbempleadorol === 'Dueña' ? ' (Dueña)' : ''}` : 'Sin asignar'],
-        ['Estado', encargo.tbencargoestado],
-        ['Registrado el', formatearfecha(encargo.tbencargofecharegistro)],
-        ['Nota', encargo.tbencargonota],
+        ['Cantidad', `${encargo.tbsolicitudencargocantidad} arreglo(s)`],
+        ['Fecha de entrega', formatearfecha(encargo.tbsolicitudencargofechaentrega)],
+        ['Asignado a', encargo.tbempleadoid ? `${encargo.tbempleadonombre}${encargo.tbempleadorol === 'Propietario' ? ' (Propietario)' : ''}` : 'Sin asignar'],
+        ['Estado', encargo.tbsolicitudencargoestado],
+        ['Registrado el', formatearfecha(encargo.tbsolicitudencargofecharegistro)],
+        ['Nota', encargo.tbsolicitudencargonota],
     ];
 
     fotodetalle.src = encargo.tbarreglofloralfoto;
     fotodetalle.alt = encargo.tbarreglofloralnombre;
-    titulodetalle.textContent = `Encargo N.º ${encargo.tbencargoid}: ${encargo.tbarreglofloralnombre}`;
+    titulodetalle.textContent = `Encargo N.º ${encargo.tbsolicitudencargoid}: ${encargo.tbarreglofloralnombre}`;
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
         .join('');
@@ -488,8 +488,8 @@ async function verdetalle(id) {
 /* ---------- Acciones de estado ---------- */
 
 async function ejecutar(accion, id) {
-    const encargo = encargos.find((item) => String(item.tbencargoid) === String(id));
-    const nombre = encargo ? `${encargo.tbencargocantidad} × ${encargo.tbarreglofloralnombre}` : `el encargo N.º ${id}`;
+    const encargo = encargos.find((item) => String(item.tbsolicitudencargoid) === String(id));
+    const nombre = encargo ? `${encargo.tbsolicitudencargocantidad} × ${encargo.tbarreglofloralnombre}` : `el encargo N.º ${id}`;
 
     const configuraciones = {
         asignarme: {
@@ -532,7 +532,7 @@ async function ejecutar(accion, id) {
 formulario.addEventListener('input', (evento) => {
     const campo = evento.target;
 
-    if (campo.name === 'tbencargocantidad') {
+    if (campo.name === 'tbsolicitudencargocantidad') {
         campo.value = campo.value.replace(/\D/g, '');
     }
 
@@ -550,22 +550,22 @@ formulario.addEventListener('click', (evento) => {
         return;
     }
 
-    const campo = formulario.elements.tbencargocantidad;
+    const campo = formulario.elements.tbsolicitudencargocantidad;
     const actual = parseInt(campo.value, 10) || 0;
     campo.value = String(Math.min(99, Math.max(1, actual + Number(paso.dataset.paso))));
-    formulario.querySelector('[data-error="tbencargocantidad"]').textContent = '';
+    formulario.querySelector('[data-error="tbsolicitudencargocantidad"]').textContent = '';
     guardarborrador();
 });
 
 formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
 
-    const esedicion = formulario.elements.tbencargoid.value !== '';
+    const esedicion = formulario.elements.tbsolicitudencargoid.value !== '';
 
     if (esedicion) {
         const aceptado = await confirmar({
             titulo: '¿Guardar los cambios?',
-            mensaje: `Se actualizará el encargo N.º ${formulario.elements.tbencargoid.value}.`,
+            mensaje: `Se actualizará el encargo N.º ${formulario.elements.tbsolicitudencargoid.value}.`,
             textoaceptar: 'Guardar cambios',
         });
 
@@ -626,7 +626,7 @@ formularioasignar.addEventListener('submit', async (evento) => {
 });
 
 document.getElementById('botonasignarme').addEventListener('click', async () => {
-    const respuesta = await enviarid('asignarme', formularioasignar.elements.tbencargoid.value);
+    const respuesta = await enviarid('asignarme', formularioasignar.elements.tbsolicitudencargoid.value);
 
     if (respuesta.exito) {
         dialogoasignar.close();
@@ -679,7 +679,7 @@ document.getElementById('botondescartarborrador').addEventListener('click', () =
     avisoborrador.hidden = true;
 });
 
-formulario.elements.tbencargofechaentrega.min = hoy();
+formulario.elements.tbsolicitudencargofechaentrega.min = hoy();
 
 const listaslistas = cargarlistas();
 

@@ -12,7 +12,7 @@ class historicorepositorio
         'arreglofloral' => ['nombre', 'precio', 'estado'],
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
         'pedido'        => ['estado'],
-        'encargo'       => ['fechaentrega'],
+        'solicitudencargo' => ['fechaentrega'],
     ];
 
     public function __construct()

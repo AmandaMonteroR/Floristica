@@ -5,7 +5,7 @@ require_once __DIR__ . '/../Aplicacion/Repositorio/empleadorepositorio.php';
 class Seguridad
 {
     // Lo que puede hacer un empleado. '' es abrir la pantalla; '*' es todo el módulo.
-    // La dueña puede hacer todo.
+    // El propietario puede hacer todo.
     private static $permisosempleado = [
         'inicio'     => '*',
         'cuenta'     => ['cambiarclave'],
@@ -57,10 +57,10 @@ class Seguridad
         return self::$usuario;
     }
 
-    public static function esduena()
+    public static function espropietario()
     {
         $usuario = self::usuario();
-        return $usuario !== null && $usuario['rol'] === 'Dueña';
+        return $usuario !== null && $usuario['rol'] === 'Propietario';
     }
 
     public static function ingresar(Empleado $empleado)
@@ -88,7 +88,7 @@ class Seguridad
             return false;
         }
 
-        if (self::esduena()) {
+        if (self::espropietario()) {
             return true;
         }
 

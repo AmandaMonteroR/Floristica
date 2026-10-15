@@ -1,4 +1,4 @@
-// Si la sesión terminó (por ejemplo, la dueña inactivó la cuenta), vuelve al login
+// Si la sesión terminó (por ejemplo, el propietario inactivó la cuenta), vuelve al login
 const fetchoriginal = window.fetch.bind(window);
 window.fetch = async (...argumentos) => {
     const respuesta = await fetchoriginal(...argumentos);

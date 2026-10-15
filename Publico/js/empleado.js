@@ -193,7 +193,7 @@ async function cargarempleados() {
     if (respuesta.datos.length === 0) {
         const sinfiltros = busqueda.value.trim() === '' && filtroestado.value === '';
         const mensaje = sinfiltros
-            ? 'Aún no hay empleados registrados. Empiece registrando a la dueña con "Nuevo empleado".'
+            ? 'Aún no hay empleados registrados. Empiece registrando al propietario con "Nuevo empleado".'
             : 'No hay empleados que coincidan con la búsqueda.';
         cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${mensaje}</td></tr>`;
         return;
@@ -205,8 +205,8 @@ async function cargarempleados() {
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
             : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
-        const rol = empleado.tbempleadorol === 'Dueña'
-            ? '<span class="estado estado-duena">Dueña</span>'
+        const rol = empleado.tbempleadorol === 'Propietario'
+            ? '<span class="estado estado-propietario">Propietario</span>'
             : '<span class="estado estado-empleado">Empleado</span>';
 
         return `

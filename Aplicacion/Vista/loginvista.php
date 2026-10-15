@@ -17,9 +17,9 @@
 
     <?php if ($primeravez): ?>
         <h1>Bienvenida</h1>
-        <p class="nota">Es la primera vez que se usa el sistema. Cree la cuenta de la dueña de la floristería; después ella podrá registrar a sus empleados.</p>
+        <p class="nota">Es la primera vez que se usa el sistema. Cree la cuenta del propietario de la floristería; después él podrá registrar a sus empleados.</p>
 
-        <form id="formulario" data-accion="registrarduena" novalidate>
+        <form id="formulario" data-accion="registrarpropietario" novalidate>
             <p id="avisoformulario" class="aviso aviso-error" role="alert" hidden></p>
 
             <label class="campo">
@@ -54,7 +54,7 @@
         </form>
     <?php else: ?>
         <h1>Ingresar</h1>
-        <p class="nota">Use el usuario y la contraseña que le dio la dueña de la floristería.</p>
+        <p class="nota">Use el usuario y la contraseña que le dio el propietario de la floristería.</p>
 
         <form id="formulario" data-accion="ingresar" novalidate>
             <p id="avisoformulario" class="aviso aviso-error" role="alert" hidden></p>

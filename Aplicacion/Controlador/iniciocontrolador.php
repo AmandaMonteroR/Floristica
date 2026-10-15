@@ -10,11 +10,11 @@ class iniciocontrolador
     {
         $encargos = (new encargocontrolador())->listar()['datos'];
         $abiertos = array_values(array_filter($encargos, function ($encargo) {
-            return in_array($encargo['tbencargoestado'], ['Pendiente', 'En proceso'], true);
+            return in_array($encargo['tbsolicitudencargoestado'], ['Pendiente', 'En proceso'], true);
         }));
 
         usort($abiertos, function ($a, $b) {
-            return [$a['tbencargofechaentrega'], $a['tbencargoid']] <=> [$b['tbencargofechaentrega'], $b['tbencargoid']];
+            return [$a['tbsolicitudencargofechaentrega'], $a['tbsolicitudencargoid']] <=> [$b['tbsolicitudencargofechaentrega'], $b['tbsolicitudencargoid']];
         });
 
         $sinasignar = array_values(array_filter($abiertos, function ($encargo) {
@@ -25,11 +25,11 @@ class iniciocontrolador
             return $encargo['tbempleadoid'] === (int) $usuario['id'];
         }));
 
-        // La dueña ve todos los atrasados; el empleado, solo los suyos
+        // El propietario ve todos los atrasados; el empleado, solo los suyos
         $hoy = date('Y-m-d');
-        $revisar = $usuario['rol'] === 'Dueña' ? $abiertos : $mios;
+        $revisar = $usuario['rol'] === 'Propietario' ? $abiertos : $mios;
         $atrasados = array_values(array_filter($revisar, function ($encargo) use ($hoy) {
-            return $encargo['tbencargofechaentrega'] < $hoy;
+            return $encargo['tbsolicitudencargofechaentrega'] < $hoy;
         }));
 
         $resumen = [
@@ -40,8 +40,8 @@ class iniciocontrolador
             'abiertos'   => $abiertos,
         ];
 
-        // Lo de compras e inventario solo lo ve la dueña
-        if ($usuario['rol'] === 'Dueña') {
+        // Lo de compras e inventario solo lo ve el propietario
+        if ($usuario['rol'] === 'Propietario') {
             $stockbajo = [];
             foreach ((new inventariorepositorio())->listar('', '', 1) as $producto) {
                 if ($producto->tieneStockBajo()) {

@@ -14,10 +14,10 @@ class sesioncontrolador
         $this->empleados = new empleadorepositorio();
     }
 
-    // true si todavía no existe la cuenta de la dueña
+    // true si todavía no existe la cuenta del propietario
     public function primeravez()
     {
-        return !$this->empleados->hayduenaconcuenta();
+        return !$this->empleados->haypropietarioconcuenta();
     }
 
     public function ingresar($datos)
@@ -59,7 +59,7 @@ class sesioncontrolador
         }
 
         if (!$empleado->estaActivo()) {
-            return $this->respuesta(false, 'Su cuenta está inactiva. Hable con la dueña de la floristería.');
+            return $this->respuesta(false, 'Su cuenta está inactiva. Hable con el propietario de la floristería.');
         }
 
         unset($_SESSION['intentos'], $_SESSION['bloqueohasta']);
@@ -68,9 +68,9 @@ class sesioncontrolador
         return $this->respuesta(true, 'Bienvenida, ' . $empleado->getTbempleadonombre() . '.');
     }
 
-    public function registrarduena($datos)
+    public function registrarpropietario($datos)
     {
-        $respuesta = (new empleadocontrolador())->crearduena($datos);
+        $respuesta = (new empleadocontrolador())->crearpropietario($datos);
 
         if (!$respuesta['exito']) {
             return $respuesta;
@@ -78,7 +78,7 @@ class sesioncontrolador
 
         Seguridad::ingresar($respuesta['datos']['empleado']);
 
-        return $this->respuesta(true, 'Cuenta de la dueña creada. Ya puede registrar a sus empleados.');
+        return $this->respuesta(true, 'Cuenta del propietario creada. Ya puede registrar a sus empleados.');
     }
 
     private function respuesta($exito, $mensaje, $datos = [])

@@ -13,65 +13,65 @@ class encargorepositorio
 
     private function siguienteid()
     {
-        $consulta = $this->conexion->query('SELECT IFNULL(MAX(tbencargoid), 0) + 1 AS siguiente FROM tbencargo');
+        $consulta = $this->conexion->query('SELECT IFNULL(MAX(tbsolicitudencargoid), 0) + 1 AS siguiente FROM tbsolicitudencargo');
         return (int) $consulta->fetch()['siguiente'];
     }
 
     public function insertar(Encargo $encargo)
     {
-        $encargo->setTbencargoid($this->siguienteid());
-        $encargo->setTbencargoestado('Pendiente');
-        $encargo->setTbencargofecharegistro(date('Y-m-d'));
+        $encargo->setTbsolicitudencargoid($this->siguienteid());
+        $encargo->setTbsolicitudencargoestado('Pendiente');
+        $encargo->setTbsolicitudencargofecharegistro(date('Y-m-d'));
 
-        $sql = 'INSERT INTO tbencargo (tbencargoid, tbarreglofloralid, tbempleadoid, tbencargocantidad,
-                tbencargofechaentrega, tbencargonota, tbencargoestado, tbencargofecharegistro)
+        $sql = 'INSERT INTO tbsolicitudencargo (tbsolicitudencargoid, tbarreglofloralid, tbempleadoid, tbsolicitudencargocantidad,
+                tbsolicitudencargofechaentrega, tbsolicitudencargonota, tbsolicitudencargoestado, tbsolicitudencargofecharegistro)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute([
-            $encargo->getTbencargoid(),
+            $encargo->getTbsolicitudencargoid(),
             $encargo->getTbarreglofloralid(),
             $encargo->getTbempleadoid(),
-            $encargo->getTbencargocantidad(),
-            $encargo->getTbencargofechaentrega(),
-            $encargo->getTbencargonota(),
-            $encargo->getTbencargoestado(),
-            $encargo->getTbencargofecharegistro(),
+            $encargo->getTbsolicitudencargocantidad(),
+            $encargo->getTbsolicitudencargofechaentrega(),
+            $encargo->getTbsolicitudencargonota(),
+            $encargo->getTbsolicitudencargoestado(),
+            $encargo->getTbsolicitudencargofecharegistro(),
         ]);
 
-        return $encargo->getTbencargoid();
+        return $encargo->getTbsolicitudencargoid();
     }
 
     public function actualizar(Encargo $encargo)
     {
-        $sql = 'UPDATE tbencargo SET tbarreglofloralid = ?, tbencargocantidad = ?, tbencargofechaentrega = ?, tbencargonota = ?
-                WHERE tbencargoid = ?';
+        $sql = 'UPDATE tbsolicitudencargo SET tbarreglofloralid = ?, tbsolicitudencargocantidad = ?, tbsolicitudencargofechaentrega = ?, tbsolicitudencargonota = ?
+                WHERE tbsolicitudencargoid = ?';
 
         $sentencia = $this->conexion->prepare($sql);
         return $sentencia->execute([
             $encargo->getTbarreglofloralid(),
-            $encargo->getTbencargocantidad(),
-            $encargo->getTbencargofechaentrega(),
-            $encargo->getTbencargonota(),
-            $encargo->getTbencargoid(),
+            $encargo->getTbsolicitudencargocantidad(),
+            $encargo->getTbsolicitudencargofechaentrega(),
+            $encargo->getTbsolicitudencargonota(),
+            $encargo->getTbsolicitudencargoid(),
         ]);
     }
 
     public function asignar($id, $idempleado)
     {
-        $sentencia = $this->conexion->prepare('UPDATE tbencargo SET tbempleadoid = ? WHERE tbencargoid = ?');
+        $sentencia = $this->conexion->prepare('UPDATE tbsolicitudencargo SET tbempleadoid = ? WHERE tbsolicitudencargoid = ?');
         return $sentencia->execute([$idempleado, $id]);
     }
 
     public function cambiarestado($id, $estado)
     {
-        $sentencia = $this->conexion->prepare('UPDATE tbencargo SET tbencargoestado = ? WHERE tbencargoid = ?');
+        $sentencia = $this->conexion->prepare('UPDATE tbsolicitudencargo SET tbsolicitudencargoestado = ? WHERE tbsolicitudencargoid = ?');
         return $sentencia->execute([$estado, $id]);
     }
 
     public function obtenerporid($id)
     {
-        $sentencia = $this->conexion->prepare('SELECT * FROM tbencargo WHERE tbencargoid = ?');
+        $sentencia = $this->conexion->prepare('SELECT * FROM tbsolicitudencargo WHERE tbsolicitudencargoid = ?');
         $sentencia->execute([$id]);
         $fila = $sentencia->fetch();
 
@@ -80,20 +80,20 @@ class encargorepositorio
 
     public function listar($estado = '', $idempleado = '')
     {
-        $sql = 'SELECT * FROM tbencargo WHERE 1 = 1';
+        $sql = 'SELECT * FROM tbsolicitudencargo WHERE 1 = 1';
         $parametros = [];
 
         if ($estado === 'abiertos' || $estado === 'atrasados') {
             // Abiertos: los que todavía hay que preparar
-            $sql .= " AND tbencargoestado IN ('Pendiente', 'En proceso')";
+            $sql .= " AND tbsolicitudencargoestado IN ('Pendiente', 'En proceso')";
 
             // Atrasados: abiertos con la fecha de entrega ya pasada
             if ($estado === 'atrasados') {
-                $sql .= ' AND tbencargofechaentrega < ?';
+                $sql .= ' AND tbsolicitudencargofechaentrega < ?';
                 $parametros[] = date('Y-m-d');
             }
         } elseif ($estado !== '') {
-            $sql .= ' AND tbencargoestado = ?';
+            $sql .= ' AND tbsolicitudencargoestado = ?';
             $parametros[] = $estado;
         }
 
@@ -105,7 +105,7 @@ class encargorepositorio
         }
 
         // Por número de encargo, de menor a mayor
-        $sql .= ' ORDER BY tbencargoid';
+        $sql .= ' ORDER BY tbsolicitudencargoid';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute($parametros);
@@ -120,8 +120,8 @@ class encargorepositorio
 
     public function contarabiertosporempleado($idempleado)
     {
-        $sentencia = $this->conexion->prepare("SELECT COUNT(*) AS total FROM tbencargo
-                WHERE tbempleadoid = ? AND tbencargoestado IN ('Pendiente', 'En proceso')");
+        $sentencia = $this->conexion->prepare("SELECT COUNT(*) AS total FROM tbsolicitudencargo
+                WHERE tbempleadoid = ? AND tbsolicitudencargoestado IN ('Pendiente', 'En proceso')");
         $sentencia->execute([(int) $idempleado]);
 
         return (int) $sentencia->fetch()['total'];

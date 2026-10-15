@@ -16,7 +16,7 @@
             <h1>Catálogo</h1>
             <p class="subtitulo">Arreglos florales que ofrece la floristería, armados con productos del inventario.</p>
         </div>
-        <?php if (Seguridad::esduena()): ?>
+        <?php if (Seguridad::espropietario()): ?>
             <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
         <?php endif; ?>    </header>
 
@@ -146,7 +146,7 @@
         </table>
     </div>
     <div class="acciones-dialogo">
-        <?php if (Seguridad::esduena()): ?>
+        <?php if (Seguridad::espropietario()): ?>
             <button type="button" class="boton" id="botonverhistorial">Ver historial</button>
         <?php endif; ?>
         <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>

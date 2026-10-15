@@ -63,7 +63,7 @@ class arreglofloralcontrolador
                 'tbinventarionombre'             => $producto ? $producto->getTbinventarionombre() : '',
                 'tbinventariocategoria'          => $producto ? $producto->getTbinventariocategoria() : '',
                 'tbinventariopreciounidad'       => $producto ? (float) $producto->getTbinventariopreciounidad() : 0,
-                'tbarreglofloraldetallecantidad' => (int) $detalle->getTbarreglofloraldetallecantidad(),
+                'tbarreglofloralinsumocantidad' => (int) $detalle->getTbarreglofloralinsumocantidad(),
             ];
         }
 
@@ -234,10 +234,10 @@ class arreglofloralcontrolador
     private function guardardetalles($idarreglo, $detalles)
     {
         foreach ($detalles as $detalle) {
-            $this->repositorio->insertardetalle(new Arreglofloraldetalle([
+            $this->repositorio->insertardetalle(new Arreglofloralinsumo([
                 'tbarreglofloralid'              => $idarreglo,
                 'tbinventarioid'                 => (int) $detalle['tbinventarioid'],
-                'tbarreglofloraldetallecantidad' => (int) $detalle['tbarreglofloraldetallecantidad'],
+                'tbarreglofloralinsumocantidad' => (int) $detalle['tbarreglofloralinsumocantidad'],
             ]));
         }
     }
@@ -248,7 +248,7 @@ class arreglofloralcontrolador
         foreach ($this->repositorio->listardetalles($idarreglo) as $detalle) {
             $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
             if ($producto) {
-                $costo += (int) $detalle->getTbarreglofloraldetallecantidad() * (float) $producto->getTbinventariopreciounidad();
+                $costo += (int) $detalle->getTbarreglofloralinsumocantidad() * (float) $producto->getTbinventariopreciounidad();
             }
         }
 
@@ -332,7 +332,7 @@ class arreglofloralcontrolador
 
             $limpios[] = [
                 'tbinventarioid'                 => trim((string) ($detalle['tbinventarioid'] ?? '')),
-                'tbarreglofloraldetallecantidad' => trim((string) ($detalle['tbarreglofloraldetallecantidad'] ?? '')),
+                'tbarreglofloralinsumocantidad' => trim((string) ($detalle['tbarreglofloralinsumocantidad'] ?? '')),
             ];
         }
 
@@ -399,9 +399,9 @@ class arreglofloralcontrolador
                 $errores['detalles'] = $linea . 'el producto está inactivo.';
             } elseif (in_array($detalle['tbinventarioid'], $usados, true)) {
                 $errores['detalles'] = $linea . 'el producto ya está en otra línea.';
-            } elseif (!ctype_digit($detalle['tbarreglofloraldetallecantidad'])
-                || (int) $detalle['tbarreglofloraldetallecantidad'] < 1
-                || (int) $detalle['tbarreglofloraldetallecantidad'] > 999) {
+            } elseif (!ctype_digit($detalle['tbarreglofloralinsumocantidad'])
+                || (int) $detalle['tbarreglofloralinsumocantidad'] < 1
+                || (int) $detalle['tbarreglofloralinsumocantidad'] > 999) {
                 $errores['detalles'] = $linea . 'la cantidad debe ser un número entero entre 1 y 999 unidades.';
             }
 

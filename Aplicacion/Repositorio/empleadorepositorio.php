@@ -74,11 +74,11 @@ class empleadorepositorio
         return (int) $sentencia->fetch()['total'] > 0;
     }
 
-    // Indica si ya existe una dueña activa que pueda iniciar sesión
-    public function hayduenaconcuenta()
+    // Indica si ya existe un propietario activo que pueda iniciar sesión
+    public function haypropietarioconcuenta()
     {
         $sentencia = $this->conexion->query("SELECT COUNT(*) AS total FROM tbempleado
-                WHERE tbempleadorol = 'Dueña' AND tbempleadoestado = 1
+                WHERE tbempleadorol = 'Propietario' AND tbempleadoestado = 1
                 AND tbempleadousuario IS NOT NULL AND tbempleadoclave IS NOT NULL");
 
         return (int) $sentencia->fetch()['total'] > 0;
@@ -124,8 +124,8 @@ class empleadorepositorio
             $parametros[] = (int) $estado;
         }
 
-        // La dueña aparece primero
-        $sql .= " ORDER BY tbempleadorol = 'Dueña' DESC, tbempleadonombre";
+        // El propietario aparece primero
+        $sql .= " ORDER BY tbempleadorol = 'Propietario' DESC, tbempleadonombre";
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute($parametros);
@@ -138,9 +138,9 @@ class empleadorepositorio
         return $empleados;
     }
 
-    public function obtenerduena()
+    public function obtenerpropietario()
     {
-        $sentencia = $this->conexion->query("SELECT * FROM tbempleado WHERE tbempleadorol = 'Dueña' AND tbempleadoestado = 1 LIMIT 1");
+        $sentencia = $this->conexion->query("SELECT * FROM tbempleado WHERE tbempleadorol = 'Propietario' AND tbempleadoestado = 1 LIMIT 1");
         $fila = $sentencia->fetch();
 
         return $fila ? new Empleado($fila) : null;
@@ -154,10 +154,10 @@ class empleadorepositorio
         return (int) $sentencia->fetch()['total'] > 0;
     }
 
-    public function existeduenaactiva($idexcluir = 0)
+    public function existepropietarioactivo($idexcluir = 0)
     {
         $sentencia = $this->conexion->prepare("SELECT COUNT(*) AS total FROM tbempleado
-                WHERE tbempleadorol = 'Dueña' AND tbempleadoestado = 1 AND tbempleadoid <> ?");
+                WHERE tbempleadorol = 'Propietario' AND tbempleadoestado = 1 AND tbempleadoid <> ?");
         $sentencia->execute([(int) $idexcluir]);
 
         return (int) $sentencia->fetch()['total'] > 0;

@@ -2,32 +2,32 @@
 
 class Encargo
 {
-    private $tbencargoid;
+    private $tbsolicitudencargoid;
     private $tbarreglofloralid;
     private $tbempleadoid;
-    private $tbencargocantidad;
-    private $tbencargofechaentrega;
-    private $tbencargonota;
-    private $tbencargoestado;
-    private $tbencargofecharegistro;
+    private $tbsolicitudencargocantidad;
+    private $tbsolicitudencargofechaentrega;
+    private $tbsolicitudencargonota;
+    private $tbsolicitudencargoestado;
+    private $tbsolicitudencargofecharegistro;
 
     public function __construct($datos = [])
     {
-        $this->tbencargoid            = $datos['tbencargoid'] ?? null;
+        $this->tbsolicitudencargoid            = $datos['tbsolicitudencargoid'] ?? null;
         $this->tbarreglofloralid      = $datos['tbarreglofloralid'] ?? 0;
         $this->tbempleadoid           = $datos['tbempleadoid'] ?? null;
-        $this->tbencargocantidad      = $datos['tbencargocantidad'] ?? 1;
-        $this->tbencargofechaentrega  = $datos['tbencargofechaentrega'] ?? null;
-        $this->tbencargonota          = $datos['tbencargonota'] ?? '';
-        $this->tbencargoestado        = $datos['tbencargoestado'] ?? 'Pendiente';
-        $this->tbencargofecharegistro = $datos['tbencargofecharegistro'] ?? null;
+        $this->tbsolicitudencargocantidad      = $datos['tbsolicitudencargocantidad'] ?? 1;
+        $this->tbsolicitudencargofechaentrega  = $datos['tbsolicitudencargofechaentrega'] ?? null;
+        $this->tbsolicitudencargonota          = $datos['tbsolicitudencargonota'] ?? '';
+        $this->tbsolicitudencargoestado        = $datos['tbsolicitudencargoestado'] ?? 'Pendiente';
+        $this->tbsolicitudencargofecharegistro = $datos['tbsolicitudencargofecharegistro'] ?? null;
     }
 
-    public function getTbencargoid() {
-        return $this->tbencargoid; }
+    public function getTbsolicitudencargoid() {
+        return $this->tbsolicitudencargoid; }
 
-    public function setTbencargoid($valor) {
-        $this->tbencargoid = $valor; }
+    public function setTbsolicitudencargoid($valor) {
+        $this->tbsolicitudencargoid = $valor; }
 
     public function getTbarreglofloralid() {
         return $this->tbarreglofloralid; }
@@ -41,38 +41,38 @@ class Encargo
     public function setTbempleadoid($valor) {
         $this->tbempleadoid = $valor; }
 
-    public function getTbencargocantidad() {
-        return $this->tbencargocantidad; }
+    public function getTbsolicitudencargocantidad() {
+        return $this->tbsolicitudencargocantidad; }
 
-    public function setTbencargocantidad($valor) {
-        $this->tbencargocantidad = $valor; }
+    public function setTbsolicitudencargocantidad($valor) {
+        $this->tbsolicitudencargocantidad = $valor; }
 
-    public function getTbencargofechaentrega() {
-        return $this->tbencargofechaentrega; }
+    public function getTbsolicitudencargofechaentrega() {
+        return $this->tbsolicitudencargofechaentrega; }
 
-    public function setTbencargofechaentrega($valor) {
-        $this->tbencargofechaentrega = $valor; }
+    public function setTbsolicitudencargofechaentrega($valor) {
+        $this->tbsolicitudencargofechaentrega = $valor; }
 
-    public function getTbencargonota() {
-        return $this->tbencargonota; }
+    public function getTbsolicitudencargonota() {
+        return $this->tbsolicitudencargonota; }
 
-    public function setTbencargonota($valor) {
-        $this->tbencargonota = $valor; }
+    public function setTbsolicitudencargonota($valor) {
+        $this->tbsolicitudencargonota = $valor; }
 
-    public function getTbencargoestado() {
-        return $this->tbencargoestado; }
+    public function getTbsolicitudencargoestado() {
+        return $this->tbsolicitudencargoestado; }
 
-    public function setTbencargoestado($valor) {
-        $this->tbencargoestado = $valor; }
+    public function setTbsolicitudencargoestado($valor) {
+        $this->tbsolicitudencargoestado = $valor; }
 
-    public function getTbencargofecharegistro() {
-        return $this->tbencargofecharegistro; }
+    public function getTbsolicitudencargofecharegistro() {
+        return $this->tbsolicitudencargofecharegistro; }
 
-    public function setTbencargofecharegistro($valor) {
-        $this->tbencargofecharegistro = $valor; }
+    public function setTbsolicitudencargofecharegistro($valor) {
+        $this->tbsolicitudencargofecharegistro = $valor; }
 
     public function estaAbierto()
     {
-        return in_array($this->tbencargoestado, ['Pendiente', 'En proceso'], true);
+        return in_array($this->tbsolicitudencargoestado, ['Pendiente', 'En proceso'], true);
     }
 }

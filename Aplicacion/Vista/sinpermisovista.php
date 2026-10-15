@@ -14,7 +14,7 @@
     <section class="sin-permiso">
         <div class="icono-confirmacion" aria-hidden="true">!</div>
         <h1>No tiene permiso para ver esta página</h1>
-        <p>Esta sección solo está disponible para la dueña de la floristería.</p>
+        <p>Esta sección solo está disponible para el propietario de la floristería.</p>
         <a class="boton boton-principal" href="index.php">Ir a mi página de inicio</a>
     </section>
 </main>

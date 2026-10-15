@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../Controlador/iniciocontrolador.php';
 
 $resumen = (new iniciocontrolador())->resumen($usuarioactual);
-$esduena = Seguridad::esduena();
+$espropietario = Seguridad::espropietario();
 
 $meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
     'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -38,12 +38,12 @@ $idusuario = (int) $usuarioactual['id'];
 $enlaces = [
     'mios'       => 'index.php?modulo=encargo&estado=abiertos&empleado=' . $idusuario,
     'sinasignar' => 'index.php?modulo=encargo&estado=abiertos&empleado=sinasignar',
-    'atrasados'  => 'index.php?modulo=encargo&estado=atrasados' . ($esduena ? '' : '&empleado=' . $idusuario),
+    'atrasados'  => 'index.php?modulo=encargo&estado=atrasados' . ($espropietario ? '' : '&empleado=' . $idusuario),
     'stockbajo'  => 'index.php?modulo=inventario&estado=1&stock=bajo',
     'sinrecibir' => 'index.php?modulo=pedido&estado=sinrecibir',
-    'abiertos'   => 'index.php?modulo=encargo&estado=abiertos' . ($esduena ? '' : '&empleado=' . $idusuario),
+    'abiertos'   => 'index.php?modulo=encargo&estado=abiertos' . ($espropietario ? '' : '&empleado=' . $idusuario),
 ];
-$listaencargos = $esduena ? $resumen['abiertos'] : $resumen['mios'];
+$listaencargos = $espropietario ? $resumen['abiertos'] : $resumen['mios'];
 
 // Accesos rápidos: solo se muestran los que el rol puede abrir
 $accesos = [
@@ -86,9 +86,9 @@ $accesos = [
         </a>
         <a class="tarjeta-resumen<?= $resumen['atrasados'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['atrasados']) ?>">
             <span class="numero"><?= count($resumen['atrasados']) ?></span>
-            <span><?= $esduena ? 'Encargos atrasados' : 'Mis encargos atrasados' ?></span>
+            <span><?= $espropietario ? 'Encargos atrasados' : 'Mis encargos atrasados' ?></span>
         </a>
-        <?php if ($esduena): ?>
+        <?php if ($espropietario): ?>
             <a class="tarjeta-resumen<?= $resumen['stockbajo'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['stockbajo']) ?>">
                 <span class="numero"><?= count($resumen['stockbajo']) ?></span>
                 <span>Productos con stock bajo</span>
@@ -110,19 +110,19 @@ $accesos = [
 
     <div class="paneles-inicio">
         <section class="panel-inicio">
-            <h2><?= $esduena ? 'Encargos por entregar' : 'Mis encargos por entregar' ?></h2>
+            <h2><?= $espropietario ? 'Encargos por entregar' : 'Mis encargos por entregar' ?></h2>
             <?php if (!$listaencargos): ?>
-                <p class="texto-suave"><?= $esduena ? 'No hay encargos abiertos.' : 'No tiene encargos asignados.' ?></p>
+                <p class="texto-suave"><?= $espropietario ? 'No hay encargos abiertos.' : 'No tiene encargos asignados.' ?></p>
             <?php else: ?>
                 <ul class="lista-inicio">
                     <?php foreach (array_slice($listaencargos, 0, 6) as $encargo): ?>
-                        <?php [$entrega, $claseentrega] = textoentrega($encargo['tbencargofechaentrega'], $resumen['hoy']); ?>
+                        <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
                         <li>
                             <span>
-                                <strong><?= (int) $encargo['tbencargocantidad'] ?> × <?= e($encargo['tbarreglofloralnombre']) ?></strong>
+                                <strong><?= (int) $encargo['tbsolicitudencargocantidad'] ?> × <?= e($encargo['tbarreglofloralnombre']) ?></strong>
                                 <small class="texto-suave">
-                                    <?= e($encargo['tbencargoestado']) ?>
-                                    <?php if ($esduena): ?>
+                                    <?= e($encargo['tbsolicitudencargoestado']) ?>
+                                    <?php if ($espropietario): ?>
                                         · <?= $encargo['tbempleadonombre'] !== '' ? e($encargo['tbempleadonombre']) : 'Sin asignar' ?>
                                     <?php endif; ?>
                                 </small>
@@ -137,7 +137,7 @@ $accesos = [
             <?php endif; ?>
         </section>
 
-        <?php if (!$esduena): ?>
+        <?php if (!$espropietario): ?>
             <section class="panel-inicio">
                 <h2>Encargos que puede tomar</h2>
                 <?php if (!$resumen['sinasignar']): ?>
@@ -145,9 +145,9 @@ $accesos = [
                 <?php else: ?>
                     <ul class="lista-inicio">
                         <?php foreach (array_slice($resumen['sinasignar'], 0, 6) as $encargo): ?>
-                            <?php [$entrega, $claseentrega] = textoentrega($encargo['tbencargofechaentrega'], $resumen['hoy']); ?>
+                            <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
                             <li>
-                                <strong><?= (int) $encargo['tbencargocantidad'] ?> × <?= e($encargo['tbarreglofloralnombre']) ?></strong>
+                                <strong><?= (int) $encargo['tbsolicitudencargocantidad'] ?> × <?= e($encargo['tbarreglofloralnombre']) ?></strong>
                                 <span class="estado <?= $claseentrega ?>"><?= e($entrega) ?></span>
                             </li>
                         <?php endforeach; ?>

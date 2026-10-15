@@ -59,7 +59,7 @@
 <dialog id="dialogoformulario" class="dialogo">
     <form id="formulario" novalidate>
         <h2 id="tituloformulario">Nuevo empleado</h2>
-        <p class="nota">Los campos con * son obligatorios. Solo puede haber una dueña activa.</p>
+        <p class="nota">Los campos con * son obligatorios. Solo puede haber un propietario activo.</p>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
             <span>Se recuperaron datos que no se habían guardado.</span>
@@ -85,7 +85,7 @@
                 <select name="tbempleadorol">
                     <option value="">Seleccione…</option>
                     <option value="Empleado">Empleado</option>
-                    <option value="Dueña">Dueña</option>
+                    <option value="Propietario">Propietario</option>
                 </select>
                       <small class="error" data-error="tbempleadorol"></small>
             </label>

@@ -17,7 +17,7 @@ class encargohistoricorepositorio
             throw new InvalidArgumentException('Campo de histórico no válido.');
         }
 
-        return 'tbencargo' . $campo . 'historico';
+        return 'tbsolicitudencargo' . $campo . 'historico';
     }
 
     private function siguienteid($tabla)
@@ -29,7 +29,7 @@ class encargohistoricorepositorio
     public function registrar($campo, $idencargo, $valor, $idempleado)
     {
         $tabla = $this->tabla($campo);
-        $sql = "INSERT INTO {$tabla} ({$tabla}id, tbencargoid, {$tabla}valor, tbempleadoid, {$tabla}fecha)
+        $sql = "INSERT INTO {$tabla} ({$tabla}id, tbsolicitudencargoid, {$tabla}valor, tbempleadoid, {$tabla}fecha)
                 VALUES (?, ?, ?, ?, ?)";
 
         $sentencia = $this->conexion->prepare($sql);
@@ -44,18 +44,18 @@ class encargohistoricorepositorio
 
     public function listar($idencargo)
     {
-        $sql = "SELECT 'estado' AS campo, h.tbencargoestadohistoricoid AS id, h.tbencargoestadohistoricovalor AS valor,
-                       NULL AS nombreasignado, h.tbencargoestadohistoricofecha AS fecha, quien.tbempleadonombre AS hechopor
-                FROM tbencargoestadohistorico h
+        $sql = "SELECT 'estado' AS campo, h.tbsolicitudencargoestadohistoricoid AS id, h.tbsolicitudencargoestadohistoricovalor AS valor,
+                       NULL AS nombreasignado, h.tbsolicitudencargoestadohistoricofecha AS fecha, quien.tbempleadonombre AS hechopor
+                FROM tbsolicitudencargoestadohistorico h
                 LEFT JOIN tbempleado quien ON quien.tbempleadoid = h.tbempleadoid
-                WHERE h.tbencargoid = ?
+                WHERE h.tbsolicitudencargoid = ?
                 UNION ALL
-                SELECT 'empleado', h.tbencargoempleadohistoricoid, h.tbencargoempleadohistoricovalor,
-                       asignado.tbempleadonombre, h.tbencargoempleadohistoricofecha, quien.tbempleadonombre
-                FROM tbencargoempleadohistorico h
-                LEFT JOIN tbempleado asignado ON asignado.tbempleadoid = h.tbencargoempleadohistoricovalor
+                SELECT 'empleado', h.tbsolicitudencargoempleadohistoricoid, h.tbsolicitudencargoempleadohistoricovalor,
+                       asignado.tbempleadonombre, h.tbsolicitudencargoempleadohistoricofecha, quien.tbempleadonombre
+                FROM tbsolicitudencargoempleadohistorico h
+                LEFT JOIN tbempleado asignado ON asignado.tbempleadoid = h.tbsolicitudencargoempleadohistoricovalor
                 LEFT JOIN tbempleado quien ON quien.tbempleadoid = h.tbempleadoid
-                WHERE h.tbencargoid = ?
+                WHERE h.tbsolicitudencargoid = ?
                 ORDER BY fecha, campo DESC, id";
 
         $sentencia = $this->conexion->prepare($sql);

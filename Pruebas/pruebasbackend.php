@@ -187,7 +187,7 @@ prueba('Sin sesión, pedir datos responde 401', $r['codigo'] === 401, 'HTTP ' . 
 $r = $anonimo->get('');
 prueba('Sin sesión, la página principal muestra el login', $r['codigo'] === 200 && strpos($r['texto'], 'name="usuario"') !== false);
 
-$r = $anonimo->ingresar('duenia', 'malaclave1');
+$r = $anonimo->ingresar('propietario', 'malaclave1');
 prueba('Contraseña incorrecta no deja entrar', !exito($r) && mensaje($r) === 'Usuario o contraseña incorrectos.', mensaje($r));
 
 $r = $anonimo->ingresar('noexiste', 'cualquiera1');
@@ -201,31 +201,31 @@ prueba('Empleada inactiva no puede entrar', !exito($r) && strpos(mensaje($r), 'i
 
 $bloqueo = new Cliente($servidor);
 for ($i = 0; $i < 5; $i++) {
-    $bloqueo->ingresar('duenia', 'otraclave' . $i);
+    $bloqueo->ingresar('propietario', 'otraclave' . $i);
 }
-$r = $bloqueo->ingresar('duenia', 'duenia123');
+$r = $bloqueo->ingresar('propietario', 'propietario1');
 prueba('Después de 5 intentos fallidos se bloquea, aunque la clave sea correcta', !exito($r) && strpos(mensaje($r), 'Demasiados intentos') !== false, mensaje($r));
 
-$duena = new Cliente($servidor);
-$r = $duena->ingresar('duenia', 'duenia123');
-prueba('La dueña entra con duenia / duenia123', exito($r), mensaje($r));
+$propietario = new Cliente($servidor);
+$r = $propietario->ingresar('propietario', 'propietario1');
+prueba('El propietario entra con propietario / propietario1', exito($r), mensaje($r));
 
 // Las pruebas cuentan con los datos de prueba recién cargados
-if (exito($r) && count(datos($duena->get('proveedor', 'listar'))) !== 8) {
+if (exito($r) && count(datos($propietario->get('proveedor', 'listar'))) !== 8) {
     fwrite(STDERR, "\nLa base ya tiene datos de una corrida anterior. Vuelva a cargarla:\n"
         . "  /opt/lampp/bin/mysql -u root --default-character-set=utf8mb4 < BaseDatos/ScriptsSQL/bdfloristica.sql\n"
         . "  /opt/lampp/bin/mysql -u root --default-character-set=utf8mb4 < BaseDatos/DatosIniciales/datosprueba.sql\n");
     exit(2);
 }
 
-$r = $duena->get('proveedor', 'crear');
+$r = $propietario->get('proveedor', 'crear');
 prueba('Una acción que modifica datos no acepta GET (405)', $r['codigo'] === 405, 'HTTP ' . $r['codigo']);
 
-$r = $duena->get('noexiste', 'listar');
+$r = $propietario->get('noexiste', 'listar');
 prueba('Módulo inexistente responde con error', !exito($r), mensaje($r));
 
-$r = $duena->get('inicio');
-prueba('La página de inicio carga para la dueña', $r['codigo'] === 200 && strpos($r['texto'], 'Productos con stock bajo') !== false);
+$r = $propietario->get('inicio');
+prueba('La página de inicio carga para el propietario', $r['codigo'] === 200 && strpos($r['texto'], 'Productos con stock bajo') !== false);
 
 $lorena = new Cliente($servidor);
 prueba('Lorena entra con empleado1 / empleado1', exito($lorena->ingresar('empleado1', 'empleado1')));
@@ -260,8 +260,8 @@ $r = $lorena->get('catalogo', 'obtener', ['id' => 1]);
 $detalle = datos($r)['detalles'][0] ?? [];
 prueba('…ni el precio por unidad de los productos', !array_key_exists('tbinventariopreciounidad', $detalle));
 
-$r = $duena->get('catalogo', 'obtener', ['id' => 1]);
-prueba('La dueña sí ve el costo', isset(datos($r)['costo']));
+$r = $propietario->get('catalogo', 'obtener', ['id' => 1]);
+prueba('El propietario sí ve el costo', isset(datos($r)['costo']));
 
 /* =====================================================================
  * 3. Proveedores
@@ -280,60 +280,60 @@ $proveedorvalido = [
     'tbproveedordescripcion'    => '',
 ];
 
-$r = $duena->get('proveedor', 'listar');
+$r = $propietario->get('proveedor', 'listar');
 prueba('Lista los 8 proveedores de prueba', count(datos($r)) === 8, 'Hay ' . count(datos($r)));
 
-$r = $duena->post('proveedor', 'crear', []);
+$r = $propietario->post('proveedor', 'crear', []);
 $faltan = array_keys(errores($r));
 prueba('Formulario vacío marca los obligatorios',
     !array_diff(['tbproveedornombreempresa', 'tbproveedornombrecontacto', 'tbproveedortelefono', 'tbproveedorprovincia'], $faltan),
     'Errores: ' . implode(', ', $faltan));
 
-$r = $duena->post('proveedor', 'crear', ['tbproveedornombreempresa' => 'Flores del Valle'] + $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', ['tbproveedornombreempresa' => 'Flores del Valle'] + $proveedorvalido);
 prueba('No deja repetir el nombre de la empresa', tieneerror($r, 'tbproveedornombreempresa'), mensaje($r));
 
-$r = $duena->post('proveedor', 'crear', ['tbproveedortelefono' => '8888-1001'] + $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', ['tbproveedortelefono' => '8888-1001'] + $proveedorvalido);
 prueba('No deja repetir el teléfono', tieneerror($r, 'tbproveedortelefono'), mensaje($r));
 
-$r = $duena->post('proveedor', 'crear', ['tbproveedortelefono' => '1234'] + $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', ['tbproveedortelefono' => '1234'] + $proveedorvalido);
 prueba('Teléfono nacional debe tener 8 dígitos', tieneerror($r, 'tbproveedortelefono'));
 
-$r = $duena->post('proveedor', 'crear', ['tbproveedorcorreo' => 'correo-malo'] + $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', ['tbproveedorcorreo' => 'correo-malo'] + $proveedorvalido);
 prueba('Correo con formato inválido', tieneerror($r, 'tbproveedorcorreo'));
 
-$r = $duena->post('proveedor', 'crear', ['tbproveedornombrecontacto' => 'Ana 123'] + $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', ['tbproveedornombrecontacto' => 'Ana 123'] + $proveedorvalido);
 prueba('Nombre del contacto no acepta números', tieneerror($r, 'tbproveedornombrecontacto'));
 
-$r = $duena->post('proveedor', 'crear', ['tbproveedorcanton' => 'Liberia'] + $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', ['tbproveedorcanton' => 'Liberia'] + $proveedorvalido);
 prueba('El cantón debe pertenecer a la provincia', tieneerror($r, 'tbproveedorcanton'));
 
-$r = $duena->post('proveedor', 'crear', $proveedorvalido);
+$r = $propietario->post('proveedor', 'crear', $proveedorvalido);
 $idproveedor = datos($r)['tbproveedorid'] ?? 0;
 prueba('Crea un proveedor válido', exito($r) && $idproveedor > 0, mensaje($r));
 
-$r = $duena->get('proveedor', 'historial', ['id' => $idproveedor]);
+$r = $propietario->get('proveedor', 'historial', ['id' => $idproveedor]);
 $historial = datos($r);
 prueba('El historial guarda los 6 datos iniciales', count($historial) === 6, 'Hay ' . count($historial));
 prueba('…con quién lo hizo (Patricia)', ($historial[0]['hechopor'] ?? '') === 'Patricia Mora Solano', $historial[0]['hechopor'] ?? 'vacío');
 
-$r = $duena->get('proveedor', 'obtener', ['id' => $idproveedor]);
+$r = $propietario->get('proveedor', 'obtener', ['id' => $idproveedor]);
 $actual = datos($r);
-$r = $duena->post('proveedor', 'actualizar', array_merge($proveedorvalido, ['tbproveedorid' => $idproveedor, 'tbproveedortelefono' => '8777-2222']));
+$r = $propietario->post('proveedor', 'actualizar', array_merge($proveedorvalido, ['tbproveedorid' => $idproveedor, 'tbproveedortelefono' => '8777-2222']));
 prueba('Actualiza el teléfono', exito($r), mensaje($r));
-$historial = datos($duena->get('proveedor', 'historial', ['id' => $idproveedor]));
+$historial = datos($propietario->get('proveedor', 'historial', ['id' => $idproveedor]));
 $ultimo = end($historial);
 prueba('El cambio de teléfono queda en el historial', count($historial) === 7 && ($ultimo['anterior'] ?? '') === '8777-1111' && ($ultimo['nuevo'] ?? '') === '8777-2222',
     json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 prueba('El historial va del más antiguo al más reciente', ($historial[0]['fecha'] ?? '') <= ($ultimo['fecha'] ?? ''));
 
-$r = $duena->post('proveedor', 'actualizar', array_merge($proveedorvalido, ['tbproveedorid' => $idproveedor, 'tbproveedortelefono' => '8777-2222']));
-$historial = datos($duena->get('proveedor', 'historial', ['id' => $idproveedor]));
+$r = $propietario->post('proveedor', 'actualizar', array_merge($proveedorvalido, ['tbproveedorid' => $idproveedor, 'tbproveedortelefono' => '8777-2222']));
+$historial = datos($propietario->get('proveedor', 'historial', ['id' => $idproveedor]));
 prueba('Guardar sin cambios no agrega nada al historial', count($historial) === 7, 'Hay ' . count($historial));
 
-prueba('Inactiva el proveedor', exito($duena->post('proveedor', 'inactivar', ['id' => $idproveedor])));
-$r = $duena->post('proveedor', 'inactivar', ['id' => $idproveedor]);
+prueba('Inactiva el proveedor', exito($propietario->post('proveedor', 'inactivar', ['id' => $idproveedor])));
+$r = $propietario->post('proveedor', 'inactivar', ['id' => $idproveedor]);
 prueba('No deja inactivarlo dos veces', !exito($r), mensaje($r));
-prueba('Lo reactiva', exito($duena->post('proveedor', 'reactivar', ['id' => $idproveedor])));
+prueba('Lo reactiva', exito($propietario->post('proveedor', 'reactivar', ['id' => $idproveedor])));
 
 /* =====================================================================
  * 4. Inventario
@@ -354,22 +354,22 @@ $florvalida = [
     'tbinventariocategoriaflordiasduracion' => 7,
 ];
 
-$r = $duena->post('inventario', 'crear', ['tbinventariocategoria' => ''] + $florvalida);
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoria' => ''] + $florvalida);
 prueba('La categoría es obligatoria', tieneerror($r, 'tbinventariocategoria'));
 
-$r = $duena->post('inventario', 'crear', ['tbinventarionombre' => 'Rosa roja'] + $florvalida);
+$r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Rosa roja'] + $florvalida);
 prueba('No deja repetir el nombre con el mismo proveedor', tieneerror($r, 'tbinventarionombre'));
 
-$r = $duena->post('inventario', 'crear', ['tbproveedorid' => 4] + $florvalida);
+$r = $propietario->post('inventario', 'crear', ['tbproveedorid' => 4] + $florvalida);
 prueba('No deja usar un proveedor inactivo', tieneerror($r, 'tbproveedorid'));
 
-$r = $duena->post('inventario', 'crear', ['tbinventariopreciopaquete' => '100.555'] + $florvalida);
+$r = $propietario->post('inventario', 'crear', ['tbinventariopreciopaquete' => '100.555'] + $florvalida);
 prueba('El precio solo acepta 2 decimales', tieneerror($r, 'tbinventariopreciopaquete'));
 
-$r = $duena->post('inventario', 'crear', ['tbinventariopreciopaquete' => '0'] + $florvalida);
+$r = $propietario->post('inventario', 'crear', ['tbinventariopreciopaquete' => '0'] + $florvalida);
 prueba('El precio debe ser mayor que 0', tieneerror($r, 'tbinventariopreciopaquete'));
 
-$r = $duena->post('inventario', 'crear', [
+$r = $propietario->post('inventario', 'crear', [
     'tbproveedorid' => 6, 'tbinventarionombre' => 'Caja prueba', 'tbinventariocategoria' => 'Base',
     'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
     'tbinventariocategoriabasetipo' => 'Caja', 'tbinventariocategoriabasematerial' => 'Madera', 'tbinventariocategoriabasecolor' => 'Café',
@@ -377,7 +377,7 @@ $r = $duena->post('inventario', 'crear', [
 ]);
 prueba('La medida debe ir en centímetros (ej. 20 x 30)', tieneerror($r, 'tbinventariocategoriabasemedida'));
 
-$r = $duena->post('inventario', 'crear', [
+$r = $propietario->post('inventario', 'crear', [
     'tbproveedorid' => 6, 'tbinventarionombre' => 'Chocolate prueba', 'tbinventariocategoria' => 'Extra',
     'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
     'tbinventariocategoriaextratipo' => 'Chocolate', 'tbinventariocategoriaextramarca' => 'Prueba', 'tbinventariocategoriaextratamano' => 'Mediano',
@@ -385,74 +385,74 @@ $r = $duena->post('inventario', 'crear', [
 ]);
 prueba('Los chocolates piden fecha de vencimiento', tieneerror($r, 'tbinventariocategoriaextrafechavencimiento'));
 
-$r = $duena->post('inventario', 'crear', $florvalida);
+$r = $propietario->post('inventario', 'crear', $florvalida);
 $idproducto = datos($r)['tbinventarioid'] ?? 0;
 prueba('Crea un producto válido', exito($r) && $idproducto > 0, mensaje($r));
 
-$producto = datos($duena->get('inventario', 'obtener', ['id' => $idproducto]));
+$producto = datos($propietario->get('inventario', 'obtener', ['id' => $idproducto]));
 prueba('Calcula el precio por unidad (10000 / 20 = 500)', (float) ($producto['tbinventariopreciounidad'] ?? 0) === 500.0, json_encode($producto['tbinventariopreciounidad'] ?? null));
 prueba('Registra el movimiento "Inicial" de 40', ($producto['movimientos'][0]['tipo'] ?? '') === 'Inicial' && ($producto['movimientos'][0]['cantidad'] ?? 0) === 40);
-prueba('El historial tiene los 5 datos iniciales', count(datos($duena->get('inventario', 'historial', ['id' => $idproducto]))) === 5);
+prueba('El historial tiene los 5 datos iniciales', count(datos($propietario->get('inventario', 'historial', ['id' => $idproducto]))) === 5);
 
 $cambio = $florvalida + ['tbinventarioid' => $idproducto];
 $cambio['tbinventariostock'] = 35;
 $cambio['tbinventariopreciopaquete'] = '12000';
-$r = $duena->post('inventario', 'actualizar', $cambio);
+$r = $propietario->post('inventario', 'actualizar', $cambio);
 prueba('Actualiza stock y precio', exito($r), mensaje($r));
 
-$producto = datos($duena->get('inventario', 'obtener', ['id' => $idproducto]));
+$producto = datos($propietario->get('inventario', 'obtener', ['id' => $idproducto]));
 $ultimomovimiento = end($producto['movimientos']);
 prueba('Corregir el stock a mano queda como "Ajuste" de −5', ($ultimomovimiento['tipo'] ?? '') === 'Ajuste' && ($ultimomovimiento['cantidad'] ?? 0) === -5 && ($ultimomovimiento['stockfinal'] ?? 0) === 35,
     json_encode($ultimomovimiento, JSON_UNESCAPED_UNICODE));
-$historial = datos($duena->get('inventario', 'historial', ['id' => $idproducto]));
+$historial = datos($propietario->get('inventario', 'historial', ['id' => $idproducto]));
 $ultimo = end($historial);
 prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') === 'precio' && strpos($ultimo['nuevo'] ?? '', '12 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 
-prueba('Inactiva el producto', exito($duena->post('inventario', 'inactivar', ['id' => $idproducto])));
-prueba('Lo reactiva', exito($duena->post('inventario', 'reactivar', ['id' => $idproducto])));
+prueba('Inactiva el producto', exito($propietario->post('inventario', 'inactivar', ['id' => $idproducto])));
+prueba('Lo reactiva', exito($propietario->post('inventario', 'reactivar', ['id' => $idproducto])));
 
 /* =====================================================================
  * 5. Pedidos
  * =================================================================== */
 seccion('5. Pedidos');
 
-$stockantes = (int) datos($duena->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
+$stockantes = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
 
-$r = $duena->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $hoy]);
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $hoy]);
 prueba('Un pedido sin productos no se guarda', tieneerror($r, 'detalles'));
 
 $detalle = ['detalles' => [['tbinventarioid' => 1, 'tbpedidodetallecantidad' => 2, 'tbpedidodetalleprecio' => '12000']]];
-$r = $duena->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $manana] + $detalle);
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $manana] + $detalle);
 prueba('La fecha del pedido no puede ser futura', tieneerror($r, 'tbpedidofecha'));
 
-$r = $duena->post('pedido', 'crear', ['tbproveedorid' => 4, 'tbpedidofecha' => $hoy] + $detalle);
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 4, 'tbpedidofecha' => $hoy] + $detalle);
 prueba('No deja pedir a un proveedor inactivo', tieneerror($r, 'tbproveedorid'));
 
-$r = $duena->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $hoy] + $detalle);
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $hoy] + $detalle);
 $idpedido = datos($r)['tbpedidoid'] ?? 0;
 prueba('Crea un pedido válido (2 paquetes de rosa roja)', exito($r) && $idpedido > 0, mensaje($r));
 
-$r = $duena->post('pedido', 'recibir', ['id' => $idpedido]);
+$r = $propietario->post('pedido', 'recibir', ['id' => $idpedido]);
 prueba('No deja recibir un pedido sin confirmar', !exito($r), mensaje($r));
 
-$r = $duena->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Crédito']);
+$r = $propietario->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Crédito']);
 prueba('A crédito pide el plazo', tieneerror($r, 'tbconfirmacioncompraplazodias'));
 
-$r = $duena->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Crédito', 'tbconfirmacioncompraplazodias' => 400]);
+$r = $propietario->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Crédito', 'tbconfirmacioncompraplazodias' => 400]);
 prueba('El plazo no puede pasar de 365 días', tieneerror($r, 'tbconfirmacioncompraplazodias'));
 
-prueba('Confirma el pedido de contado', exito($duena->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Contado'])));
-prueba('No deja confirmarlo dos veces', !exito($duena->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Contado'])));
+prueba('Confirma el pedido de contado', exito($propietario->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Contado'])));
+prueba('No deja confirmarlo dos veces', !exito($propietario->post('pedido', 'confirmar', ['tbpedidoid' => $idpedido, 'tbconfirmacioncompratipopago' => 'Contado'])));
 
-prueba('Recibe el pedido', exito($duena->post('pedido', 'recibir', ['id' => $idpedido])));
-$producto = datos($duena->get('inventario', 'obtener', ['id' => 1]));
+prueba('Recibe el pedido', exito($propietario->post('pedido', 'recibir', ['id' => $idpedido])));
+$producto = datos($propietario->get('inventario', 'obtener', ['id' => 1]));
 prueba('El stock de rosa roja sube 48 (2 paquetes × 24)', (int) $producto['tbinventariostock'] === $stockantes + 48, "Antes {$stockantes}, ahora " . $producto['tbinventariostock']);
 $ultimomovimiento = end($producto['movimientos']);
 prueba('Queda el movimiento "Entrada" del pedido', ($ultimomovimiento['tipo'] ?? '') === 'Entrada' && strpos($ultimomovimiento['motivo'] ?? '', "N.º {$idpedido}") !== false);
 
-$historial = datos($duena->get('pedido', 'historial', ['id' => $idpedido]));
+$historial = datos($propietario->get('pedido', 'historial', ['id' => $idpedido]));
 prueba('Historial del pedido: Pendiente → Confirmado → Recibido', array_column($historial, 'nuevo') === ['Pendiente', 'Confirmado', 'Recibido'], json_encode(array_column($historial, 'nuevo')));
-prueba('No deja recibirlo dos veces', !exito($duena->post('pedido', 'recibir', ['id' => $idpedido])));
+prueba('No deja recibirlo dos veces', !exito($propietario->post('pedido', 'recibir', ['id' => $idpedido])));
 
 /* =====================================================================
  * 6. Catálogo
@@ -464,34 +464,34 @@ $arreglovalido = [
     'tbarreglofloraldescripcion' => 'Creado por las pruebas',
     'tbarreglofloralprecio'      => '25000',
     'detalles'                   => [
-        ['tbinventarioid' => 1, 'tbarreglofloraldetallecantidad' => 6],   // rosa roja 6 × 500
-        ['tbinventarioid' => 11, 'tbarreglofloraldetallecantidad' => 2],  // eucalipto 2 × 200
+        ['tbinventarioid' => 1, 'tbarreglofloralinsumocantidad' => 6],   // rosa roja 6 × 500
+        ['tbinventarioid' => 11, 'tbarreglofloralinsumocantidad' => 2],  // eucalipto 2 × 200
     ],
 ];
 
-$r = $duena->post('catalogo', 'crear', $arreglovalido);
+$r = $propietario->post('catalogo', 'crear', $arreglovalido);
 prueba('La foto es obligatoria al crear', tieneerror($r, 'tbarreglofloralfoto'));
 
-$r = $duena->post('catalogo', 'crear', ['detalles' => []] + $arreglovalido, ['tbarreglofloralfoto' => $fotoprueba]);
+$r = $propietario->post('catalogo', 'crear', ['detalles' => []] + $arreglovalido, ['tbarreglofloralfoto' => $fotoprueba]);
 prueba('Debe llevar al menos un producto', tieneerror($r, 'detalles'));
 
-$r = $duena->post('catalogo', 'crear', ['tbarreglofloralnombre' => 'Ramo silvestre'] + $arreglovalido, ['tbarreglofloralfoto' => $fotoprueba]);
+$r = $propietario->post('catalogo', 'crear', ['tbarreglofloralnombre' => 'Ramo silvestre'] + $arreglovalido, ['tbarreglofloralfoto' => $fotoprueba]);
 prueba('No deja repetir el nombre', tieneerror($r, 'tbarreglofloralnombre'));
 
-$r = $duena->post('catalogo', 'crear', ['tbarreglofloralfoto_falsa' => 1] + $arreglovalido, ['tbarreglofloralfoto' => __FILE__]);
+$r = $propietario->post('catalogo', 'crear', ['tbarreglofloralfoto_falsa' => 1] + $arreglovalido, ['tbarreglofloralfoto' => __FILE__]);
 prueba('Rechaza un archivo que no es imagen', tieneerror($r, 'tbarreglofloralfoto'), mensaje($r));
 
-$r = $duena->post('catalogo', 'crear', $arreglovalido, ['tbarreglofloralfoto' => $fotoprueba]);
+$r = $propietario->post('catalogo', 'crear', $arreglovalido, ['tbarreglofloralfoto' => $fotoprueba]);
 $idarreglo = datos($r)['tbarreglofloralid'] ?? 0;
 prueba('Crea un arreglo válido con foto', exito($r) && $idarreglo > 0, mensaje($r));
 
-$arreglo = datos($duena->get('catalogo', 'obtener', ['id' => $idarreglo]));
+$arreglo = datos($propietario->get('catalogo', 'obtener', ['id' => $idarreglo]));
 prueba('Calcula el costo (6 × 500 + 2 × 200 = 3400)', (float) ($arreglo['costo'] ?? 0) === 3400.0, json_encode($arreglo['costo'] ?? null));
 prueba('Guarda la foto en imagenes/arreglos', strpos($arreglo['tbarreglofloralfoto'] ?? '', 'imagenes/arreglos/') === 0);
 
-$r = $duena->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglo, 'tbarreglofloralprecio' => '27000'] + $arreglovalido);
+$r = $propietario->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglo, 'tbarreglofloralprecio' => '27000'] + $arreglovalido);
 prueba('Actualiza el precio sin cambiar la foto', exito($r), mensaje($r));
-$historial = datos($duena->get('catalogo', 'historial', ['id' => $idarreglo]));
+$historial = datos($propietario->get('catalogo', 'historial', ['id' => $idarreglo]));
 $ultimo = end($historial);
 prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') === 'precio' && strpos($ultimo['nuevo'] ?? '', '27 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 
@@ -503,33 +503,33 @@ seccion('7. Encargos');
 $encargovalido = [
     'tbarreglofloralid'     => $idarreglo,
     'tbempleadoid'          => '',
-    'tbencargocantidad'     => 2,
-    'tbencargofechaentrega' => $manana,
-    'tbencargonota'         => 'Prueba',
+    'tbsolicitudencargocantidad'     => 2,
+    'tbsolicitudencargofechaentrega' => $manana,
+    'tbsolicitudencargonota'         => 'Prueba',
 ];
 
-$r = $duena->post('encargo', 'crear', ['tbencargofechaentrega' => $ayer] + $encargovalido);
-prueba('La fecha de entrega no puede ser anterior a hoy', tieneerror($r, 'tbencargofechaentrega'));
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargofechaentrega' => $ayer] + $encargovalido);
+prueba('La fecha de entrega no puede ser anterior a hoy', tieneerror($r, 'tbsolicitudencargofechaentrega'));
 
-$r = $duena->post('encargo', 'crear', ['tbencargocantidad' => 0] + $encargovalido);
-prueba('La cantidad debe ser de 1 a 99', tieneerror($r, 'tbencargocantidad'));
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargocantidad' => 0] + $encargovalido);
+prueba('La cantidad debe ser de 1 a 99', tieneerror($r, 'tbsolicitudencargocantidad'));
 
-$r = $duena->post('encargo', 'crear', ['tbempleadoid' => 5] + $encargovalido);
+$r = $propietario->post('encargo', 'crear', ['tbempleadoid' => 5] + $encargovalido);
 prueba('No deja asignarlo a una empleada inactiva', tieneerror($r, 'tbempleadoid'));
 
 $r = $lorena->post('encargo', 'crear', ['tbempleadoid' => 3] + $encargovalido);
 prueba('Un empleado no puede crear un encargo asignado a otro', tieneerror($r, 'tbempleadoid'));
 
-$r = $duena->post('encargo', 'crear', $encargovalido);
-$idencargo = datos($r)['tbencargoid'] ?? 0;
+$r = $propietario->post('encargo', 'crear', $encargovalido);
+$idencargo = datos($r)['tbsolicitudencargoid'] ?? 0;
 prueba('Crea un encargo sin asignar', exito($r) && $idencargo > 0, mensaje($r));
 
-$r = $duena->post('encargo', 'iniciar', ['id' => $idencargo]);
+$r = $propietario->post('encargo', 'iniciar', ['id' => $idencargo]);
 prueba('No deja iniciarlo sin asignar', !exito($r), mensaje($r));
 
-$r = $duena->post('encargo', 'asignar', ['tbencargoid' => $idencargo, 'tbempleadoid' => 2]);
-prueba('La dueña se lo asigna a Lorena', exito($r), mensaje($r));
-$r = $duena->post('encargo', 'asignar', ['tbencargoid' => $idencargo, 'tbempleadoid' => 2]);
+$r = $propietario->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idencargo, 'tbempleadoid' => 2]);
+prueba('El propietario se lo asigna a Lorena', exito($r), mensaje($r));
+$r = $propietario->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idencargo, 'tbempleadoid' => 2]);
 prueba('Asignarlo a la misma persona no duplica el historial', exito($r) && strpos(mensaje($r), 'ya estaba') !== false, mensaje($r));
 
 $r = $carlos->post('encargo', 'iniciar', ['id' => $idencargo]);
@@ -539,37 +539,37 @@ prueba('Carlos no puede quitárselo a Lorena con "Asignármelo"', !exito($r), me
 
 prueba('Lorena lo inicia', exito($lorena->post('encargo', 'iniciar', ['id' => $idencargo])));
 
-$stockrosa = (int) datos($duena->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
-$stockeucalipto = (int) datos($duena->get('inventario', 'obtener', ['id' => 11]))['tbinventariostock'];
+$stockrosa = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
+$stockeucalipto = (int) datos($propietario->get('inventario', 'obtener', ['id' => 11]))['tbinventariostock'];
 prueba('Lorena lo termina', exito($lorena->post('encargo', 'terminar', ['id' => $idencargo])));
-$rosa = datos($duena->get('inventario', 'obtener', ['id' => 1]));
-$eucalipto = datos($duena->get('inventario', 'obtener', ['id' => 11]));
+$rosa = datos($propietario->get('inventario', 'obtener', ['id' => 1]));
+$eucalipto = datos($propietario->get('inventario', 'obtener', ['id' => 11]));
 prueba('Descuenta 12 rosas (6 por arreglo × 2)', (int) $rosa['tbinventariostock'] === $stockrosa - 12, "Antes {$stockrosa}, ahora " . $rosa['tbinventariostock']);
 prueba('Descuenta 4 de eucalipto (2 × 2)', (int) $eucalipto['tbinventariostock'] === $stockeucalipto - 4);
 $ultimomovimiento = end($rosa['movimientos']);
 prueba('Queda la "Salida" con el nombre de Lorena', ($ultimomovimiento['tipo'] ?? '') === 'Salida' && ($ultimomovimiento['hechopor'] ?? '') === 'Lorena Bermúdez Badilla',
     json_encode($ultimomovimiento, JSON_UNESCAPED_UNICODE));
 
-$historial = datos($duena->get('encargo', 'obtener', ['id' => $idencargo]))['historial'] ?? [];
+$historial = datos($propietario->get('encargo', 'obtener', ['id' => $idencargo]))['historial'] ?? [];
 prueba('El historial del encargo tiene registro, asignación, inicio y fin', count($historial) === 4, json_encode(array_column($historial, 'texto'), JSON_UNESCAPED_UNICODE));
 prueba('No deja terminarlo dos veces', !exito($lorena->post('encargo', 'terminar', ['id' => $idencargo])));
 
 // Encargo N.º 4 de los datos de prueba: 3 ramos de 24 rosas rosadas (72) y hay 48 → no alcanza
-$stockrosada = (int) datos($duena->get('inventario', 'obtener', ['id' => 2]))['tbinventariostock'];
+$stockrosada = (int) datos($propietario->get('inventario', 'obtener', ['id' => 2]))['tbinventariostock'];
 $carlos->post('encargo', 'iniciar', ['id' => 4]);
 $r = $carlos->post('encargo', 'terminar', ['id' => 4]);
 prueba('Si no alcanza el stock, no deja terminar y dice qué falta', !exito($r) && strpos(mensaje($r), 'Rosa rosada') !== false, mensaje($r));
-prueba('…y el stock no cambia', (int) datos($duena->get('inventario', 'obtener', ['id' => 2]))['tbinventariostock'] === $stockrosada);
+prueba('…y el stock no cambia', (int) datos($propietario->get('inventario', 'obtener', ['id' => 2]))['tbinventariostock'] === $stockrosada);
 
-$r = $duena->post('encargo', 'crear', $encargovalido);
-$idencargo2 = datos($r)['tbencargoid'] ?? 0;
+$r = $propietario->post('encargo', 'crear', $encargovalido);
+$idencargo2 = datos($r)['tbsolicitudencargoid'] ?? 0;
 $fechanueva = date('Y-m-d', strtotime('+5 day'));
-$r = $duena->post('encargo', 'actualizar', ['tbencargoid' => $idencargo2, 'tbencargofechaentrega' => $fechanueva] + $encargovalido);
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idencargo2, 'tbsolicitudencargofechaentrega' => $fechanueva] + $encargovalido);
 prueba('Cambia la fecha de entrega', exito($r), mensaje($r));
-$historial = datos($duena->get('encargo', 'obtener', ['id' => $idencargo2]))['historial'] ?? [];
+$historial = datos($propietario->get('encargo', 'obtener', ['id' => $idencargo2]))['historial'] ?? [];
 prueba('El cambio de fecha queda en el historial', strpos(end($historial)['texto'] ?? '', 'La fecha de entrega cambió') !== false, json_encode(array_column($historial, 'texto'), JSON_UNESCAPED_UNICODE));
-prueba('Cancela el encargo', exito($duena->post('encargo', 'cancelar', ['id' => $idencargo2])));
-prueba('No deja cancelarlo dos veces', !exito($duena->post('encargo', 'cancelar', ['id' => $idencargo2])));
+prueba('Cancela el encargo', exito($propietario->post('encargo', 'cancelar', ['id' => $idencargo2])));
+prueba('No deja cancelarlo dos veces', !exito($propietario->post('encargo', 'cancelar', ['id' => $idencargo2])));
 
 /* =====================================================================
  * 8. Empleados
@@ -584,49 +584,49 @@ $empleadovalido = [
     'tbempleadoclave'    => 'empleado5',
 ];
 
-$r = $duena->post('empleado', 'crear', ['tbempleadousuario' => 'empleado1'] + $empleadovalido);
+$r = $propietario->post('empleado', 'crear', ['tbempleadousuario' => 'empleado1'] + $empleadovalido);
 prueba('No deja repetir el usuario', tieneerror($r, 'tbempleadousuario'));
-$r = $duena->post('empleado', 'crear', ['tbempleadotelefono' => '8800-1001'] + $empleadovalido);
+$r = $propietario->post('empleado', 'crear', ['tbempleadotelefono' => '8800-1001'] + $empleadovalido);
 prueba('No deja repetir el teléfono', tieneerror($r, 'tbempleadotelefono'));
-$r = $duena->post('empleado', 'crear', ['tbempleadoclave' => 'corta1'] + $empleadovalido);
+$r = $propietario->post('empleado', 'crear', ['tbempleadoclave' => 'corta1'] + $empleadovalido);
 prueba('La contraseña debe tener al menos 8 caracteres', tieneerror($r, 'tbempleadoclave'));
-$r = $duena->post('empleado', 'crear', ['tbempleadoclave' => 'solamenteletras'] + $empleadovalido);
+$r = $propietario->post('empleado', 'crear', ['tbempleadoclave' => 'solamenteletras'] + $empleadovalido);
 prueba('La contraseña debe tener letra y número', tieneerror($r, 'tbempleadoclave'));
-$r = $duena->post('empleado', 'crear', ['tbempleadorol' => 'Dueña'] + $empleadovalido);
-prueba('Solo puede haber una dueña activa', tieneerror($r, 'tbempleadorol'));
+$r = $propietario->post('empleado', 'crear', ['tbempleadorol' => 'Propietario'] + $empleadovalido);
+prueba('Solo puede haber un propietario activo', tieneerror($r, 'tbempleadorol'));
 
-$r = $duena->post('empleado', 'crear', $empleadovalido);
+$r = $propietario->post('empleado', 'crear', $empleadovalido);
 $idempleado = datos($r)['tbempleadoid'] ?? 0;
 prueba('Crea un empleado válido', exito($r) && $idempleado > 0, mensaje($r));
 
-$r = $duena->get('empleado', 'listar');
+$r = $propietario->get('empleado', 'listar');
 $textolista = json_encode(datos($r));
 prueba('La lista de empleados nunca envía contraseñas', strpos($textolista, 'clave') === false && strpos($textolista, '$2y$') === false);
 
 $sofia = new Cliente($servidor);
 prueba('El empleado nuevo puede entrar', exito($sofia->ingresar('empleado5', 'empleado5')));
 
-$r = $duena->post('empleado', 'actualizar', ['tbempleadoid' => $idempleado, 'tbempleadoclave' => 'nuevaclave9'] + $empleadovalido);
-prueba('La dueña le cambia la contraseña', exito($r), mensaje($r));
+$r = $propietario->post('empleado', 'actualizar', ['tbempleadoid' => $idempleado, 'tbempleadoclave' => 'nuevaclave9'] + $empleadovalido);
+prueba('El propietario le cambia la contraseña', exito($r), mensaje($r));
 prueba('Ya no entra con la contraseña vieja', !exito((new Cliente($servidor))->ingresar('empleado5', 'empleado5')));
 prueba('Sí entra con la nueva', exito((new Cliente($servidor))->ingresar('empleado5', 'nuevaclave9')));
 
-$historial = datos($duena->get('empleado', 'historial', ['id' => $idempleado]));
+$historial = datos($propietario->get('empleado', 'historial', ['id' => $idempleado]));
 $claves = array_values(array_filter($historial, function ($cambio) {
     return $cambio['campo'] === 'clave';
 }));
 prueba('El historial dice "Asignada" y "Cambiada", sin la contraseña', array_column($claves, 'nuevo') === ['Asignada', 'Cambiada']
     && strpos(json_encode($historial), 'nuevaclave9') === false, json_encode(array_column($claves, 'nuevo')));
 
-$r = $duena->post('empleado', 'inactivar', ['id' => 1]);
-prueba('La dueña no puede inactivarse a sí misma', !exito($r), mensaje($r));
-$r = $duena->post('empleado', 'actualizar', ['tbempleadoid' => 1, 'tbempleadonombre' => 'Patricia Mora Solano', 'tbempleadotelefono' => '8800-0001',
-    'tbempleadorol' => 'Empleado', 'tbempleadousuario' => 'duenia', 'tbempleadoclave' => '']);
-prueba('La dueña no puede quitarse el rol', tieneerror($r, 'tbempleadorol'));
-$r = $duena->post('empleado', 'inactivar', ['id' => 3]);
+$r = $propietario->post('empleado', 'inactivar', ['id' => 1]);
+prueba('El propietario no puede inactivarse a sí mismo', !exito($r), mensaje($r));
+$r = $propietario->post('empleado', 'actualizar', ['tbempleadoid' => 1, 'tbempleadonombre' => 'Patricia Mora Solano', 'tbempleadotelefono' => '8800-0001',
+    'tbempleadorol' => 'Empleado', 'tbempleadousuario' => 'propietario', 'tbempleadoclave' => '']);
+prueba('El propietario no puede quitarse el rol', tieneerror($r, 'tbempleadorol'));
+$r = $propietario->post('empleado', 'inactivar', ['id' => 3]);
 prueba('No deja inactivar a alguien con encargos abiertos (Carlos)', !exito($r), mensaje($r));
 
-prueba('Inactiva al empleado nuevo', exito($duena->post('empleado', 'inactivar', ['id' => $idempleado])));
+prueba('Inactiva al empleado nuevo', exito($propietario->post('empleado', 'inactivar', ['id' => $idempleado])));
 $r = $sofia->get('encargo', 'listar');
 prueba('Al inactivarlo, su sesión abierta se cierra (401)', $r['codigo'] === 401, 'HTTP ' . $r['codigo']);
 

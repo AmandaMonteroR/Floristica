@@ -34,7 +34,7 @@ const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirma
 const camposformulario = ['tbarreglofloralnombre', 'tbarreglofloraldescripcion', 'tbarreglofloralprecio'];
 
 // usuarioactual viene de menu.php. Un empleado solo puede ver el catálogo.
-const esduena = usuarioactual.rol === 'Dueña';
+const espropietario = usuarioactual.rol === 'Propietario';
 
 let temporizadorbusqueda;
 let temporizadoraviso;
@@ -181,7 +181,7 @@ function revisarfoto() {
 function lineavacia() {
     return {
         tbinventarioid: '',
-        tbarreglofloraldetallecantidad: '',
+        tbarreglofloralinsumocantidad: '',
         tbinventarionombre: '',
         tbinventariopreciounidad: 0,
     };
@@ -193,7 +193,7 @@ function costounidad(linea) {
 }
 
 function subtotal(linea) {
-    return (parseInt(linea.tbarreglofloraldetallecantidad, 10) || 0) * costounidad(linea);
+    return (parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0) * costounidad(linea);
 }
 
 function actualizartotales() {
@@ -250,7 +250,7 @@ function dibujarlineas() {
             <td>
                 <div class="contador">
                     <button type="button" class="boton-contador" data-paso="-1" aria-label="Quitar una unidad en la línea ${indice + 1}">−</button>
-                    <input type="text" data-campo="tbarreglofloraldetallecantidad" inputmode="numeric" maxlength="3" autocomplete="off" value="${escapar(linea.tbarreglofloraldetallecantidad)}" aria-label="Unidades de la línea ${indice + 1}">
+                    <input type="text" data-campo="tbarreglofloralinsumocantidad" inputmode="numeric" maxlength="3" autocomplete="off" value="${escapar(linea.tbarreglofloralinsumocantidad)}" aria-label="Unidades de la línea ${indice + 1}">
                     <button type="button" class="boton-contador" data-paso="1" aria-label="Agregar una unidad en la línea ${indice + 1}">+</button>
                 </div>
             </td>
@@ -263,7 +263,7 @@ function dibujarlineas() {
 }
 
 function actualizarfila(fila, linea) {
-    fila.querySelector('[data-campo="tbarreglofloraldetallecantidad"]').value = linea.tbarreglofloraldetallecantidad;
+    fila.querySelector('[data-campo="tbarreglofloralinsumocantidad"]').value = linea.tbarreglofloralinsumocantidad;
     fila.querySelector('.subtotal-linea').textContent = formatearmonto(subtotal(linea));
     formulario.querySelector('[data-error="detalles"]').textContent = '';
     actualizartotales();
@@ -284,7 +284,7 @@ function leerformulario() {
     });
     datos.lineas = lineas.map((linea) => ({
         tbinventarioid: linea.tbinventarioid,
-        tbarreglofloraldetallecantidad: linea.tbarreglofloraldetallecantidad,
+        tbarreglofloralinsumocantidad: linea.tbarreglofloralinsumocantidad,
         tbinventarionombre: linea.tbinventarionombre,
         tbinventariopreciounidad: linea.tbinventariopreciounidad,
     }));
@@ -336,7 +336,7 @@ function llenarformulario(datos) {
         tbarreglofloralprecio: datos.tbarreglofloralprecio !== undefined ? String(datos.tbarreglofloralprecio) : '',
         lineas: (datos.detalles ?? []).map((detalle) => ({
             tbinventarioid: String(detalle.tbinventarioid),
-            tbarreglofloraldetallecantidad: String(detalle.tbarreglofloraldetallecantidad),
+            tbarreglofloralinsumocantidad: String(detalle.tbarreglofloralinsumocantidad),
             tbinventarionombre: detalle.tbinventarionombre,
             tbinventariopreciounidad: detalle.tbinventariopreciounidad,
         })),
@@ -397,7 +397,7 @@ async function cargararreglos() {
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
             : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
-        const botonesduena = esduena
+        const botonespropietario = espropietario
             ? `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
                         ${botonestado}`
             : '';
@@ -411,10 +411,10 @@ async function cargararreglos() {
                         <span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span>
                     </div>
                     <p class="tarjeta-precio">${formatearmonto(arreglo.tbarreglofloralprecio)}</p>
-                    ${esduena ? `<p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costo)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>` : ''}
+                    ${espropietario ? `<p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costo)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>` : ''}
                     <div class="tarjeta-acciones">
                         <button type="button" class="enlace" data-accion="ver" data-id="${id}">Ver</button>
-                        ${botonesduena}
+                        ${botonespropietario}
                     </div>
                 </div>
             </article>`;
@@ -453,8 +453,8 @@ function mostrarerrores(errores) {
 /* ---------- Abrir formulario y detalle ---------- */
 
 async function abrirnuevo() {
-    // Solo la dueña crea arreglos (el servidor también lo bloquea)
-    if (!esduena) {
+    // Solo el propietario crea arreglos (el servidor también lo bloquea)
+    if (!espropietario) {
         return;
     }
 
@@ -469,7 +469,7 @@ async function abrirnuevo() {
 }
 
 async function abrireditar(id) {
-    if (!esduena) {
+    if (!espropietario) {
         return;
     }
 
@@ -505,8 +505,8 @@ async function verdetalle(id) {
         ['Precio de venta', formatearmonto(arreglo.tbarreglofloralprecio)],
     ];
 
-    // El costo y la ganancia solo los ve la dueña
-    if (esduena) {
+    // El costo y la ganancia solo los ve el propietario
+    if (espropietario) {
         filas.push(['Costo de productos', formatearmonto(arreglo.costo)]);
         filas.push(['Ganancia', formatearmonto(arreglo.tbarreglofloralprecio - arreglo.costo)]);
     }
@@ -524,9 +524,9 @@ async function verdetalle(id) {
         <tr>
             <td>${escapar(detalle.tbinventarionombre)}</td>
             <td>${escapar(detalle.tbinventariocategoria)}</td>
-            <td>${detalle.tbarreglofloraldetallecantidad}</td>
-            <td>${esduena ? formatearmonto(detalle.tbinventariopreciounidad) : '—'}</td>
-            <td>${esduena ? formatearmonto(detalle.tbarreglofloraldetallecantidad * detalle.tbinventariopreciounidad) : '—'}</td>
+            <td>${detalle.tbarreglofloralinsumocantidad}</td>
+            <td>${espropietario ? formatearmonto(detalle.tbinventariopreciounidad) : '—'}</td>
+            <td>${espropietario ? formatearmonto(detalle.tbarreglofloralinsumocantidad * detalle.tbinventariopreciounidad) : '—'}</td>
         </tr>`).join('');
 
     dialogodetalle.showModal();
@@ -594,12 +594,12 @@ formulario.addEventListener('input', (evento) => {
 cuerpolineas.addEventListener('input', (evento) => {
     const campo = evento.target;
     const fila = campo.closest('tr[data-indice]');
-    if (!fila || campo.dataset.campo !== 'tbarreglofloraldetallecantidad') {
+    if (!fila || campo.dataset.campo !== 'tbarreglofloralinsumocantidad') {
         return;
     }
 
     const linea = lineas[Number(fila.dataset.indice)];
-    linea.tbarreglofloraldetallecantidad = soloentero(campo.value);
+    linea.tbarreglofloralinsumocantidad = soloentero(campo.value);
     actualizarfila(fila, linea);
 });
 
@@ -615,8 +615,8 @@ cuerpolineas.addEventListener('change', (evento) => {
     linea.tbinventarionombre = producto ? producto.tbinventarionombre : '';
     linea.tbinventariopreciounidad = producto ? producto.tbinventariopreciounidad : 0;
 
-    if (producto && linea.tbarreglofloraldetallecantidad === '') {
-        linea.tbarreglofloraldetallecantidad = '1';
+    if (producto && linea.tbarreglofloralinsumocantidad === '') {
+        linea.tbarreglofloralinsumocantidad = '1';
     }
 
     dibujarlineas();
@@ -630,8 +630,8 @@ cuerpolineas.addEventListener('click', (evento) => {
     if (paso) {
         const fila = paso.closest('tr[data-indice]');
         const linea = lineas[Number(fila.dataset.indice)];
-        const actual = parseInt(linea.tbarreglofloraldetallecantidad, 10) || 0;
-        linea.tbarreglofloraldetallecantidad = String(Math.min(999, Math.max(1, actual + Number(paso.dataset.paso))));
+        const actual = parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0;
+        linea.tbarreglofloralinsumocantidad = String(Math.min(999, Math.max(1, actual + Number(paso.dataset.paso))));
         actualizarfila(fila, linea);
     } else if (quitar) {
         lineas.splice(Number(quitar.dataset.quitar), 1);
@@ -668,7 +668,7 @@ formulario.addEventListener('submit', async (evento) => {
     }
     lineas.forEach((linea, indice) => {
         datos.append(`detalles[${indice}][tbinventarioid]`, linea.tbinventarioid);
-        datos.append(`detalles[${indice}][tbarreglofloraldetallecantidad]`, linea.tbarreglofloraldetallecantidad);
+        datos.append(`detalles[${indice}][tbarreglofloralinsumocantidad]`, linea.tbarreglofloralinsumocantidad);
     });
 
     const clave = claveborrador();
@@ -734,7 +734,7 @@ document.getElementById('botonagregarlinea').addEventListener('click', agregarli
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 
-// "Ver historial" del arreglo que está abierto en el detalle (solo existe para la dueña)
+// "Ver historial" del arreglo que está abierto en el detalle (solo existe para el propietario)
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {

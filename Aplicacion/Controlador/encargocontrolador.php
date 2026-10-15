@@ -75,7 +75,7 @@ class encargocontrolador
 
         $datos = $this->convertirarreglo($encargo);
         $datos['materiales'] = $this->materiales($encargo);
-        $datos['historial'] = $this->historial($encargo->getTbencargoid());
+        $datos['historial'] = $this->historial($encargo->getTbsolicitudencargoid());
 
         return $this->respuesta(true, '', $datos);
     }
@@ -85,7 +85,7 @@ class encargocontrolador
         $datos = $this->limpiar($datos);
 
         // Un empleado solo puede dejarlo sin asignar o asignárselo a sí mismo
-        if ($usuario['rol'] !== 'Dueña' && !in_array($datos['tbempleadoid'], ['', (string) $usuario['id']], true)) {
+        if ($usuario['rol'] !== 'Propietario' && !in_array($datos['tbempleadoid'], ['', (string) $usuario['id']], true)) {
             return $this->respuesta(false, 'Revise los datos ingresados.',
                 ['errores' => ['tbempleadoid' => 'Solo puede asignarse el encargo a usted misma.']]);
         }
@@ -99,7 +99,7 @@ class encargocontrolador
         $id = $this->entransaccion(function () use ($datos, $usuario) {
             $id = $this->repositorio->insertar(new Encargo($datos));
             $this->historico->registrar('estado', $id, 'Pendiente', $usuario['id']);
-            $this->fechas->registrar('encargo', $id, [], ['fechaentrega' => $datos['tbencargofechaentrega']], $usuario['id']);
+            $this->fechas->registrar('solicitudencargo', $id, [], ['fechaentrega' => $datos['tbsolicitudencargofechaentrega']], $usuario['id']);
 
             // Al validar, "sin asignar" queda como null
             if ($datos['tbempleadoid'] !== null && $datos['tbempleadoid'] !== '') {
@@ -109,19 +109,19 @@ class encargocontrolador
             return $id;
         });
 
-        return $this->respuesta(true, 'Encargo registrado correctamente.', ['tbencargoid' => $id]);
+        return $this->respuesta(true, 'Encargo registrado correctamente.', ['tbsolicitudencargoid' => $id]);
     }
 
     public function actualizar($datos, $usuario)
     {
-        $id = (int) ($datos['tbencargoid'] ?? 0);
+        $id = (int) ($datos['tbsolicitudencargoid'] ?? 0);
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
             return $this->respuesta(false, 'El encargo no existe.');
         }
 
-        if ($encargo->getTbencargoestado() !== 'Pendiente') {
+        if ($encargo->getTbsolicitudencargoestado() !== 'Pendiente') {
             return $this->respuesta(false, 'Solo se pueden editar encargos pendientes.');
         }
 
@@ -132,17 +132,17 @@ class encargocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
-        $fechaanterior = $encargo->getTbencargofechaentrega();
+        $fechaanterior = $encargo->getTbsolicitudencargofechaentrega();
 
         $encargo->setTbarreglofloralid($datos['tbarreglofloralid']);
-        $encargo->setTbencargocantidad($datos['tbencargocantidad']);
-        $encargo->setTbencargofechaentrega($datos['tbencargofechaentrega']);
-        $encargo->setTbencargonota($datos['tbencargonota']);
+        $encargo->setTbsolicitudencargocantidad($datos['tbsolicitudencargocantidad']);
+        $encargo->setTbsolicitudencargofechaentrega($datos['tbsolicitudencargofechaentrega']);
+        $encargo->setTbsolicitudencargonota($datos['tbsolicitudencargonota']);
 
         $this->entransaccion(function () use ($encargo, $id, $fechaanterior, $datos, $usuario) {
             $this->repositorio->actualizar($encargo);
-            $this->fechas->registrar('encargo', $id, ['fechaentrega' => $fechaanterior],
-                ['fechaentrega' => $datos['tbencargofechaentrega']], $usuario['id']);
+            $this->fechas->registrar('solicitudencargo', $id, ['fechaentrega' => $fechaanterior],
+                ['fechaentrega' => $datos['tbsolicitudencargofechaentrega']], $usuario['id']);
         });
 
         return $this->respuesta(true, 'Encargo actualizado correctamente.');
@@ -150,7 +150,7 @@ class encargocontrolador
 
     public function asignar($datos, $usuario)
     {
-        $id = (int) ($datos['tbencargoid'] ?? 0);
+        $id = (int) ($datos['tbsolicitudencargoid'] ?? 0);
         $idempleado = trim((string) ($datos['tbempleadoid'] ?? ''));
         $encargo = $this->repositorio->obtenerporid($id);
 
@@ -182,23 +182,23 @@ class encargocontrolador
         return $this->respuesta(true, 'Encargo asignado a ' . $empleado->getTbempleadonombre() . '.');
     }
 
-    // Quien tiene la sesión abierta (dueña o empleado) se asigna el encargo
+    // Quien tiene la sesión abierta (propietario o empleado) se asigna el encargo
     public function asignarme($id, $usuario)
     {
         $encargo = $this->repositorio->obtenerporid((int) $id);
 
-        if ($encargo && $usuario['rol'] !== 'Dueña' && $encargo->getTbempleadoid()
+        if ($encargo && $usuario['rol'] !== 'Propietario' && $encargo->getTbempleadoid()
             && (int) $encargo->getTbempleadoid() !== (int) $usuario['id']) {
             return $this->respuesta(false, 'Este encargo ya está asignado a otra persona.');
         }
 
-        return $this->asignar(['tbencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']], $usuario);
+        return $this->asignar(['tbsolicitudencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']], $usuario);
     }
 
     // Un empleado solo puede mover sus propios encargos
     private function esdeotro(Encargo $encargo, $usuario)
     {
-        return $usuario['rol'] !== 'Dueña' && (int) $encargo->getTbempleadoid() !== (int) $usuario['id'];
+        return $usuario['rol'] !== 'Propietario' && (int) $encargo->getTbempleadoid() !== (int) $usuario['id'];
     }
 
     public function iniciar($id, $usuario)
@@ -210,7 +210,7 @@ class encargocontrolador
             return $this->respuesta(false, 'El encargo no existe.');
         }
 
-        if ($encargo->getTbencargoestado() !== 'Pendiente') {
+        if ($encargo->getTbsolicitudencargoestado() !== 'Pendiente') {
             return $this->respuesta(false, 'Solo se pueden iniciar encargos pendientes.');
         }
 
@@ -240,7 +240,7 @@ class encargocontrolador
             return $this->respuesta(false, 'Solo puede terminar los encargos asignados a usted.');
         }
 
-        if ($encargo->getTbencargoestado() !== 'En proceso') {
+        if ($encargo->getTbsolicitudencargoestado() !== 'En proceso') {
             return $this->respuesta(false, 'Solo se pueden terminar encargos en proceso.');
         }
 
@@ -325,7 +325,7 @@ class encargocontrolador
             return date('d/m/Y', strtotime($valor));
         };
 
-        foreach ($this->fechas->listar('encargo', $idencargo, ['fechaentrega' => 'Fecha de entrega'], $formatear) as $cambio) {
+        foreach ($this->fechas->listar('solicitudencargo', $idencargo, ['fechaentrega' => 'Fecha de entrega'], $formatear) as $cambio) {
             if ($cambio['anterior'] === null) {
                 continue;
             }
@@ -350,7 +350,7 @@ class encargocontrolador
         $materiales = [];
         foreach ($this->arreglos->listardetalles($encargo->getTbarreglofloralid()) as $detalle) {
             $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
-            $necesarias = (int) $detalle->getTbarreglofloraldetallecantidad() * (int) $encargo->getTbencargocantidad();
+            $necesarias = (int) $detalle->getTbarreglofloralinsumocantidad() * (int) $encargo->getTbsolicitudencargocantidad();
             $stock = $producto ? (int) $producto->getTbinventariostock() : 0;
 
             $materiales[] = [
@@ -404,9 +404,9 @@ class encargocontrolador
         return [
             'tbarreglofloralid'     => trim((string) ($datos['tbarreglofloralid'] ?? '')),
             'tbempleadoid'          => trim((string) ($datos['tbempleadoid'] ?? '')),
-            'tbencargocantidad'     => trim((string) ($datos['tbencargocantidad'] ?? '')),
-            'tbencargofechaentrega' => trim((string) ($datos['tbencargofechaentrega'] ?? '')),
-            'tbencargonota'         => trim(preg_replace('/\s+/u', ' ', (string) ($datos['tbencargonota'] ?? ''))),
+            'tbsolicitudencargocantidad'     => trim((string) ($datos['tbsolicitudencargocantidad'] ?? '')),
+            'tbsolicitudencargofechaentrega' => trim((string) ($datos['tbsolicitudencargofechaentrega'] ?? '')),
+            'tbsolicitudencargonota'         => trim(preg_replace('/\s+/u', ' ', (string) ($datos['tbsolicitudencargonota'] ?? ''))),
         ];
     }
 
@@ -423,23 +423,23 @@ class encargocontrolador
             $errores['tbarreglofloralid'] = 'El arreglo seleccionado está inactivo.';
         }
 
-        if ($datos['tbencargocantidad'] === '') {
-            $errores['tbencargocantidad'] = 'La cantidad es obligatoria.';
-        } elseif (!ctype_digit($datos['tbencargocantidad']) || (int) $datos['tbencargocantidad'] < 1 || (int) $datos['tbencargocantidad'] > 99) {
-            $errores['tbencargocantidad'] = 'La cantidad debe ser un número entero entre 1 y 99.';
+        if ($datos['tbsolicitudencargocantidad'] === '') {
+            $errores['tbsolicitudencargocantidad'] = 'La cantidad es obligatoria.';
+        } elseif (!ctype_digit($datos['tbsolicitudencargocantidad']) || (int) $datos['tbsolicitudencargocantidad'] < 1 || (int) $datos['tbsolicitudencargocantidad'] > 99) {
+            $errores['tbsolicitudencargocantidad'] = 'La cantidad debe ser un número entero entre 1 y 99.';
         }
 
-        $fecha = DateTime::createFromFormat('Y-m-d', $datos['tbencargofechaentrega']);
-        if ($datos['tbencargofechaentrega'] === '') {
-            $errores['tbencargofechaentrega'] = 'La fecha de entrega es obligatoria.';
-        } elseif (!$fecha || $fecha->format('Y-m-d') !== $datos['tbencargofechaentrega']) {
-            $errores['tbencargofechaentrega'] = 'La fecha de entrega no es válida.';
-        } elseif ($datos['tbencargofechaentrega'] < date('Y-m-d')) {
-            $errores['tbencargofechaentrega'] = 'La fecha de entrega no puede ser anterior a hoy.';
+        $fecha = DateTime::createFromFormat('Y-m-d', $datos['tbsolicitudencargofechaentrega']);
+        if ($datos['tbsolicitudencargofechaentrega'] === '') {
+            $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega es obligatoria.';
+        } elseif (!$fecha || $fecha->format('Y-m-d') !== $datos['tbsolicitudencargofechaentrega']) {
+            $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega no es válida.';
+        } elseif ($datos['tbsolicitudencargofechaentrega'] < date('Y-m-d')) {
+            $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega no puede ser anterior a hoy.';
         }
 
-        if (mb_strlen($datos['tbencargonota']) > 255) {
-            $errores['tbencargonota'] = 'La nota no puede superar 255 caracteres.';
+        if (mb_strlen($datos['tbsolicitudencargonota']) > 255) {
+            $errores['tbsolicitudencargonota'] = 'La nota no puede superar 255 caracteres.';
         }
 
         // Al crear se puede dejar sin asignar
@@ -468,18 +468,18 @@ class encargocontrolador
         }
 
         return [
-            'tbencargoid'            => $encargo->getTbencargoid(),
+            'tbsolicitudencargoid'            => $encargo->getTbsolicitudencargoid(),
             'tbarreglofloralid'      => (int) $encargo->getTbarreglofloralid(),
             'tbarreglofloralnombre'  => $arreglo ? $arreglo->getTbarreglofloralnombre() : '',
             'tbarreglofloralfoto'    => $arreglo ? $arreglo->getTbarreglofloralfoto() : '',
             'tbempleadoid'           => $empleado ? (int) $empleado->getTbempleadoid() : null,
             'tbempleadonombre'       => $empleado ? $empleado->getTbempleadonombre() : '',
             'tbempleadorol'          => $empleado ? $empleado->getTbempleadorol() : '',
-            'tbencargocantidad'      => (int) $encargo->getTbencargocantidad(),
-            'tbencargofechaentrega'  => $encargo->getTbencargofechaentrega(),
-            'tbencargonota'          => $encargo->getTbencargonota(),
-            'tbencargoestado'        => $encargo->getTbencargoestado(),
-            'tbencargofecharegistro' => $encargo->getTbencargofecharegistro(),
+            'tbsolicitudencargocantidad'      => (int) $encargo->getTbsolicitudencargocantidad(),
+            'tbsolicitudencargofechaentrega'  => $encargo->getTbsolicitudencargofechaentrega(),
+            'tbsolicitudencargonota'          => $encargo->getTbsolicitudencargonota(),
+            'tbsolicitudencargoestado'        => $encargo->getTbsolicitudencargoestado(),
+            'tbsolicitudencargofecharegistro' => $encargo->getTbsolicitudencargofecharegistro(),
             'alcanzastock'           => $alcanza,
         ];
     }

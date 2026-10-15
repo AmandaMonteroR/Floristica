@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 require_once __DIR__ . '/../Modelo/arreglofloral.php';
-require_once __DIR__ . '/../Modelo/arreglofloraldetalle.php';
+require_once __DIR__ . '/../Modelo/arreglofloralinsumo.php';
 
 class arreglofloralrepositorio
 {
@@ -20,7 +20,7 @@ class arreglofloralrepositorio
 
     private function siguienteiddetalle()
     {
-        $consulta = $this->conexion->query('SELECT IFNULL(MAX(tbarreglofloraldetalleid), 0) + 1 AS siguiente FROM tbarreglofloraldetalle');
+        $consulta = $this->conexion->query('SELECT IFNULL(MAX(tbarreglofloralinsumoid), 0) + 1 AS siguiente FROM tbarreglofloralinsumo');
         return (int) $consulta->fetch()['siguiente'];
     }
 
@@ -78,37 +78,37 @@ class arreglofloralrepositorio
         return $this->cambiarestado($id, 1);
     }
 
-    public function insertardetalle(Arreglofloraldetalle $detalle)
+    public function insertardetalle(Arreglofloralinsumo $detalle)
     {
-        $detalle->setTbarreglofloraldetalleid($this->siguienteiddetalle());
+        $detalle->setTbarreglofloralinsumoid($this->siguienteiddetalle());
 
-        $sql = 'INSERT INTO tbarreglofloraldetalle (tbarreglofloraldetalleid, tbarreglofloralid,
-                tbinventarioid, tbarreglofloraldetallecantidad)
+        $sql = 'INSERT INTO tbarreglofloralinsumo (tbarreglofloralinsumoid, tbarreglofloralid,
+                tbinventarioid, tbarreglofloralinsumocantidad)
                 VALUES (?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         return $sentencia->execute([
-            $detalle->getTbarreglofloraldetalleid(),
+            $detalle->getTbarreglofloralinsumoid(),
             $detalle->getTbarreglofloralid(),
             $detalle->getTbinventarioid(),
-            $detalle->getTbarreglofloraldetallecantidad(),
+            $detalle->getTbarreglofloralinsumocantidad(),
         ]);
     }
 
     public function eliminardetalles($idarreglo)
     {
-        $sentencia = $this->conexion->prepare('DELETE FROM tbarreglofloraldetalle WHERE tbarreglofloralid = ?');
+        $sentencia = $this->conexion->prepare('DELETE FROM tbarreglofloralinsumo WHERE tbarreglofloralid = ?');
         return $sentencia->execute([$idarreglo]);
     }
 
     public function listardetalles($idarreglo)
     {
-        $sentencia = $this->conexion->prepare('SELECT * FROM tbarreglofloraldetalle WHERE tbarreglofloralid = ? ORDER BY tbarreglofloraldetalleid');
+        $sentencia = $this->conexion->prepare('SELECT * FROM tbarreglofloralinsumo WHERE tbarreglofloralid = ? ORDER BY tbarreglofloralinsumoid');
         $sentencia->execute([$idarreglo]);
 
         $detalles = [];
         foreach ($sentencia->fetchAll() as $fila) {
-            $detalles[] = new Arreglofloraldetalle($fila);
+            $detalles[] = new Arreglofloralinsumo($fila);
         }
 
         return $detalles;

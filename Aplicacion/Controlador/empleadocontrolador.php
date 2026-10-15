@@ -8,7 +8,7 @@ class empleadocontrolador
     private $repositorio;
     private $encargos;
     private $historico;
-    private $roles = ['Dueña', 'Empleado'];
+    private $roles = ['Propietario', 'Empleado'];
 
     public function __construct()
     {
@@ -73,8 +73,8 @@ class empleadocontrolador
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos, $empleado);
 
-        if ($id === (int) $usuarioactual['id'] && $datos['tbempleadorol'] !== 'Dueña') {
-            $errores['tbempleadorol'] = 'No puede quitarse a sí misma el rol de dueña.';
+        if ($id === (int) $usuarioactual['id'] && $datos['tbempleadorol'] !== 'Propietario') {
+            $errores['tbempleadorol'] = 'No puede quitarse a sí mismo el rol de propietario.';
         }
 
         if ($errores) {
@@ -156,18 +156,18 @@ class empleadocontrolador
         return $this->respuesta(true, 'Contraseña cambiada. La próxima vez que ingrese, use la nueva.');
     }
 
-    // Primera vez que se usa el sistema: se crea (o completa) la cuenta de la dueña
-    public function crearduena($datos)
+    // Primera vez que se usa el sistema: se crea (o completa) la cuenta del propietario
+    public function crearpropietario($datos)
     {
-        if ($this->repositorio->hayduenaconcuenta()) {
-            return $this->respuesta(false, 'La cuenta de la dueña ya fue creada. Inicie sesión.');
+        if ($this->repositorio->haypropietarioconcuenta()) {
+            return $this->respuesta(false, 'La cuenta del propietario ya fue creada. Inicie sesión.');
         }
 
         $datos = $this->limpiar($datos);
-        $datos['tbempleadorol'] = 'Dueña';
+        $datos['tbempleadorol'] = 'Propietario';
 
-        // Si ya había una dueña registrada sin cuenta, se completa su registro
-        $existente = $this->repositorio->obtenerduena();
+        // Si ya había un propietario registrado sin cuenta, se completa su registro
+        $existente = $this->repositorio->obtenerpropietario();
         $errores = $this->validar($datos, $existente);
 
         if (($datos['tbempleadoclaveconfirmar'] ?? '') !== $datos['tbempleadoclave']) {
@@ -180,8 +180,8 @@ class empleadocontrolador
 
         $clave = password_hash($datos['tbempleadoclave'], PASSWORD_DEFAULT);
 
-        // La dueña es quien hace el cambio en su propio registro
-        $duena = $this->entransaccion(function () use ($existente, $datos, $clave) {
+        // El propietario es quien hace el cambio en su propio registro
+        $propietario = $this->entransaccion(function () use ($existente, $datos, $clave) {
             if ($existente) {
                 $anteriores = $this->datoshistorico($existente);
                 $existente->setTbempleadonombre($datos['tbempleadonombre']);
@@ -189,21 +189,21 @@ class empleadocontrolador
                 $existente->setTbempleadousuario($datos['tbempleadousuario']);
                 $existente->setTbempleadoclave($clave);
                 $this->repositorio->actualizar($existente);
-                $duena = $existente;
+                $propietario = $existente;
             } else {
                 $anteriores = [];
                 $datos['tbempleadoclave'] = $clave;
                 $id = $this->repositorio->insertar(new Empleado($datos));
-                $duena = $this->repositorio->obtenerporid($id);
+                $propietario = $this->repositorio->obtenerporid($id);
             }
 
-            $nuevos = $this->datoshistorico($duena) + ['clave' => 'Asignada'];
-            $this->historico->registrar('empleado', $duena->getTbempleadoid(), $anteriores, $nuevos, $duena->getTbempleadoid());
+            $nuevos = $this->datoshistorico($propietario) + ['clave' => 'Asignada'];
+            $this->historico->registrar('empleado', $propietario->getTbempleadoid(), $anteriores, $nuevos, $propietario->getTbempleadoid());
 
-            return $duena;
+            return $propietario;
         });
 
-        return $this->respuesta(true, 'Cuenta creada.', ['empleado' => $duena]);
+        return $this->respuesta(true, 'Cuenta creada.', ['empleado' => $propietario]);
     }
 
     public function inactivar($id, $usuarioactual)
@@ -250,8 +250,8 @@ class empleadocontrolador
             return $this->respuesta(false, 'El empleado ya está activo.');
         }
 
-        if ($empleado->esDuena() && $this->repositorio->existeduenaactiva($id)) {
-            return $this->respuesta(false, 'Ya hay otra dueña activa. Solo puede haber una.');
+        if ($empleado->esPropietario() && $this->repositorio->existepropietarioactivo($id)) {
+            return $this->respuesta(false, 'Ya hay otro propietario activo. Solo puede haber uno.');
         }
 
         $this->entransaccion(function () use ($id, $usuarioactual) {
@@ -369,8 +369,8 @@ class empleadocontrolador
             $errores['tbempleadorol'] = 'El rol es obligatorio.';
         } elseif (!in_array($datos['tbempleadorol'], $this->roles, true)) {
             $errores['tbempleadorol'] = 'El rol seleccionado no es válido.';
-        } elseif ($datos['tbempleadorol'] === 'Dueña' && $activo && $this->repositorio->existeduenaactiva($idexcluir)) {
-            $errores['tbempleadorol'] = 'Ya hay una dueña registrada. Solo puede haber una activa.';
+        } elseif ($datos['tbempleadorol'] === 'Propietario' && $activo && $this->repositorio->existepropietarioactivo($idexcluir)) {
+            $errores['tbempleadorol'] = 'Ya hay un propietario registrado. Solo puede haber uno activo.';
         }
 
         if ($datos['tbempleadousuario'] === '') {

@@ -23,7 +23,7 @@ class inventariomovimientorepositorio
         $stockfinal = (int) $consulta->fetchColumn();
 
         $sql = 'INSERT INTO tbinventariomovimiento (tbinventariomovimientoid, tbinventarioid, tbinventariomovimientotipo,
-                tbinventariomovimientocantidad, tbinventariomovimientostockfinal, tbpedidoid, tbencargoid, tbempleadoid,
+                tbinventariomovimientocantidad, tbinventariomovimientostockfinal, tbpedidoid, tbsolicitudencargoid, tbempleadoid,
                 tbinventariomovimientofecha)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
