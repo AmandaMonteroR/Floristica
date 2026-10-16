@@ -2256,3 +2256,8 @@ h1 {
     border-color: var(--peligro);
     box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.15);
 }
+
+/* Las etiquetas de estado ("En uso", "Activa"...) no se partan en dos líneas */
+.estado {
+    white-space: nowrap;
+}
