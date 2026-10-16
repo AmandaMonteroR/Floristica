@@ -8,6 +8,7 @@ require_once __DIR__ . '/../Aplicacion/Controlador/empleadocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/encargocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/clientecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/temporadacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/sesioncontrolador.php';
 require_once __DIR__ . '/../Configuracion/Seguridad.php';
 
@@ -94,6 +95,7 @@ if ($accion === '') {
         'empleado'   => 'empleadovista.php',
         'cliente'    => 'clientevista.php',
         'zonaentrega' => 'zonaentregavista.php',
+        'temporada'  => 'temporadavista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -109,7 +111,8 @@ if ($accion === '') {
 header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
-    'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave'];
+    'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
+    'activar', 'desactivar', 'guardarpreciostemporada'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -158,6 +161,15 @@ try {
             switch ($accion) {
                 case 'listar':
                     $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['categoria'] ?? '', $_GET['estado'] ?? null);
+                    break;
+                case 'temporadas':
+                    $respuesta = $controlador->temporadas();
+                    break;
+                case 'pendientestemporada':
+                    $respuesta = $controlador->pendientestemporada();
+                    break;
+                case 'guardarpreciostemporada':
+                    $respuesta = $controlador->guardarpreciostemporada($_POST, $usuarioactual);
                     break;
                 case 'obtener':
                     $respuesta = $controlador->obtener($_GET['id'] ?? 0);
@@ -239,6 +251,15 @@ try {
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST, $_FILES, $usuarioactual);
+                    break;
+                case 'temporadas':
+                    $respuesta = $controlador->temporadas();
+                    break;
+                case 'pendientestemporada':
+                    $respuesta = $controlador->pendientestemporada();
+                    break;
+                case 'guardarpreciostemporada':
+                    $respuesta = $controlador->guardarpreciostemporada($_POST, $usuarioactual);
                     break;
                 case 'inactivar':
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
@@ -342,6 +363,42 @@ try {
                     break;
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST, $usuarioactual);
+                    break;
+                case 'inactivar':
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'reactivar':
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        case 'temporada':
+            $controlador = new temporadacontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['estado'] ?? null);
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
+                    break;
+                case 'activar':
+                    $respuesta = $controlador->activar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'desactivar':
+                    $respuesta = $controlador->desactivar($usuarioactual);
                     break;
                 case 'inactivar':
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);

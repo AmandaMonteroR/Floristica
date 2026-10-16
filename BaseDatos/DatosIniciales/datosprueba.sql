@@ -229,18 +229,18 @@ INSERT INTO `tbzonaentrega` VALUES (5,'Siquirres','Siquirres centro',4000.00,1);
 INSERT INTO `tbzonaentrega` VALUES (6,'Limón centro','Ciudad de Limón',6000.00,1);
 
 -- Solicitudes de encargo
-INSERT INTO `tbsolicitudencargo` VALUES (1,1,NULL,'Predefinido',1,1,35000.00,NULL,NULL,1,1,'El Humo de Roxana, 200 m oeste de la escuela',1000.00,42000.00,43000.00,'2026-10-12','Tarjeta: Feliz aniversario, mi amor.','Pendiente','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (2,2,2,'Predefinido',2,2,22000.00,NULL,NULL,0,NULL,'',0.00,50000.00,50000.00,'2026-10-13','Para un cumpleaños, entregar en la mañana.','Pendiente','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (3,3,2,'Predefinido',6,1,20000.00,NULL,NULL,1,4,'Guápiles, barrio La Emilia',2500.00,20000.00,22500.00,'2026-10-11','','En proceso','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (4,4,3,'Predefinido',5,3,38000.00,NULL,NULL,0,NULL,'',0.00,114000.00,114000.00,'2026-10-14','Pedido grande para una boda.','Pendiente','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (5,5,NULL,'Predefinido',4,1,27000.00,NULL,NULL,1,6,'Limón centro, avenida 2',6000.00,27500.00,33500.00,'2026-10-15','','Pendiente','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (6,6,1,'Predefinido',3,1,28000.00,NULL,NULL,0,NULL,'',0.00,28000.00,28000.00,'2026-10-12','La clienta pasa a recogerlo a las 4 p. m.','Pendiente','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (7,7,3,'Predefinido',1,1,35000.00,NULL,NULL,0,NULL,'',0.00,35000.00,35000.00,'2026-10-11','','Terminado','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (8,8,4,'Predefinido',7,1,32000.00,NULL,NULL,0,NULL,'',0.00,32000.00,32000.00,'2026-10-13','La clienta canceló por teléfono.','Cancelado','2026-10-11');
-INSERT INTO `tbsolicitudencargo` VALUES (9,1,4,'Predefinido',2,1,22000.00,NULL,NULL,0,NULL,'',0.00,22000.00,22000.00,'2026-10-09','','Pendiente','2026-10-06');
-INSERT INTO `tbsolicitudencargo` VALUES (10,3,NULL,'Personalizado',NULL,1,NULL,'Presupuesto',15000.00,1,3,'Guápiles, barrio La Emilia',2000.00,14300.00,16300.00,'2026-10-16','Presupuesto de 15 000 colones, colores alegres.','Pendiente','2026-10-13');
-INSERT INTO `tbsolicitudencargo` VALUES (11,4,2,'Personalizado',NULL,1,NULL,'Libre',NULL,0,NULL,'',0.00,22700.00,22700.00,'2026-10-17','Ramo de aniversario, tarjeta: Te amo.','Pendiente','2026-10-14');
-INSERT INTO `tbsolicitudencargo` VALUES (12,7,3,'Predefinido',3,1,28000.00,NULL,NULL,1,2,'Roxana, 100 m sur de la plaza',1500.00,41700.00,43200.00,'2026-10-18','Con adicionales: peluche, cinta dorada y chocolates.','Pendiente','2026-10-14');
+INSERT INTO `tbsolicitudencargo` VALUES (1,1,NULL,'Predefinido',1,1,35000.00,NULL,NULL,1,1,'El Humo de Roxana, 200 m oeste de la escuela',1000.00,42000.00,43000.00,'2026-10-12','Tarjeta: Feliz aniversario, mi amor.','Pendiente','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (2,2,2,'Predefinido',2,2,22000.00,NULL,NULL,0,NULL,'',0.00,50000.00,50000.00,'2026-10-13','Para un cumpleaños, entregar en la mañana.','Pendiente','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (3,3,2,'Predefinido',6,1,20000.00,NULL,NULL,1,4,'Guápiles, barrio La Emilia',2500.00,20000.00,22500.00,'2026-10-11','','En proceso','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (4,4,3,'Predefinido',5,3,38000.00,NULL,NULL,0,NULL,'',0.00,114000.00,114000.00,'2026-10-14','Pedido grande para una boda.','Pendiente','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (5,5,NULL,'Predefinido',4,1,27000.00,NULL,NULL,1,6,'Limón centro, avenida 2',6000.00,27500.00,33500.00,'2026-10-15','','Pendiente','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (6,6,1,'Predefinido',3,1,28000.00,NULL,NULL,0,NULL,'',0.00,28000.00,28000.00,'2026-10-12','La clienta pasa a recogerlo a las 4 p. m.','Pendiente','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (7,7,3,'Predefinido',1,1,35000.00,NULL,NULL,0,NULL,'',0.00,35000.00,35000.00,'2026-10-11','','Terminado','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (8,8,4,'Predefinido',7,1,32000.00,NULL,NULL,0,NULL,'',0.00,32000.00,32000.00,'2026-10-13','La clienta canceló por teléfono.','Cancelado','2026-10-11',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (9,1,4,'Predefinido',2,1,22000.00,NULL,NULL,0,NULL,'',0.00,22000.00,22000.00,'2026-10-09','','Pendiente','2026-10-06',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (10,3,NULL,'Personalizado',NULL,1,NULL,'Presupuesto',15000.00,1,3,'Guápiles, barrio La Emilia',2000.00,14300.00,16300.00,'2026-10-16','Presupuesto de 15 000 colones, colores alegres.','Pendiente','2026-10-13',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (11,4,2,'Personalizado',NULL,1,NULL,'Libre',NULL,0,NULL,'',0.00,22700.00,22700.00,'2026-10-17','Ramo de aniversario, tarjeta: Te amo.','Pendiente','2026-10-14',NULL);
+INSERT INTO `tbsolicitudencargo` VALUES (12,7,3,'Predefinido',3,1,28000.00,NULL,NULL,1,2,'Roxana, 100 m sur de la plaza',1500.00,41700.00,43200.00,'2026-10-18','Con adicionales: peluche, cinta dorada y chocolates.','Pendiente','2026-10-14',NULL);
 
 -- Insumos de cada solicitud (adicionales en los predefinidos; todo el arreglo en los personalizados)
 INSERT INTO `tbsolicitudencargoinsumo` VALUES (1,1,24,1,7000.00);
@@ -674,3 +674,68 @@ INSERT INTO `tbzonaentregaestadohistorico` VALUES (3,3,1,1,'2026-10-02 08:03:00'
 INSERT INTO `tbzonaentregaestadohistorico` VALUES (4,4,1,1,'2026-10-02 08:04:00');
 INSERT INTO `tbzonaentregaestadohistorico` VALUES (5,5,1,1,'2026-10-02 08:05:00');
 INSERT INTO `tbzonaentregaestadohistorico` VALUES (6,6,1,1,'2026-10-02 08:06:00');
+
+
+-- Temporadas (ninguna vigente: se usan los precios normales)
+INSERT INTO `tbtemporada` VALUES (1,'Temporada alta','Precios generales para la época de más ventas',0,1);
+INSERT INTO `tbtemporada` VALUES (2,'San Valentín','14 de febrero: rosas rojas, chocolates y peluches',0,1);
+INSERT INTO `tbtemporada` VALUES (3,'Día de la Madre','15 de agosto',0,1);
+INSERT INTO `tbtemporada` VALUES (4,'Día de la Novia','Ramos para novias y parejas',0,1);
+INSERT INTO `tbtemporada` VALUES (5,'Día de las Flores Amarillas','21 de septiembre: girasoles y flores amarillas',0,1);
+INSERT INTO `tbtemporada` VALUES (6,'Día de los Hot Wheels','Ramos con carritos Hot Wheels para regalarles a los hombres',0,1);
+
+-- Precios de temporada de algunos arreglos
+INSERT INTO `tbarreglofloraltemporada` VALUES (1,1,2,42000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (2,3,2,33000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (3,5,2,45000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (4,2,3,26000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (5,4,3,32000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (6,6,5,24000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (7,1,1,39000.00);
+INSERT INTO `tbarreglofloraltemporada` VALUES (8,5,1,42000.00);
+
+-- Precios de temporada de algunos productos
+INSERT INTO `tbinventariotemporada` VALUES (1,1,2,1500.00);
+INSERT INTO `tbinventariotemporada` VALUES (2,2,2,1400.00);
+INSERT INTO `tbinventariotemporada` VALUES (3,3,2,1400.00);
+INSERT INTO `tbinventariotemporada` VALUES (4,20,2,800.00);
+INSERT INTO `tbinventariotemporada` VALUES (5,2,3,1300.00);
+INSERT INTO `tbinventariotemporada` VALUES (6,6,3,500.00);
+INSERT INTO `tbinventariotemporada` VALUES (7,5,5,1600.00);
+INSERT INTO `tbinventariotemporada` VALUES (8,1,1,1200.00);
+
+-- Históricos de temporadas (registradas por el propietario)
+INSERT INTO `tbtemporadanombrehistorico` VALUES (1,1,'Temporada alta',1,'2026-10-01 07:30:00');
+INSERT INTO `tbtemporadanombrehistorico` VALUES (2,2,'San Valentín',1,'2026-10-02 07:30:00');
+INSERT INTO `tbtemporadanombrehistorico` VALUES (3,3,'Día de la Madre',1,'2026-10-03 07:30:00');
+INSERT INTO `tbtemporadanombrehistorico` VALUES (4,4,'Día de la Novia',1,'2026-10-04 07:30:00');
+INSERT INTO `tbtemporadanombrehistorico` VALUES (5,5,'Día de las Flores Amarillas',1,'2026-10-05 07:30:00');
+INSERT INTO `tbtemporadanombrehistorico` VALUES (6,6,'Día de los Hot Wheels',1,'2026-10-06 07:30:00');
+INSERT INTO `tbtemporadavigentehistorico` VALUES (1,1,0,1,'2026-10-01 07:30:00');
+INSERT INTO `tbtemporadavigentehistorico` VALUES (2,2,0,1,'2026-10-02 07:30:00');
+INSERT INTO `tbtemporadavigentehistorico` VALUES (3,3,0,1,'2026-10-03 07:30:00');
+INSERT INTO `tbtemporadavigentehistorico` VALUES (4,4,0,1,'2026-10-04 07:30:00');
+INSERT INTO `tbtemporadavigentehistorico` VALUES (5,5,0,1,'2026-10-05 07:30:00');
+INSERT INTO `tbtemporadavigentehistorico` VALUES (6,6,0,1,'2026-10-06 07:30:00');
+INSERT INTO `tbtemporadaestadohistorico` VALUES (1,1,1,1,'2026-10-01 07:30:00');
+INSERT INTO `tbtemporadaestadohistorico` VALUES (2,2,1,1,'2026-10-02 07:30:00');
+INSERT INTO `tbtemporadaestadohistorico` VALUES (3,3,1,1,'2026-10-03 07:30:00');
+INSERT INTO `tbtemporadaestadohistorico` VALUES (4,4,1,1,'2026-10-04 07:30:00');
+INSERT INTO `tbtemporadaestadohistorico` VALUES (5,5,1,1,'2026-10-05 07:30:00');
+INSERT INTO `tbtemporadaestadohistorico` VALUES (6,6,1,1,'2026-10-06 07:30:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (1,1,'2|42000.00',1,'2026-10-07 08:01:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (2,3,'2|33000.00',1,'2026-10-07 08:02:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (3,5,'2|45000.00',1,'2026-10-07 08:03:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (4,2,'3|26000.00',1,'2026-10-07 08:04:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (5,4,'3|32000.00',1,'2026-10-07 08:05:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (6,6,'5|24000.00',1,'2026-10-07 08:06:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (7,1,'1|39000.00',1,'2026-10-07 08:07:00');
+INSERT INTO `tbarreglofloralpreciotemporadahistorico` VALUES (8,5,'1|42000.00',1,'2026-10-07 08:08:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (1,1,'2|1500.00',1,'2026-10-07 09:01:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (2,2,'2|1400.00',1,'2026-10-07 09:02:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (3,3,'2|1400.00',1,'2026-10-07 09:03:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (4,20,'2|800.00',1,'2026-10-07 09:04:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (5,2,'3|1300.00',1,'2026-10-07 09:05:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (6,6,'3|500.00',1,'2026-10-07 09:06:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (7,5,'5|1600.00',1,'2026-10-07 09:07:00');
+INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (8,1,'1|1200.00',1,'2026-10-07 09:08:00');

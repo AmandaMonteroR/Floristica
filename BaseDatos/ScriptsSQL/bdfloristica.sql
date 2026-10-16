@@ -298,6 +298,7 @@ CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargonota VARCHAR(255),
     tbsolicitudencargoestado VARCHAR(20),
     tbsolicitudencargofecharegistro DATE,
+    tbtemporadaid INT,
     PRIMARY KEY (tbsolicitudencargoid)
 );
 
@@ -589,4 +590,84 @@ CREATE TABLE tbzonaentregaestadohistorico (
     tbempleadoid INT,
     tbzonaentregaestadohistoricofecha DATETIME,
     PRIMARY KEY (tbzonaentregaestadohistoricoid)
+);
+
+
+-- ---------- Temporadas (San Valentín, Día de la Madre...) ----------
+-- tbtemporadavigente = 1 es la temporada cuyos precios se están usando. Solo puede haber una.
+-- Si ninguna está vigente, se usan los precios normales (temporada baja).
+CREATE TABLE tbtemporada (
+    tbtemporadaid INT,
+    tbtemporadanombre VARCHAR(100),
+    tbtemporadadescripcion VARCHAR(200),
+    tbtemporadavigente TINYINT(1),
+    tbtemporadaestado TINYINT(1),
+    PRIMARY KEY (tbtemporadaid)
+);
+
+-- Precio de un arreglo del catálogo en una temporada
+CREATE TABLE tbarreglofloraltemporada (
+    tbarreglofloraltemporadaid INT,
+    tbarreglofloralid INT,
+    tbtemporadaid INT,
+    tbarreglofloraltemporadaprecio DECIMAL(10,2),
+    PRIMARY KEY (tbarreglofloraltemporadaid)
+);
+
+-- Precio de venta por unidad de un producto del inventario en una temporada
+CREATE TABLE tbinventariotemporada (
+    tbinventariotemporadaid INT,
+    tbinventarioid INT,
+    tbtemporadaid INT,
+    tbinventariotemporadaprecioventa DECIMAL(10,2),
+    PRIMARY KEY (tbinventariotemporadaid)
+);
+
+-- ---------- Históricos de temporadas ----------
+CREATE TABLE tbtemporadanombrehistorico (
+    tbtemporadanombrehistoricoid INT,
+    tbtemporadaid INT,
+    tbtemporadanombrehistoricovalor VARCHAR(100),
+    tbempleadoid INT,
+    tbtemporadanombrehistoricofecha DATETIME,
+    PRIMARY KEY (tbtemporadanombrehistoricoid)
+);
+
+-- Cuándo se activaron (1) y desactivaron (0) los precios de la temporada
+CREATE TABLE tbtemporadavigentehistorico (
+    tbtemporadavigentehistoricoid INT,
+    tbtemporadaid INT,
+    tbtemporadavigentehistoricovalor TINYINT(1),
+    tbempleadoid INT,
+    tbtemporadavigentehistoricofecha DATETIME,
+    PRIMARY KEY (tbtemporadavigentehistoricoid)
+);
+
+CREATE TABLE tbtemporadaestadohistorico (
+    tbtemporadaestadohistoricoid INT,
+    tbtemporadaid INT,
+    tbtemporadaestadohistoricovalor TINYINT(1),
+    tbempleadoid INT,
+    tbtemporadaestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbtemporadaestadohistoricoid)
+);
+
+-- Precios de temporada de cada arreglo y de cada producto.
+-- El valor es "idtemporada|precio"; si se quitó el precio queda "idtemporada|".
+CREATE TABLE tbarreglofloralpreciotemporadahistorico (
+    tbarreglofloralpreciotemporadahistoricoid INT,
+    tbarreglofloralid INT,
+    tbarreglofloralpreciotemporadahistoricovalor VARCHAR(30),
+    tbempleadoid INT,
+    tbarreglofloralpreciotemporadahistoricofecha DATETIME,
+    PRIMARY KEY (tbarreglofloralpreciotemporadahistoricoid)
+);
+
+CREATE TABLE tbinventariopreciotemporadahistorico (
+    tbinventariopreciotemporadahistoricoid INT,
+    tbinventarioid INT,
+    tbinventariopreciotemporadahistoricovalor VARCHAR(30),
+    tbempleadoid INT,
+    tbinventariopreciotemporadahistoricofecha DATETIME,
+    PRIMARY KEY (tbinventariopreciotemporadahistoricoid)
 );

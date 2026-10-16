@@ -4,6 +4,7 @@ require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
+require_once __DIR__ . '/preciotemporadacontrolador.php';
 
 class inventariocontrolador
 {
@@ -12,6 +13,8 @@ class inventariocontrolador
     private $proveedores;
     private $movimientos;
     private $historico;
+    private $temporadas;
+    private $preciosvigentes = null;
     private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta'];
 
     // Opciones de las listas de cada categoría. La vista las usa para llenar los select
@@ -52,6 +55,7 @@ class inventariocontrolador
         $this->proveedores = new proveedorrepositorio();
         $this->movimientos = new inventariomovimientorepositorio();
         $this->historico = new historicocontrolador();
+        $this->temporadas = new preciotemporadacontrolador();
     }
 
     public function proveedores()
@@ -89,6 +93,7 @@ class inventariocontrolador
 
         $datos = $this->convertirarreglo($inventario, $this->nombresproveedores());
         $datos['categoria'] = $this->convertircategoria($inventario);
+        $datos['preciostemporada'] = $this->temporadas->paraformulario('inventario', $inventario->getTbinventarioid());
         $datos['movimientos'] = $this->convertirmovimientos($inventario->getTbinventarioid());
 
         return $this->respuesta(true, '', $datos);
@@ -96,8 +101,10 @@ class inventariocontrolador
 
     public function crear($datos, $usuario)
     {
+        $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos);
+        $errores += $this->validartemporadas($preciostemporada, $datos, $errores);
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -106,8 +113,9 @@ class inventariocontrolador
         $datos['tbinventariopreciounidad'] = $this->calcularpreciounidad($datos);
         $inventario = new Inventario($datos);
 
-        $id = $this->entransaccion(function () use ($inventario, $datos, $usuario) {
+        $id = $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $usuario) {
             $id = $this->repositorio->insertar($inventario);
+            $this->temporadas->guardar('inventario', $id, $preciostemporada, $usuario['id']);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
             $this->movimientos->registrar($id, 'Inicial', (int) $datos['tbinventariostock'], $usuario['id']);
             $this->historico->registrar('inventario', $id, [], $this->datoshistorico($inventario), $usuario['id']);
@@ -127,8 +135,10 @@ class inventariocontrolador
             return $this->respuesta(false, 'El producto no existe.');
         }
 
+        $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos, $id);
+        $errores += $this->validartemporadas($preciostemporada, $datos, $errores);
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -147,8 +157,9 @@ class inventariocontrolador
         $inventario->setTbinventariostock($datos['tbinventariostock']);
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
-        $this->entransaccion(function () use ($inventario, $datos, $id, $stockanterior, $anteriores, $usuario) {
+        $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $id, $stockanterior, $anteriores, $usuario) {
             $this->repositorio->actualizar($inventario);
+            $this->temporadas->guardar('inventario', $id, $preciostemporada, $usuario['id']);
             $this->historico->registrar('inventario', $id, $anteriores, $this->datoshistorico($inventario), $usuario['id']);
             $this->atributos->eliminar($id);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
@@ -218,6 +229,7 @@ class inventariocontrolador
             'proveedor'   => 'Proveedor',
             'precio'      => 'Precio del paquete',
             'precioventa' => 'Precio de venta',
+            'preciotemporada' => 'Precio de temporada',
             'stockminimo' => 'Stock mínimo',
             'estado'      => 'Estado',
         ];
@@ -233,6 +245,8 @@ class inventariocontrolador
                     return historicocontrolador::monto($precio) . ' por ' . $unidades . ' unidades';
                 case 'precioventa':
                     return historicocontrolador::monto($valor) . ' por unidad';
+                case 'preciotemporada':
+                    return $this->temporadas->textohistorial($valor);
                 case 'estado':
                     return historicocontrolador::estado($valor);
                 default:
@@ -240,7 +254,68 @@ class inventariocontrolador
             }
         };
 
-        return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear));
+        return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear, ['preciotemporada']));
+    }
+
+    // Los precios de temporada tampoco pueden quedar por debajo del costo por unidad
+    private function validartemporadas($preciostemporada, $datos, $errores)
+    {
+        $minimo = isset($errores['tbinventariopreciopaquete']) || isset($errores['tbinventariounidadespaquete'])
+            ? 0 : $this->calcularpreciounidad($datos);
+        $error = $this->temporadas->validar($preciostemporada, $minimo, 'el costo por unidad');
+
+        return $error !== '' ? ['temporadas' => $error] : [];
+    }
+
+    // Temporadas para el formulario de un producto nuevo
+    public function temporadas()
+    {
+        return $this->respuesta(true, '', $this->temporadas->paraformulario('inventario', 0));
+    }
+
+    // Productos activos sin precio para la temporada vigente (para el aviso flotante)
+    public function pendientestemporada()
+    {
+        $registros = [];
+        foreach ($this->repositorio->listar('', '', 1) as $inventario) {
+            $registros[] = [
+                'id'           => (int) $inventario->getTbinventarioid(),
+                'nombre'       => $inventario->getTbinventarionombre(),
+                'categoria'    => $inventario->getTbinventariocategoria(),
+                'precionormal' => (float) $inventario->getTbinventarioprecioventa(),
+                'minimo'       => (float) $inventario->getTbinventariopreciounidad(),
+            ];
+        }
+
+        return $this->respuesta(true, '', $this->temporadas->pendientes('inventario', $registros));
+    }
+
+    // Guarda de una vez los precios de venta de la temporada vigente: precios[idinventario] = monto
+    public function guardarpreciostemporada($datos, $usuario)
+    {
+        if (!$this->temporadas->vigente()) {
+            return $this->respuesta(false, 'No hay una temporada en uso.');
+        }
+
+        $registros = [];
+        foreach ($this->repositorio->listar('', '', 1) as $inventario) {
+            $registros[(int) $inventario->getTbinventarioid()] = [
+                'nombre' => $inventario->getTbinventarionombre(),
+                'minimo' => (float) $inventario->getTbinventariopreciounidad(),
+            ];
+        }
+
+        $resultado = $this->entransaccion(function () use ($datos, $registros, $usuario) {
+            return $this->temporadas->guardarvarios('inventario', $datos['precios'] ?? [], $registros, 'el costo por unidad', $usuario['id']);
+        });
+
+        if ($resultado['errores']) {
+            return $this->respuesta(false, 'Revise los precios.', ['errores' => $resultado['errores']]);
+        }
+
+        return $this->respuesta(true, $resultado['guardados'] === 0
+            ? 'No se escribió ningún precio.'
+            : 'Se guardaron ' . $resultado['guardados'] . ' precios de ' . $this->temporadas->vigente()->getTbtemporadanombre() . '.');
     }
 
     // Datos del producto que llevan histórico, tal como se guardan
@@ -281,7 +356,7 @@ class inventariocontrolador
                     $motivo = 'Pedido N.º ' . $fila['tbpedidoid'] . ' recibido';
                     break;
                 case 'Salida':
-                    $motivo = 'Solicitud de encargo N.º ' . $fila['tbsolicitudencargoid'] . ' terminada';
+                    $motivo = 'Solicitud de pedido de arreglo N.º ' . $fila['tbsolicitudencargoid'] . ' terminada';
                     break;
                 default:
                     $motivo = 'Ajuste manual al editar el producto';
@@ -687,7 +762,18 @@ class inventariocontrolador
 
     private function convertirarreglo(Inventario $inventario, $nombres)
     {
+        if ($this->preciosvigentes === null) {
+            $this->preciosvigentes = $this->temporadas->preciosvigentes('inventario');
+        }
+
+        $id = (int) $inventario->getTbinventarioid();
+        $vigente = $this->temporadas->datosvigente();
+        $contemporada = isset($this->preciosvigentes[$id]);
+
         return [
+            // Precio de venta que se cobra ahora: el de la temporada en uso o el normal
+            'precioventaactual'           => $contemporada ? $this->preciosvigentes[$id] : (float) $inventario->getTbinventarioprecioventa(),
+            'temporadaprecio'             => $contemporada ? $vigente['tbtemporadanombre'] : '',
             'tbinventarioid'              => $inventario->getTbinventarioid(),
             'tbproveedorid'               => (int) $inventario->getTbproveedorid(),
             'tbproveedornombreempresa'    => $nombres[$inventario->getTbproveedorid()] ?? '',

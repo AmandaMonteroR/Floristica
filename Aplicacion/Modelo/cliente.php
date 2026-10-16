@@ -1,6 +1,6 @@
 <?php
 
-// Persona que hace las solicitudes de encargo (normalmente por WhatsApp)
+// Persona que hace las solicitudes de pedido de arreglo (normalmente por WhatsApp)
 class Cliente
 {
     private $tbclienteid;

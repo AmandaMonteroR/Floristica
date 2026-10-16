@@ -459,6 +459,13 @@ $categoriasinventario = [
             </div>
         </fieldset>
 
+        <fieldset class="seccion-categoria">
+            <legend>Precio de venta por temporada</legend>
+            <p class="nota">Precio por unidad en cada temporada (no puede ser menor que el costo). Si lo deja vacío, en esa temporada se cobra el precio de venta normal.</p>
+            <div class="rejilla-temporadas" id="preciostemporada"></div>
+            <small class="error" data-error="temporadas"></small>
+        </fieldset>
+
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>
             <button type="submit" class="boton boton-principal" id="botonguardar">Guardar producto</button>
@@ -529,6 +536,7 @@ $categoriasinventario = [
     // Sugerencias de variedad según el tipo (flor o follaje)
     const variedadesflor = <?= json_encode($opciones['variedades'], JSON_UNESCAPED_UNICODE) ?>;
 </script>
+<script src="js/preciostemporada.js"></script>
 <script src="js/inventario.js"></script>
 </body>
 </html>

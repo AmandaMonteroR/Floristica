@@ -1,6 +1,6 @@
 # Florística
 
-Sistema web para la gestión de una floristería ubicada en El Humo de Roxana, Cariari (Limón): proveedores, inventario, pedidos de compra, catálogo de arreglos florales, clientes, solicitudes de encargo (con servicio express por zonas) y empleados, con inicio de sesión por roles. Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
+Sistema web para la gestión de una floristería ubicada en El Humo de Roxana, Cariari (Limón): proveedores, inventario, pedidos de compra, catálogo de arreglos florales, clientes, solicitudes de pedido de arreglo (con servicio express por zonas) y empleados, con inicio de sesión por roles. Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
 
 ## Requisitos
 
@@ -78,7 +78,8 @@ Los datos de prueba también traen:
 - 7 arreglos con foto (en `Publico/imagenes/muestras/`);
 - 4 pedidos y 8 clientes;
 - 6 zonas de entrega, de El Humo de Roxana (₡1 000) a Limón centro (₡6 000);
-- 12 solicitudes de encargo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express.
+- 12 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express;
+- 6 temporadas (Temporada alta, San Valentín, Día de la Madre, Día de la Novia, Día de las Flores Amarillas y Día de los Hot Wheels), algunas con precios cargados y ninguna en uso.
 
 ## Configuración
 
@@ -128,12 +129,13 @@ Floristica/
 | Ver el catálogo (sin costos ni ganancias) | ✓ | ✓ |
 | Crear, editar o inactivar arreglos | ✓ | |
 | Registrar, editar e inactivar clientes | ✓ | ✓ |
-| Registrar solicitudes de encargo | ✓ | ✓ (sin asignar o para sí mismo) |
+| Registrar solicitudes de pedido de arreglo | ✓ | ✓ (sin asignar o para sí mismo) |
 | Asignar o reasignar solicitudes a cualquiera | ✓ | |
 | Asignarse una solicitud libre | ✓ | ✓ |
 | Iniciar y terminar solicitudes | ✓ (todas) | ✓ (solo las suyas) |
 | Cancelar o editar solicitudes | ✓ | |
 | Zonas de entrega y precios del express | ✓ | |
+| Temporadas: crearlas, ponerles precios y activarlas | ✓ | |
 | Proveedores, inventario, pedidos y empleados | ✓ | |
 
 ## Módulos
@@ -216,7 +218,7 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 - **Orden:** la lista va de la zona más barata (la más cercana) a la más cara.
 - **Inactivar:** no se puede si hay solicitudes abiertas con entrega a esa zona.
 
-### Solicitudes de encargo
+### Solicitudes de pedido de arreglo
 
 - **Datos de toda solicitud:** cliente, tipo, fecha de entrega (no anterior a hoy), nota opcional y, si se quiere, a quién se asigna.
 - **Predefinida:** un arreglo del catálogo (el que el cliente eligió del catálogo de WhatsApp) por la cantidad (1 a 99), más **adicionales** opcionales: chocolates, cintas, peluches, tarjetas u otros productos, cada uno a su precio de venta.
@@ -230,6 +232,22 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
   - Para iniciarla, debe estar asignada a alguien.
   - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.
 - **Listado:** se filtra por estado, tipo y persona asignada. Las atrasadas se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
+
+### Temporadas y precios por temporada
+
+- **Qué son:** fechas con precios especiales, como San Valentín, Día de la Madre, Día de la Novia o Día de las Flores Amarillas. El propietario puede crear todas las que necesite.
+- **Precios:**
+  - Cada arreglo del catálogo puede tener un precio por temporada (tabla `tbarreglofloraltemporada`).
+  - Cada producto del inventario puede tener un precio de venta por temporada (tabla `tbinventariotemporada`), que no puede ser menor que su costo por unidad.
+  - Se ponen en el formulario del arreglo o del producto, en "Precios por temporada". Si se deja vacío, en esa temporada se cobra el precio normal.
+- **Activar:** se hace a mano, en **Temporadas y precios → Usar sus precios**.
+  - Solo puede haber una temporada en uso. Al activar otra, la anterior se desactiva.
+  - Mientras esté en uso, el catálogo, el inventario y las solicitudes nuevas usan sus precios.
+  - En la barra de arriba aparece "Precios de …" para que todos lo vean.
+  - **Volver a precios normales** regresa a la temporada baja.
+- **Aviso flotante:** si hay una temporada en uso y hay arreglos o productos sin precio para ella, el catálogo y el inventario lo avisan. Con **Agregar precios** se ponen todos desde una sola ventana.
+- **Solicitudes:** guardan con qué temporada se cotizaron (`tbtemporadaid`) y sus precios no cambian después.
+- **Inactivar:** no se puede inactivar la temporada que está en uso.
 
 ### Empleados
 
@@ -267,13 +285,14 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 
 | Módulo | Datos con histórico |
 |--------|---------------------|
-| Inventario | Nombre, proveedor, precio del paquete, precio de venta, stock mínimo y estado |
-| Catálogo | Nombre, precio y estado |
+| Inventario | Nombre, proveedor, precio del paquete, precio de venta, precio de cada temporada, stock mínimo y estado |
+| Catálogo | Nombre, precio, precio de cada temporada y estado |
 | Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
 | Clientes | Nombre, teléfono, dirección y estado |
 | Zonas de entrega | Nombre, precio y estado |
+| Temporadas | Nombre, cuándo se activaron y desactivaron sus precios, y estado |
 
-### Solicitudes de encargo
+### Solicitudes de pedido de arreglo
 
 Se ven en **Ver** de cada solicitud, con fecha, hora y quién hizo el cambio:
 
@@ -292,7 +311,7 @@ Cada cambio de stock queda en `tbinventariomovimiento`: el motivo, la cantidad (
 |------|--------|
 | Inicial | Al registrar el producto |
 | Entrada | Al recibir un pedido |
-| Salida | Al terminar una solicitud de encargo |
+| Salida | Al terminar una solicitud de pedido de arreglo |
 | Ajuste | Al corregir el stock a mano editando el producto |
 
 ## Pruebas automáticas

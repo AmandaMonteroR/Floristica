@@ -2,12 +2,15 @@
 require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
+require_once __DIR__ . '/preciotemporadacontrolador.php';
 
 class arreglofloralcontrolador
 {
     private $repositorio;
     private $inventario;
     private $historico;
+    private $temporadas;
+    private $preciosvigentes = null;
     private $carpetafotos;
     private $tiposfoto = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     private $tamanomaximo = 2097152;
@@ -17,6 +20,7 @@ class arreglofloralcontrolador
         $this->repositorio = new arreglofloralrepositorio();
         $this->inventario = new inventariorepositorio();
         $this->historico = new historicocontrolador();
+        $this->temporadas = new preciotemporadacontrolador();
         $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/arreglos/';
     }
 
@@ -54,6 +58,7 @@ class arreglofloralcontrolador
         }
 
         $datos = $this->convertirarreglo($arreglo);
+        $datos['preciostemporada'] = $this->temporadas->paraformulario('arreglofloral', $arreglo->getTbarreglofloralid());
         $datos['detalles'] = [];
 
         foreach ($this->repositorio->listardetalles($arreglo->getTbarreglofloralid()) as $detalle) {
@@ -73,9 +78,14 @@ class arreglofloralcontrolador
     public function crear($datos, $archivos, $usuario)
     {
         $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
+        $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
         $datos = $this->limpiar($datos);
         $foto = $archivos['tbarreglofloralfoto'] ?? null;
         $errores = $this->validar($datos, $detalles, $foto, true);
+        $errortemporada = $this->temporadas->validar($preciostemporada);
+        if ($errortemporada !== '') {
+            $errores['temporadas'] = $errortemporada;
+        }
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -85,10 +95,11 @@ class arreglofloralcontrolador
         $arreglo = new Arreglofloral($datos);
 
         try {
-            $id = $this->entransaccion(function () use ($arreglo, $detalles, $usuario) {
+            $id = $this->entransaccion(function () use ($arreglo, $detalles, $preciostemporada, $usuario) {
                 $id = $this->repositorio->insertar($arreglo);
                 $this->guardardetalles($id, $detalles);
                 $this->historico->registrar('arreglofloral', $id, [], $this->datoshistorico($arreglo), $usuario['id']);
+                $this->temporadas->guardar('arreglofloral', $id, $preciostemporada, $usuario['id']);
 
                 return $id;
             });
@@ -110,9 +121,14 @@ class arreglofloralcontrolador
         }
 
         $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
+        $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
         $datos = $this->limpiar($datos);
         $foto = $archivos['tbarreglofloralfoto'] ?? null;
         $errores = $this->validar($datos, $detalles, $foto, false, $id);
+        $errortemporada = $this->temporadas->validar($preciostemporada);
+        if ($errortemporada !== '') {
+            $errores['temporadas'] = $errortemporada;
+        }
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -131,9 +147,10 @@ class arreglofloralcontrolador
         }
 
         try {
-            $this->entransaccion(function () use ($arreglo, $detalles, $id, $anteriores, $usuario) {
+            $this->entransaccion(function () use ($arreglo, $detalles, $preciostemporada, $id, $anteriores, $usuario) {
                 $this->repositorio->actualizar($arreglo);
                 $this->historico->registrar('arreglofloral', $id, $anteriores, $this->datoshistorico($arreglo), $usuario['id']);
+                $this->temporadas->guardar('arreglofloral', $id, $preciostemporada, $usuario['id']);
                 $this->repositorio->eliminardetalles($id);
                 $this->guardardetalles($id, $detalles);
             });
@@ -202,15 +219,18 @@ class arreglofloralcontrolador
         }
 
         $etiquetas = [
-            'nombre' => 'Nombre',
-            'precio' => 'Precio de venta',
-            'estado' => 'Estado',
+            'nombre'          => 'Nombre',
+            'precio'          => 'Precio de venta',
+            'preciotemporada' => 'Precio de temporada',
+            'estado'          => 'Estado',
         ];
 
         $formatear = function ($campo, $valor) {
             switch ($campo) {
                 case 'precio':
                     return historicocontrolador::monto($valor);
+                case 'preciotemporada':
+                    return $this->temporadas->textohistorial($valor);
                 case 'estado':
                     return historicocontrolador::estado($valor);
                 default:
@@ -218,7 +238,54 @@ class arreglofloralcontrolador
             }
         };
 
-        return $this->respuesta(true, '', $this->historico->listar('arreglofloral', $id, $etiquetas, $formatear));
+        return $this->respuesta(true, '', $this->historico->listar('arreglofloral', $id, $etiquetas, $formatear, ['preciotemporada']));
+    }
+
+    // Temporadas para el formulario de un arreglo nuevo
+    public function temporadas()
+    {
+        return $this->respuesta(true, '', $this->temporadas->paraformulario('arreglofloral', 0));
+    }
+
+    // Arreglos activos sin precio para la temporada vigente (para el aviso flotante)
+    public function pendientestemporada()
+    {
+        $registros = [];
+        foreach ($this->repositorio->listar('', 1) as $arreglo) {
+            $registros[] = [
+                'id'          => (int) $arreglo->getTbarreglofloralid(),
+                'nombre'      => $arreglo->getTbarreglofloralnombre(),
+                'precionormal' => (float) $arreglo->getTbarreglofloralprecio(),
+                'minimo'      => 0,
+            ];
+        }
+
+        return $this->respuesta(true, '', $this->temporadas->pendientes('arreglofloral', $registros));
+    }
+
+    // Guarda de una vez los precios de la temporada vigente: precios[idarreglo] = monto
+    public function guardarpreciostemporada($datos, $usuario)
+    {
+        if (!$this->temporadas->vigente()) {
+            return $this->respuesta(false, 'No hay una temporada en uso.');
+        }
+
+        $registros = [];
+        foreach ($this->repositorio->listar('', 1) as $arreglo) {
+            $registros[(int) $arreglo->getTbarreglofloralid()] = ['nombre' => $arreglo->getTbarreglofloralnombre(), 'minimo' => 0];
+        }
+
+        $resultado = $this->entransaccion(function () use ($datos, $registros, $usuario) {
+            return $this->temporadas->guardarvarios('arreglofloral', $datos['precios'] ?? [], $registros, '', $usuario['id']);
+        });
+
+        if ($resultado['errores']) {
+            return $this->respuesta(false, 'Revise los precios.', ['errores' => $resultado['errores']]);
+        }
+
+        return $this->respuesta(true, $resultado['guardados'] === 0
+            ? 'No se escribió ningún precio.'
+            : 'Se guardaron ' . $resultado['guardados'] . ' precios de ' . $this->temporadas->vigente()->getTbtemporadanombre() . '.');
     }
 
     // Datos del arreglo que llevan histórico, tal como se guardan
@@ -417,7 +484,18 @@ class arreglofloralcontrolador
 
     private function convertirarreglo(Arreglofloral $arreglo)
     {
+        if ($this->preciosvigentes === null) {
+            $this->preciosvigentes = $this->temporadas->preciosvigentes('arreglofloral');
+        }
+
+        $id = (int) $arreglo->getTbarreglofloralid();
+        $vigente = $this->temporadas->datosvigente();
+        $contemporada = isset($this->preciosvigentes[$id]);
+
         return [
+            // Precio que se cobra ahora: el de la temporada en uso o el normal
+            'precioactual'               => $contemporada ? $this->preciosvigentes[$id] : (float) $arreglo->getTbarreglofloralprecio(),
+            'temporadaprecio'            => $contemporada ? $vigente['tbtemporadanombre'] : '',
             'tbarreglofloralid'          => $arreglo->getTbarreglofloralid(),
             'tbarreglofloralnombre'      => $arreglo->getTbarreglofloralnombre(),
             'tbarreglofloraldescripcion' => $arreglo->getTbarreglofloraldescripcion(),

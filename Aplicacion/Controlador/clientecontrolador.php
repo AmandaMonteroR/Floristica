@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../Repositorio/clienterepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 
-// Clientes que hacen solicitudes de encargo. Los manejan el propietario y los empleados.
+// Clientes que hacen solicitudes de pedido de arreglo. Los manejan el propietario y los empleados.
 class clientecontrolador
 {
     private $repositorio;
@@ -105,7 +105,7 @@ class clientecontrolador
         $abiertas = $this->repositorio->contarsolicitudes()[$id]['abiertas'] ?? 0;
         if ($abiertas > 0) {
             return $this->respuesta(false, 'No se puede inactivar: ' . $cliente->getTbclientenombre() . ' tiene ' . $abiertas
-                . ($abiertas === 1 ? ' solicitud de encargo pendiente o en proceso.' : ' solicitudes de encargo pendientes o en proceso.'));
+                . ($abiertas === 1 ? ' solicitud de pedido de arreglo pendiente o en proceso.' : ' solicitudes de pedido de arreglo pendientes o en proceso.'));
         }
 
         $this->entransaccion(function () use ($id, $usuario) {

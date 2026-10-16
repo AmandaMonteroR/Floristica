@@ -22,7 +22,7 @@
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
         <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Arreglos</a>
-        <a href="index.php?modulo=encargo">Encargos</a>
+        <a href="index.php?modulo=encargo">Solicitudes de pedido de arreglo</a>
     </nav>
 
     <section class="filtros">
@@ -115,6 +115,11 @@
             <button type="button" class="boton" id="botonagregarlinea">+ Agregar producto</button>
         </div>
 
+        <h3 class="subtitulo-seccion">Precios por temporada</h3>
+        <p class="nota">Precio del arreglo en cada temporada. Si lo deja vacío, en esa temporada se cobra el precio normal.</p>
+        <div class="rejilla-temporadas" id="preciostemporada"></div>
+        <small class="error" data-error="temporadas"></small>
+
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>
             <button type="submit" class="boton boton-principal" id="botonguardar">Guardar arreglo</button>
@@ -187,6 +192,7 @@
 
 <script src="js/menu.js"></script>
 <script src="js/historial.js"></script>
+<script src="js/preciostemporada.js"></script>
 <script src="js/arreglofloral.js"></script>
 </body>
 </html>

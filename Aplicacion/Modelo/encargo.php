@@ -1,6 +1,6 @@
 <?php
 
-// Solicitud de encargo: predefinida (arreglo del catálogo + adicionales)
+// Solicitud de pedido de arreglo: predefinida (arreglo del catálogo + adicionales)
 // o personalizada (productos que elige el cliente, con presupuesto o libre)
 class Encargo
 {
@@ -23,6 +23,7 @@ class Encargo
     private $tbsolicitudencargonota;
     private $tbsolicitudencargoestado;
     private $tbsolicitudencargofecharegistro;
+    private $tbtemporadaid;
 
     public function __construct($datos = [])
     {
@@ -45,6 +46,7 @@ class Encargo
         $this->tbsolicitudencargonota             = $datos['tbsolicitudencargonota'] ?? '';
         $this->tbsolicitudencargoestado           = $datos['tbsolicitudencargoestado'] ?? 'Pendiente';
         $this->tbsolicitudencargofecharegistro    = $datos['tbsolicitudencargofecharegistro'] ?? null;
+        $this->tbtemporadaid                      = $datos['tbtemporadaid'] ?? null;
     }
 
     public function getTbsolicitudencargoid() {
@@ -160,6 +162,12 @@ class Encargo
 
     public function setTbsolicitudencargofecharegistro($valor) {
         $this->tbsolicitudencargofecharegistro = $valor; }
+
+    public function getTbtemporadaid() {
+        return $this->tbtemporadaid; }
+
+    public function setTbtemporadaid($valor) {
+        $this->tbtemporadaid = $valor; }
 
     public function estaAbierto()
     {

@@ -1,6 +1,8 @@
 <?php
 // $modulo y $usuarioactual vienen de index.php
+require_once __DIR__ . '/../Repositorio/temporadarepositorio.php';
 $moduloactual = $modulo;
+$temporadavigente = (new temporadarepositorio())->obtenervigente();
 
 // Estructura del menú: una opción tiene 'modulo' (enlace) o 'hijos' (submenú)
 $opcionesmenu = [
@@ -18,8 +20,9 @@ $opcionesmenu = [
     ['texto' => 'Ventas', 'hijos' => [
         ['texto' => 'Cotizaciones', 'modulo' => 'cotizacion'],
         ['texto' => 'Catálogo de arreglos', 'modulo' => 'catalogo'],
-        ['texto' => 'Solicitudes de encargo', 'modulo' => 'encargo'],
+        ['texto' => 'Solicitudes de pedido de arreglo', 'modulo' => 'encargo'],
         ['texto' => 'Zonas de entrega (express)', 'modulo' => 'zonaentrega'],
+        ['texto' => 'Temporadas y precios', 'modulo' => 'temporada'],
     ]],
     ['texto' => 'Compras', 'hijos' => [
         ['texto' => 'Proveedores', 'hijos' => [
@@ -114,6 +117,12 @@ function dibujarmenu($opciones, $moduloactual, $nivel = 1)
                 <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
             </svg>
             <span>Inicio</span>
+        </a>
+    <?php endif; ?>
+    <?php if ($temporadavigente): ?>
+        <a class="chip-temporada" href="<?= Seguridad::permitido('temporada') ? 'index.php?modulo=temporada' : 'index.php?modulo=catalogo' ?>"
+           title="Se están usando los precios de esta temporada">
+            <span aria-hidden="true">✿</span> <span class="chip-texto">Precios de</span> <?= e($temporadavigente->getTbtemporadanombre()) ?>
         </a>
     <?php endif; ?>
     <div class="usuario-sesion">

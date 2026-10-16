@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Solicitudes de encargo | Floristica</title>
+    <title>Solicitudes de pedido de arreglo | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="css/estilos.css">
 </head>
@@ -13,7 +13,7 @@
 <main class="contenedor">
     <header class="encabezado">
         <div>
-            <h1>Solicitudes de encargo</h1>
+            <h1>Solicitudes de pedido de arreglo</h1>
             <p class="subtitulo">Pedidos de los clientes: arreglos del catálogo o personalizados, con o sin servicio express.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nueva solicitud</button>
@@ -21,7 +21,7 @@
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
         <a href="index.php?modulo=catalogo">Arreglos</a>
-        <a href="index.php?modulo=encargo" class="activa" aria-current="page">Solicitudes de encargo</a>
+        <a href="index.php?modulo=encargo" class="activa" aria-current="page">Solicitudes de pedido de arreglo</a>
     </nav>
 
     <section class="filtros">
@@ -78,7 +78,7 @@
 
 <dialog id="dialogoformulario" class="dialogo dialogo-ancho">
     <form id="formulario" novalidate>
-        <h2 id="tituloformulario">Nueva solicitud de encargo</h2>
+        <h2 id="tituloformulario">Nueva solicitud de pedido de arreglo</h2>
         <p class="nota">Los campos con * son obligatorios. Los precios salen del catálogo, del inventario y de las zonas de entrega.</p>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
@@ -87,6 +87,7 @@
         </div>
 
         <p id="avisoformulario" class="aviso aviso-error" role="alert" hidden></p>
+        <p id="avisotemporadaform" class="aviso aviso-temporada" hidden></p>
         <input type="hidden" name="tbsolicitudencargoid">
 
         <div class="rejilla">

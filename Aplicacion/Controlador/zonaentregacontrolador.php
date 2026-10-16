@@ -102,7 +102,7 @@ class zonaentregacontrolador
         $abiertas = $this->repositorio->solicitudesabiertas($id);
         if ($abiertas > 0) {
             return $this->respuesta(false, 'No se puede inactivar: hay ' . $abiertas
-                . ($abiertas === 1 ? ' solicitud de encargo pendiente o en proceso' : ' solicitudes de encargo pendientes o en proceso')
+                . ($abiertas === 1 ? ' solicitud de pedido de arreglo pendiente o en proceso' : ' solicitudes de pedido de arreglo pendientes o en proceso')
                 . ' con entrega a esta zona.');
         }
 

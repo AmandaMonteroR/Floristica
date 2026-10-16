@@ -544,9 +544,9 @@ $ultimo = end($historial);
 prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') === 'precio' && strpos($ultimo['nuevo'] ?? '', '27 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 
 /* =====================================================================
- * 7. Solicitudes de encargo
+ * 7. Solicitudes de pedido de arreglo
  * =================================================================== */
-seccion('7. Solicitudes de encargo');
+seccion('7. Solicitudes de pedido de arreglo');
 
 // Arreglo de la sección 6: 27 000 colones, lleva 6 rosas rojas y 2 de eucalipto
 $base = [
@@ -753,7 +753,7 @@ $r = $propietario->post('empleado', 'actualizar', ['tbempleadoid' => 1, 'tbemple
     'tbempleadorol' => 'Empleado', 'tbempleadousuario' => 'propietario', 'tbempleadoclave' => '']);
 prueba('El propietario no puede quitarse el rol', tieneerror($r, 'tbempleadorol'));
 $r = $propietario->post('empleado', 'inactivar', ['id' => 3]);
-prueba('No deja inactivar a alguien con encargos abiertos (Carlos)', !exito($r), mensaje($r));
+prueba('No deja inactivar a alguien con solicitudes abiertas (Carlos)', !exito($r), mensaje($r));
 
 prueba('Inactiva al empleado nuevo', exito($propietario->post('empleado', 'inactivar', ['id' => $idempleado])));
 $r = $sofia->get('encargo', 'listar');
@@ -859,6 +859,105 @@ prueba('No deja inactivar una zona con solicitudes abiertas', !exito($r) && strp
 
 prueba('Inactiva la zona nueva', exito($propietario->post('zonaentrega', 'inactivar', ['id' => $idzona])));
 prueba('La reactiva', exito($propietario->post('zonaentrega', 'reactivar', ['id' => $idzona])));
+
+/* =====================================================================
+ * 11. Temporadas y precios por temporada
+ * =================================================================== */
+seccion('11. Temporadas');
+
+$r = $lorena->get('temporada', 'listar');
+prueba('Un empleado no puede manejar las temporadas (403)', $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
+
+$temporadas = datos($propietario->get('temporada', 'listar'));
+prueba('Lista las 6 temporadas de prueba, ninguna en uso', count($temporadas) === 6
+    && !in_array(1, array_column($temporadas, 'tbtemporadavigente'), true), json_encode(array_column($temporadas, 'tbtemporadanombre'), JSON_UNESCAPED_UNICODE));
+
+$r = $propietario->post('temporada', 'crear', ['tbtemporadanombre' => '']);
+prueba('El nombre de la temporada es obligatorio', tieneerror($r, 'tbtemporadanombre'));
+$r = $propietario->post('temporada', 'crear', ['tbtemporadanombre' => 'san valentín']);
+prueba('No deja repetir el nombre de una temporada', tieneerror($r, 'tbtemporadanombre'));
+
+$r = $propietario->post('temporada', 'crear', ['tbtemporadanombre' => 'Día del Padre', 'tbtemporadadescripcion' => 'Tercer domingo de junio']);
+$idpadre = datos($r)['tbtemporadaid'] ?? 0;
+prueba('Crea una temporada nueva', exito($r) && $idpadre > 0, mensaje($r));
+prueba('Su historial tiene nombre, si está en uso y estado', count(datos($propietario->get('temporada', 'historial', ['id' => $idpadre]))) === 3);
+
+// Activar San Valentín (2): rosas rojas a 1 500, jarrón de rosas rojas a 42 000
+$r = $propietario->post('temporada', 'activar', ['id' => 2]);
+prueba('Activa los precios de San Valentín', exito($r), mensaje($r));
+
+$catalogo = array_column(datos($propietario->get('catalogo', 'listar')), null, 'tbarreglofloralid');
+prueba('El catálogo cobra el precio de San Valentín al arreglo que lo tiene (42 000)',
+    (float) ($catalogo[1]['precioactual'] ?? 0) === 42000.0 && ($catalogo[1]['temporadaprecio'] ?? '') === 'San Valentín', json_encode($catalogo[1] ?? null, JSON_UNESCAPED_UNICODE));
+prueba('…y el precio normal al que no tiene (22 000)', (float) ($catalogo[2]['precioactual'] ?? 0) === 22000.0 && ($catalogo[2]['temporadaprecio'] ?? '') === '');
+
+$inventario = array_column(datos($propietario->get('inventario', 'listar')), null, 'tbinventarioid');
+prueba('El inventario cobra la rosa roja a 1 500 en San Valentín', (float) ($inventario[1]['precioventaactual'] ?? 0) === 1500.0);
+
+$opciones = datos($lorena->get('encargo', 'opciones'));
+$arreglosopcion = array_column($opciones['arreglos'] ?? [], 'tbarreglofloralprecio', 'tbarreglofloralid');
+prueba('Las solicitudes nuevas usan los precios de la temporada', (float) ($arreglosopcion[1] ?? 0) === 42000.0
+    && ($opciones['temporada']['tbtemporadanombre'] ?? '') === 'San Valentín');
+
+$r = $propietario->post('encargo', 'crear', [
+    'tbclienteid' => 3, 'tbempleadoid' => '', 'tbsolicitudencargofechaentrega' => $manana, 'tbsolicitudencargonota' => '',
+    'tbsolicitudencargotipo' => 'Predefinido', 'tbarreglofloralid' => 1, 'tbsolicitudencargocantidad' => 1,
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 2]],
+]);
+$idsanvalentin = datos($r)['tbsolicitudencargoid'] ?? 0;
+prueba('Una solicitud en San Valentín: 42 000 + 2 rosas a 1 500 = 45 000', exito($r) && (float) (datos($r)['total'] ?? 0) === 45000.0, mensaje($r));
+
+$pendientes = datos($propietario->get('catalogo', 'pendientestemporada'));
+prueba('Avisa cuántos arreglos activos no tienen precio de San Valentín (5)', count($pendientes['pendientes'] ?? []) === 5,
+    json_encode(array_column($pendientes['pendientes'] ?? [], 'nombre'), JSON_UNESCAPED_UNICODE));
+$r = $propietario->post('catalogo', 'guardarpreciostemporada', ['precios' => [2 => '25000']]);
+prueba('Desde el aviso se le pone precio de temporada a un arreglo', exito($r), mensaje($r));
+prueba('…y ya solo faltan 4', count(datos($propietario->get('catalogo', 'pendientestemporada'))['pendientes'] ?? []) === 4);
+$r = $propietario->post('inventario', 'guardarpreciostemporada', ['precios' => [6 => '100']]);
+prueba('Un precio de temporada no puede ser menor que el costo por unidad', !exito($r) && isset(errores($r)[6]), mensaje($r));
+
+$r = $propietario->post('temporada', 'activar', ['id' => 3]);
+$vigentes = array_filter(datos($propietario->get('temporada', 'listar')), function ($temporada) {
+    return $temporada['tbtemporadavigente'] === 1;
+});
+prueba('Al activar Día de la Madre, San Valentín deja de estar en uso (solo una a la vez)',
+    exito($r) && count($vigentes) === 1 && (reset($vigentes)['tbtemporadaid'] ?? 0) === 3, mensaje($r));
+$r = $propietario->post('temporada', 'inactivar', ['id' => 3]);
+prueba('No deja inactivar la temporada que está en uso', !exito($r), mensaje($r));
+
+$r = $propietario->post('temporada', 'desactivar', []);
+prueba('Vuelve a los precios normales', exito($r), mensaje($r));
+$catalogo = array_column(datos($propietario->get('catalogo', 'listar')), null, 'tbarreglofloralid');
+prueba('El jarrón vuelve a costar 35 000', (float) ($catalogo[1]['precioactual'] ?? 0) === 35000.0);
+$solicitud = datos($propietario->get('encargo', 'obtener', ['id' => $idsanvalentin]));
+prueba('La solicitud de San Valentín conserva su total y dice con qué precios se cotizó',
+    (float) ($solicitud['tbsolicitudencargototal'] ?? 0) === 45000.0 && ($solicitud['tbtemporadanombre'] ?? '') === 'San Valentín');
+
+$historial = datos($propietario->get('temporada', 'historial', ['id' => 2]));
+prueba('El historial de San Valentín muestra cuándo se activaron y desactivaron sus precios',
+    array_column(array_filter($historial, function ($cambio) { return $cambio['campo'] === 'vigente'; }), 'nuevo')
+    === ['No (precios normales)', 'Sí (precios activados)', 'No (precios normales)'], json_encode(array_column($historial, 'nuevo'), JSON_UNESCAPED_UNICODE));
+
+// Precios de temporada desde el formulario del arreglo y del producto
+$r = $propietario->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglo, 'temporadas' => [4 => '0']] + $arreglovalido);
+prueba('El precio de temporada debe ser mayor que 0', tieneerror($r, 'temporadas'));
+$r = $propietario->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglo, 'temporadas' => [4 => '34000']] + $arreglovalido);
+prueba('Le pone al arreglo un precio para el Día de la Novia', exito($r), mensaje($r));
+$r = $propietario->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglo, 'temporadas' => [4 => '']] + $arreglovalido);
+$historial = datos($propietario->get('catalogo', 'historial', ['id' => $idarreglo]));
+$temporadacambios = array_values(array_filter($historial, function ($cambio) { return $cambio['campo'] === 'preciotemporada'; }));
+prueba('El historial del arreglo guarda el precio de temporada y cuándo se quitó',
+    count($temporadacambios) === 2 && strpos($temporadacambios[0]['nuevo'], 'Día de la Novia: ₡34 000') === 0
+    && strpos($temporadacambios[1]['nuevo'], 'sin precio') !== false && $temporadacambios[1]['anterior'] === $temporadacambios[0]['nuevo'],
+    json_encode($temporadacambios, JSON_UNESCAPED_UNICODE));
+
+$cambio = $florvalida + ['tbinventarioid' => $idproducto, 'tbinventariopreciopaquete' => '12000', 'tbinventarioprecioventa' => '1200'];
+$r = $propietario->post('inventario', 'actualizar', ['temporadas' => [2 => '100']] + $cambio);
+prueba('En el inventario, el precio de temporada no puede ser menor que el costo (600)', tieneerror($r, 'temporadas'), mensaje($r));
+$r = $propietario->post('inventario', 'actualizar', ['temporadas' => [2 => '1800']] + $cambio);
+$producto = datos($propietario->get('inventario', 'obtener', ['id' => $idproducto]));
+$preciosproducto = array_column($producto['preciostemporada'] ?? [], 'precio', 'tbtemporadaid');
+prueba('Guarda el precio de venta del producto para San Valentín', exito($r) && (float) ($preciosproducto[2] ?? 0) === 1800.0, mensaje($r));
 
 /* =====================================================================
  * Resumen

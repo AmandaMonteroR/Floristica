@@ -333,8 +333,26 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             return;
         }
 
+        quitarestirado();
         const medida = porpagina(todos);
-        let cantidad = medida.cantidad;
+        const tope = Math.ceil(todos.length / medida.porfila) * medida.porfila;
+        let cantidad = Math.min(Math.max(medida.cantidad, medida.minimo), tope);
+
+        // Muestra los primeros "cantidad" registros, solo para medir si caben
+        const probar = (prueba) => {
+            todos.forEach((registro, indice) => {
+                registro.hidden = indice >= prueba;
+            });
+            pintarcontroles(Math.ceil(todos.length / prueba), 0, Math.min(prueba, todos.length), todos.length);
+            return !sobrepasa();
+        };
+
+        // Agrega filas mientras quepan sin que aparezca scroll
+        if (probar(cantidad)) {
+            while (cantidad < tope && probar(cantidad + medida.porfila)) {
+                cantidad += medida.porfila;
+            }
+        }
 
         // Muestra la página; si aun así queda scroll, quita una fila y prueba de nuevo
         do {
@@ -349,6 +367,50 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             pintarcontroles(total, desde, hasta, todos.length);
             cantidad -= medida.porfila;
         } while (sobrepasa() && cantidad >= medida.minimo);
+
+        estirarfotos(medida.porfila);
+    }
+
+    // Catálogo: si sobra espacio debajo de las tarjetas, las fotos se hacen más altas para llenarlo
+    function quitarestirado() {
+        lista.querySelectorAll('img[data-estirada]').forEach((foto) => {
+            foto.style.height = '';
+            delete foto.dataset.estirada;
+        });
+    }
+
+    function estirarfotos(porfila) {
+        if (!lista.classList.contains('galeria')) {
+            return;
+        }
+
+        const visibles = registros().filter((registro) => !registro.hidden);
+        const relleno = parseFloat(getComputedStyle(lista.closest('main')).paddingBottom) || 0;
+        const sobra = window.innerHeight - (controles.getBoundingClientRect().bottom + relleno) - 4;
+        const filas = Math.ceil(visibles.length / porfila);
+
+        if (sobra < 8 || filas === 0) {
+            return;
+        }
+
+        visibles.forEach((tarjeta) => {
+            const foto = tarjeta.querySelector('img');
+            if (!foto) {
+                return;
+            }
+            const caja = foto.getBoundingClientRect();
+            // Sin pasarse de una foto un poco más alta que ancha
+            const alto = Math.min(caja.height + sobra / filas, caja.width * 1.15);
+            if (alto > caja.height) {
+                foto.style.height = `${Math.floor(alto)}px`;
+                foto.dataset.estirada = '1';
+            }
+        });
+
+        // Si por redondeos apareció scroll, se vuelve al tamaño normal
+        if (sobrepasa()) {
+            quitarestirado();
+        }
     }
 
     controles.addEventListener('click', (evento) => {

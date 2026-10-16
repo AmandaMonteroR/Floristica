@@ -11,8 +11,9 @@ class historicorepositorio
 
     // Entidades y datos que llevan histórico. Solo se aceptan estos nombres.
     private $campos = [
-        'inventario'    => ['nombre', 'proveedor', 'precio', 'precioventa', 'stockminimo', 'estado'],
-        'arreglofloral' => ['nombre', 'precio', 'estado'],
+        'inventario'    => ['nombre', 'proveedor', 'precio', 'precioventa', 'preciotemporada', 'stockminimo', 'estado'],
+        'arreglofloral' => ['nombre', 'precio', 'preciotemporada', 'estado'],
+        'temporada'     => ['nombre', 'vigente', 'estado'],
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
         'pedido'        => ['estado'],
         'solicitudencargo' => ['fechaentrega', 'total'],

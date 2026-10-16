@@ -2048,3 +2048,211 @@ h1 {
         min-width: 250px;
     }
 }
+
+
+/* ---------- Temporadas ---------- */
+
+/* Arriba, en la barra: qué precios se están usando */
+.chip-temporada {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: auto;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--ciruela);
+    text-decoration: none;
+    white-space: nowrap;
+    background: #ffd166;
+    border-radius: 999px;
+}
+
+.chip-temporada + .usuario-sesion {
+    margin-left: 0;
+}
+
+.estado-vigente {
+    background: #fff1c2;
+    color: #7a4b00;
+}
+
+/* Página de temporadas: aviso de qué precios se usan */
+.banner-temporada {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-left: 5px solid var(--verde);
+    border-radius: var(--radio);
+}
+
+.banner-temporada p {
+    margin: 0.2rem 0 0;
+    font-size: 0.9rem;
+}
+
+.banner-temporada.banner-vigente {
+    background: #fffaeb;
+    border-left-color: #f0a500;
+}
+
+/* Formularios: un campo de precio por temporada */
+.rejilla-temporadas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.precio-temporada > span {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Catálogo: precio normal debajo del de temporada */
+.precio-normal {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--texto-suave);
+    text-decoration: line-through;
+}
+
+/* Aviso flotante de precios que faltan */
+.aviso-flotante {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 20;
+    width: min(380px, calc(100% - 2rem));
+    padding: 1rem 1.1rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-top: 5px solid #f0a500;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(59, 15, 36, 0.18);
+}
+
+.aviso-flotante p {
+    margin: 0 0 0.75rem;
+    font-size: 0.92rem;
+}
+
+.aviso-flotante-acciones {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (max-width: 760px) {
+    .chip-temporada {
+        min-width: 0;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .chip-temporada .chip-texto {
+        display: none;
+    }
+
+    /* Con el aviso de temporada arriba, el botón de inicio queda solo con el ícono */
+    .barra-superior:has(.chip-temporada) .boton-inicio span {
+        display: none;
+    }
+
+    .chip-temporada + .usuario-sesion .boton-salir {
+        white-space: nowrap;
+    }
+
+    .aviso-flotante {
+        right: 1rem;
+        bottom: 1rem;
+    }
+}
+
+
+/* ---------- Barra superior sin saltos ---------- */
+.boton-salir,
+.boton-inicio,
+.usuario-datos strong,
+.usuario-datos small {
+    white-space: nowrap;
+}
+
+.usuario-sesion,
+.usuario-datos {
+    min-width: 0;
+}
+
+.usuario-datos strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Pantallas medianas: el aviso de temporada se acorta para que todo quepa en una línea */
+@media (max-width: 1100px) {
+    .chip-temporada .chip-texto {
+        display: none;
+    }
+}
+
+@media (max-width: 860px) {
+    .barra-superior:has(.chip-temporada) .boton-inicio span {
+        display: none;
+    }
+
+    .usuario-datos strong {
+        max-width: 11rem;
+    }
+}
+
+/* Solicitudes en pantallas medianas: la tabla cabe sin moverse de lado */
+@media (min-width: 761px) and (max-width: 1000px) {
+    .tabla-encargos .columna-acciones {
+        min-width: 0;
+        width: 9rem;
+    }
+
+    .tabla-encargos .columna-acciones .enlace {
+        white-space: nowrap;
+    }
+
+    .tabla-encargos .celda-arreglo {
+        min-width: 0;
+    }
+
+    .tabla-encargos .celda-arreglo img {
+        display: none;
+    }
+
+    .tabla-encargos td:nth-child(6) small {
+        white-space: normal;
+    }
+}
+
+
+/* Formulario de solicitudes: con qué precios de temporada se cotiza */
+.aviso-temporada {
+    background: #fff1c2;
+    color: #7a4b00;
+    border-left: 4px solid #f0a500;
+}
+
+
+/* Precio de temporada mal escrito: borde rojo al momento */
+.tabla-lineas input[aria-invalid="true"],
+.precio-temporada input[aria-invalid="true"] {
+    border-color: var(--peligro);
+    box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.15);
+}

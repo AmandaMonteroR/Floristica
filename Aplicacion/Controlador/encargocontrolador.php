@@ -8,8 +8,10 @@ require_once __DIR__ . '/../Repositorio/zonaentregarepositorio.php';
 require_once __DIR__ . '/../Repositorio/encargohistoricorepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
+require_once __DIR__ . '/preciotemporadacontrolador.php';
+require_once __DIR__ . '/../Repositorio/temporadarepositorio.php';
 
-// Solicitudes de encargo:
+// Solicitudes de pedido de arreglo:
 // - Predefinida: un arreglo del catálogo (el cliente lo eligió del catálogo de WhatsApp) + adicionales.
 // - Personalizada: el cliente elige los productos. "Presupuesto": no se puede pasar del monto que dio.
 //   "Libre": se eligen los productos y el sistema calcula el total para cotizarle.
@@ -25,6 +27,7 @@ class encargocontrolador
     private $historico;
     private $movimientos;
     private $generales;
+    private $temporadas;
 
     public function __construct()
     {
@@ -37,18 +40,31 @@ class encargocontrolador
         $this->historico = new encargohistoricorepositorio();
         $this->movimientos = new inventariomovimientorepositorio();
         $this->generales = new historicocontrolador();
+        $this->temporadas = new preciotemporadacontrolador();
+    }
+
+    // Precio que se cobra hoy: el de la temporada en uso, si el arreglo o producto tiene uno; si no, el normal
+    private function precioactual($tipo, $id, $precionormal)
+    {
+        static $precios = [];
+        if (!isset($precios[$tipo])) {
+            $precios[$tipo] = $this->temporadas->preciosvigentes($tipo);
+        }
+
+        return $precios[$tipo][(int) $id] ?? (float) $precionormal;
     }
 
     // Todo lo que se necesita para llenar el formulario, en una sola consulta
     public function opciones()
     {
-        $datos = ['arreglos' => [], 'empleados' => [], 'clientes' => [], 'zonas' => [], 'productos' => []];
+        $datos = ['arreglos' => [], 'empleados' => [], 'clientes' => [], 'zonas' => [], 'productos' => [],
+            'temporada' => $this->temporadas->datosvigente()];
 
         foreach ($this->arreglos->listar('', 1) as $arreglo) {
             $datos['arreglos'][] = [
                 'tbarreglofloralid'     => (int) $arreglo->getTbarreglofloralid(),
                 'tbarreglofloralnombre' => $arreglo->getTbarreglofloralnombre(),
-                'tbarreglofloralprecio' => (float) $arreglo->getTbarreglofloralprecio(),
+                'tbarreglofloralprecio' => $this->precioactual('arreglofloral', $arreglo->getTbarreglofloralid(), $arreglo->getTbarreglofloralprecio()),
                 'tbarreglofloralfoto'   => $arreglo->getTbarreglofloralfoto(),
             ];
         }
@@ -83,7 +99,7 @@ class encargocontrolador
                 'tbinventarioid'          => (int) $producto->getTbinventarioid(),
                 'tbinventarionombre'      => $producto->getTbinventarionombre(),
                 'tbinventariocategoria'   => $producto->getTbinventariocategoria(),
-                'tbinventarioprecioventa' => (float) $producto->getTbinventarioprecioventa(),
+                'tbinventarioprecioventa' => $this->precioactual('inventario', $producto->getTbinventarioid(), $producto->getTbinventarioprecioventa()),
                 'tbinventariostock'       => (int) $producto->getTbinventariostock(),
             ];
         }
@@ -108,7 +124,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid((int) $id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de encargo no existe.');
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
         }
 
         $datos = $this->convertirarreglo($encargo, $this->nombres());
@@ -130,6 +146,8 @@ class encargocontrolador
         }
 
         $errores = $this->validar($datos, null);
+        $vigente = $this->temporadas->vigente();
+        $datos['tbtemporadaid'] = $vigente ? (int) $vigente->getTbtemporadaid() : null;
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -150,7 +168,7 @@ class encargocontrolador
             return $id;
         });
 
-        return $this->respuesta(true, 'Solicitud de encargo N.º ' . $id . ' registrada. Total: '
+        return $this->respuesta(true, 'Solicitud de pedido de arreglo N.º ' . $id . ' registrada. Total: '
             . historicocontrolador::monto($encargo->getTbsolicitudencargototal()) . '.',
             ['tbsolicitudencargoid' => $id, 'total' => (float) $encargo->getTbsolicitudencargototal()]);
     }
@@ -161,7 +179,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de encargo no existe.');
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
         }
 
         if ($encargo->getTbsolicitudencargoestado() !== 'Pendiente') {
@@ -182,6 +200,7 @@ class encargocontrolador
         $datos['tbsolicitudencargoid'] = $id;
         $datos['tbsolicitudencargoestado'] = $encargo->getTbsolicitudencargoestado();
         $datos['tbsolicitudencargofecharegistro'] = $encargo->getTbsolicitudencargofecharegistro();
+        $datos['tbtemporadaid'] = $encargo->getTbtemporadaid();
         $nuevo = new Encargo($datos);
 
         $this->entransaccion(function () use ($nuevo, $datos, $id, $anteriores, $usuario) {
@@ -190,7 +209,7 @@ class encargocontrolador
             $this->generales->registrar('solicitudencargo', $id, $anteriores, $this->datoshistorico($nuevo), $usuario['id']);
         });
 
-        return $this->respuesta(true, 'Solicitud de encargo N.º ' . $id . ' actualizada. Total: '
+        return $this->respuesta(true, 'Solicitud de pedido de arreglo N.º ' . $id . ' actualizada. Total: '
             . historicocontrolador::monto($nuevo->getTbsolicitudencargototal()) . '.');
     }
 
@@ -201,7 +220,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de encargo no existe.');
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
         }
 
         if (!$encargo->estaAbierto()) {
@@ -253,7 +272,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de encargo no existe.');
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
         }
 
         if ($encargo->getTbsolicitudencargoestado() !== 'Pendiente') {
@@ -279,7 +298,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de encargo no existe.');
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
         }
 
         if ($this->esdeotro($encargo, $usuario)) {
@@ -325,7 +344,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de encargo no existe.');
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
         }
 
         if (!$encargo->estaAbierto()) {
@@ -588,7 +607,8 @@ class encargocontrolador
             // Si el mismo producto se eligió dos veces, se suman las cantidades
             $idproducto = (int) $producto->getTbinventarioid();
             $cantidades[$idproducto] = ($cantidades[$idproducto] ?? 0) + (int) $fila['cantidad'];
-            $lineas[$idproducto] = $preciosanteriores[$idproducto] ?? (float) $producto->getTbinventarioprecioventa();
+            $lineas[$idproducto] = $preciosanteriores[$idproducto]
+                ?? $this->precioactual('inventario', $idproducto, $producto->getTbinventarioprecioventa());
         }
 
         $subtotalproductos = 0;
@@ -627,7 +647,8 @@ class encargocontrolador
                 $errores['tbsolicitudencargocantidad'] = 'La cantidad debe ser un número entero entre 1 y 99.';
             }
 
-            $precioarreglo = $arreglo ? ($mismoarreglo ? (float) $actual->getTbsolicitudencargoprecioarreglo() : (float) $arreglo->getTbarreglofloralprecio()) : 0;
+            $precioarreglo = $arreglo ? ($mismoarreglo ? (float) $actual->getTbsolicitudencargoprecioarreglo()
+                : $this->precioactual('arreglofloral', $arreglo->getTbarreglofloralid(), $arreglo->getTbarreglofloralprecio())) : 0;
             $subtotal += $precioarreglo * (int) $datos['tbsolicitudencargocantidad'];
 
             $datos['tbsolicitudencargoprecioarreglo'] = $precioarreglo;
@@ -728,7 +749,11 @@ class encargocontrolador
     // Nombres de clientes, zonas, arreglos y empleados, para no consultarlos uno por uno
     private function nombres()
     {
-        $nombres = ['clientes' => [], 'zonas' => [], 'arreglos' => [], 'empleados' => []];
+        $nombres = ['clientes' => [], 'zonas' => [], 'arreglos' => [], 'empleados' => [], 'temporadas' => []];
+
+        foreach ((new temporadarepositorio())->listar() as $temporada) {
+            $nombres['temporadas'][$temporada->getTbtemporadaid()] = $temporada->getTbtemporadanombre();
+        }
 
         foreach ($this->clientes->listar() as $cliente) {
             $nombres['clientes'][$cliente->getTbclienteid()] = $cliente;
@@ -800,6 +825,8 @@ class encargocontrolador
             'tbsolicitudencargonota'             => (string) $encargo->getTbsolicitudencargonota(),
             'tbsolicitudencargoestado'           => $encargo->getTbsolicitudencargoestado(),
             'tbsolicitudencargofecharegistro'    => $encargo->getTbsolicitudencargofecharegistro(),
+            'tbtemporadaid'                      => $encargo->getTbtemporadaid() !== null ? (int) $encargo->getTbtemporadaid() : null,
+            'tbtemporadanombre'                  => $nombres['temporadas'][$encargo->getTbtemporadaid()] ?? '',
             'descripcion'                        => $descripcion,
             'alcanzastock'                       => $alcanza,
         ];

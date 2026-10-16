@@ -421,6 +421,11 @@ function actualizarresumen() {
         filas.push([`Express${zona ? ' a ' + zona.tbzonaentreganombre : ''}`, formatearmonto(cuentas.express)]);
     }
 
+    // Con una temporada en uso, lo nuevo se cotiza con sus precios
+    if (opciones.temporada) {
+        filas.unshift(['Precios de temporada', escapar(opciones.temporada.tbtemporadanombre)]);
+    }
+
     resumentotal.innerHTML = filas.map(([etiqueta, valor]) => `<div><dt>${escapar(etiqueta)}</dt><dd>${valor}</dd></div>`).join('')
         + `<div class="resumen-total"><dt>Total a cobrar</dt><dd>${formatearmonto(cuentas.total)}</dd></div>`;
 
@@ -714,14 +719,24 @@ function mostrarerrores(errores, form = formulario) {
 
 /* ---------- Abrir formularios ---------- */
 
+// Arriba del formulario: con qué precios se cotiza
+function mostrartemporadaform(texto) {
+    const avisotemporadaform = document.getElementById('avisotemporadaform');
+    avisotemporadaform.textContent = texto;
+    avisotemporadaform.hidden = texto === '';
+}
+
 async function abrirnuevo() {
     await opcioneslistas;
     datosservidor = { tbsolicitudencargofechaentrega: hoy() };
     llenarformulario(datosservidor);
+    mostrartemporadaform(opciones.temporada
+        ? `✿ Se cotiza con los precios de ${opciones.temporada.tbtemporadanombre}. Lo que no tiene precio para esta temporada va al precio normal.`
+        : '');
     limpiarerrores();
     aplicarborrador();
     campoasignar.hidden = false;
-    tituloformulario.textContent = 'Nueva solicitud de encargo';
+    tituloformulario.textContent = 'Nueva solicitud de pedido de arreglo';
     botonguardar.textContent = 'Guardar solicitud';
     dialogoformulario.showModal();
 }
@@ -737,6 +752,8 @@ async function abrireditar(id) {
 
     datosservidor = respuesta.datos;
     llenarformulario(datosservidor);
+    mostrartemporadaform(datosservidor.tbtemporadanombre
+        ? `✿ Esta solicitud se cotizó con los precios de ${datosservidor.tbtemporadanombre}.` : '');
     limpiarerrores();
     aplicarborrador();
     // Al editar, la asignación se cambia con el botón "Reasignar"
@@ -778,6 +795,7 @@ async function verdetalle(id) {
             ? `Express a ${encargo.tbzonaentreganombre}: ${encargo.tbsolicitudencargodireccionentrega}`
             : 'El cliente lo recoge en el local'],
         ['Total', formatearmonto(encargo.tbsolicitudencargototal)],
+        ['Cotizada con', encargo.tbtemporadanombre ? `Precios de ${encargo.tbtemporadanombre}` : 'Precios normales'],
         ['Asignado a', encargo.tbempleadoid ? `${encargo.tbempleadonombre}${encargo.tbempleadorol === 'Propietario' ? ' (Propietario)' : ''}` : 'Sin asignar'],
         ['Estado', encargo.tbsolicitudencargoestado],
         ['Registrada el', formatearfecha(encargo.tbsolicitudencargofecharegistro)],

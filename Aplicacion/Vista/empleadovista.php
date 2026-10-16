@@ -14,7 +14,7 @@
     <header class="encabezado">
         <div>
             <h1>Empleados</h1>
-            <p class="subtitulo">Personas de la floristería a las que se les asignan los encargos de arreglos.</p>
+            <p class="subtitulo">Personas de la floristería a las que se les asignan las solicitudes de pedido de arreglo.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo empleado</button>
     </header>
@@ -44,7 +44,7 @@
                     <th>Teléfono</th>
                     <th>Rol</th>
                     <th>Usuario</th>
-                    <th>Encargos abiertos</th>
+                    <th>Solicitudes abiertas</th>
                     <th>Estado</th>
                     <th class="columna-acciones">Acciones</th>
                 </tr>

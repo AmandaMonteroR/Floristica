@@ -84,6 +84,7 @@ const campopersonalizable = document.getElementById('campopersonalizable');
 const etiquetatipoenvoltura = document.getElementById('etiquetatipoenvoltura');
 const etiquetamedidaenvoltura = document.getElementById('etiquetamedidaenvoltura');
 const listavariedades = document.getElementById('listavariedades');
+const contenedortemporadas = document.getElementById('preciostemporada');
 const dialogodetalle = document.getElementById('dialogodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
@@ -203,7 +204,7 @@ async function cargarproveedores() {
 }
 
 function mostrarseccioncategoria() {
-    formulario.querySelectorAll('.seccion-categoria').forEach((seccion) => {
+    formulario.querySelectorAll('.seccion-categoria[data-categoria]').forEach((seccion) => {
         seccion.hidden = seccion.dataset.categoria !== selectcategoria.value;
     });
     actualizarvariedades();
@@ -249,6 +250,16 @@ function calcularpreciounidad() {
     preciounidad.textContent = costo !== null ? formatearmonto(costo) : '—';
     gananciaunidad.textContent = costo !== null && venta > 0 ? formatearmonto(venta - costo) : '—';
     gananciaunidad.classList.toggle('texto-peligro', costo !== null && venta > 0 && venta < costo);
+}
+
+// Precios de temporada: se revisan contra el costo por unidad mientras se escribe
+function revisartemporadas() {
+    const precio = numero(formulario.elements.tbinventariopreciopaquete.value);
+    const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
+    const costo = precio > 0 && unidades > 0 ? precio / unidades : 0;
+
+    preciostemporada.revisar(contenedortemporadas, formulario.querySelector('[data-error="temporadas"]'),
+        costo, 'el costo por unidad');
 }
 
 function claveborrador() {
@@ -306,6 +317,7 @@ function asignarcampos(datos) {
 
 function llenarformulario(datos) {
     formulario.reset();
+    preciostemporada.dibujar(contenedortemporadas, datos.preciostemporada);
     formulario.elements.tbinventarioid.value = datos.tbinventarioid ?? '';
 
     if (datos.tbproveedorid && !selectproveedor.querySelector(`option[value="${datos.tbproveedorid}"]`)) {
@@ -409,7 +421,8 @@ async function cargarinventario() {
                 <td>${escapar(producto.tbinventariocategoria)}</td>
                 <td>${escapar(producto.tbproveedornombreempresa)}</td>
                 <td>${formatearmonto(producto.tbinventariopreciounidad)}</td>
-                <td>${formatearmonto(producto.tbinventarioprecioventa)}</td>
+                <td>${formatearmonto(producto.precioventaactual)}${producto.temporadaprecio
+                    ? `<br><span class="estado estado-vigente">${escapar(producto.temporadaprecio)}</span>` : ''}</td>
                 <td><span class="stock ${nivel.clase}" title="${nivel.texto} (mínimo: ${producto.tbinventariostockminimo})">${producto.tbinventariostock}</span></td>
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
@@ -450,7 +463,8 @@ function mostrarerrores(errores) {
 
 async function abrirnuevo() {
     await proveedoreslistos;
-    datosservidor = {};
+    const temporadas = await consultar('temporadas');
+    datosservidor = { preciostemporada: temporadas.exito ? temporadas.datos : [] };
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
@@ -495,6 +509,10 @@ async function verdetalle(id) {
         ['Costo por unidad', formatearmonto(producto.tbinventariopreciounidad)],
         ['Precio de venta por unidad', formatearmonto(producto.tbinventarioprecioventa)],
         ['Ganancia por unidad', formatearmonto(producto.tbinventarioprecioventa - producto.tbinventariopreciounidad)],
+        ...(producto.preciostemporada ?? []).filter((temporada) => temporada.precio !== null).map((temporada) => [
+            `Precio de ${temporada.tbtemporadanombre}${temporada.vigente ? ' (en uso)' : ''}`,
+            `${formatearmonto(temporada.precio)} (ganancia ${formatearmonto(temporada.precio - producto.tbinventariopreciounidad)})`,
+        ]),
         ['Stock actual', `${producto.tbinventariostock} (${nivelstock(producto).texto.toLowerCase()})`],
         ['Stock mínimo', String(producto.tbinventariostockminimo)],
     ];
@@ -580,11 +598,19 @@ formulario.addEventListener('input', (evento) => {
         }
     }
 
+    preciostemporada.filtrar(campo);
+
     const error = formulario.querySelector(`[data-error="${campo.name}"]`);
     if (error) {
         error.textContent = '';
     }
     campo.removeAttribute('aria-invalid');
+
+    // Al escribir un precio de temporada o cambiar el paquete, se revisa al momento
+    if (campo.name.startsWith('temporadas[') || campo.name === 'tbinventariopreciopaquete'
+        || campo.name === 'tbinventariounidadespaquete') {
+        revisartemporadas();
+    }
     guardarborrador();
 });
 
@@ -714,3 +740,15 @@ cargarinventario();
 
 // Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
 abrirformulariosipide(abrirnuevo);
+
+// Si hay una temporada en uso y hay productos sin precio para ella, se avisa
+preciostemporada.aviso({
+    modulo: 'inventario',
+    singular: 'producto',
+    plural: 'productos',
+    columnaminimo: 'Costo por unidad',
+    alguardar: (mensaje) => {
+        mostraraviso(mensaje, 'exito');
+        cargarinventario();
+    },
+});

@@ -79,15 +79,15 @@ $accesos = [
     <section class="resumen-inicio" aria-label="Resumen">
         <a class="tarjeta-resumen" href="<?= e($enlaces['mios']) ?>">
             <span class="numero"><?= count($resumen['mios']) ?></span>
-            <span>Mis encargos abiertos</span>
+            <span>Mis solicitudes abiertas</span>
         </a>
         <a class="tarjeta-resumen" href="<?= e($enlaces['sinasignar']) ?>">
             <span class="numero"><?= count($resumen['sinasignar']) ?></span>
-            <span>Encargos sin asignar</span>
+            <span>Solicitudes sin asignar</span>
         </a>
         <a class="tarjeta-resumen<?= $resumen['atrasados'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['atrasados']) ?>">
             <span class="numero"><?= count($resumen['atrasados']) ?></span>
-            <span><?= $espropietario ? 'Encargos atrasados' : 'Mis encargos atrasados' ?></span>
+            <span><?= $espropietario ? 'Solicitudes atrasadas' : 'Mis solicitudes atrasadas' ?></span>
         </a>
         <?php if ($espropietario): ?>
             <a class="tarjeta-resumen<?= $resumen['stockbajo'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['stockbajo']) ?>">
@@ -111,9 +111,9 @@ $accesos = [
 
     <div class="paneles-inicio">
         <section class="panel-inicio">
-            <h2><?= $espropietario ? 'Encargos por entregar' : 'Mis encargos por entregar' ?></h2>
+            <h2><?= $espropietario ? 'Solicitudes por entregar' : 'Mis solicitudes por entregar' ?></h2>
             <?php if (!$listaencargos): ?>
-                <p class="texto-suave"><?= $espropietario ? 'No hay encargos abiertos.' : 'No tiene encargos asignados.' ?></p>
+                <p class="texto-suave"><?= $espropietario ? 'No hay solicitudes abiertas.' : 'No tiene solicitudes asignadas.' ?></p>
             <?php else: ?>
                 <ul class="lista-inicio">
                     <?php foreach (array_slice($listaencargos, 0, 6) as $encargo): ?>
@@ -134,16 +134,16 @@ $accesos = [
                     <?php endforeach; ?>
                 </ul>
                 <?php if (count($listaencargos) > 6): ?>
-                    <a class="enlace-panel" href="<?= e($enlaces['abiertos']) ?>">Ver los <?= count($listaencargos) ?> encargos</a>
+                    <a class="enlace-panel" href="<?= e($enlaces['abiertos']) ?>">Ver las <?= count($listaencargos) ?> solicitudes</a>
                 <?php endif; ?>
             <?php endif; ?>
         </section>
 
         <?php if (!$espropietario): ?>
             <section class="panel-inicio">
-                <h2>Encargos que puede tomar</h2>
+                <h2>Solicitudes que puede tomar</h2>
                 <?php if (!$resumen['sinasignar']): ?>
-                    <p class="texto-suave">No hay encargos sin asignar.</p>
+                    <p class="texto-suave">No hay solicitudes sin asignar.</p>
                 <?php else: ?>
                     <ul class="lista-inicio">
                         <?php foreach (array_slice($resumen['sinasignar'], 0, 6) as $encargo): ?>
@@ -154,7 +154,7 @@ $accesos = [
                             </li>
                         <?php endforeach; ?>
                     </ul>
-                    <a class="enlace-panel" href="<?= e($enlaces['sinasignar']) ?>">Ir a encargos para asignárselo</a>
+                    <a class="enlace-panel" href="<?= e($enlaces['sinasignar']) ?>">Ir a solicitudes para asignársela</a>
                 <?php endif; ?>
             </section>
         <?php else: ?>

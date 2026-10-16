@@ -226,7 +226,7 @@ class empleadocontrolador
         $abiertos = $this->encargos->contarabiertosporempleado($id);
         if ($abiertos > 0) {
             return $this->respuesta(false, 'No se puede inactivar: tiene ' . $abiertos
-                . ' encargo(s) pendiente(s) o en proceso. Reasígnelos primero.');
+                . ' solicitud(es) pendiente(s) o en proceso. Reasígnelos primero.');
         }
 
         $this->entransaccion(function () use ($id, $usuarioactual) {

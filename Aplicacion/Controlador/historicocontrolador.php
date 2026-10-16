@@ -25,26 +25,29 @@ class historicocontrolador
 
     // Une todos los históricos de un registro, del más antiguo al más reciente.
     // $etiquetas: ['campo' => 'Nombre visible']; $formatear: función que convierte el valor en texto.
-    public function listar($entidad, $id, $etiquetas, $formatear)
+    // $agrupados: campos cuyo valor es "grupo|valor" (por ejemplo el precio de cada temporada);
+    // en esos, el valor anterior se busca dentro del mismo grupo.
+    public function listar($entidad, $id, $etiquetas, $formatear, $agrupados = [])
     {
         $cambios = [];
 
         foreach ($etiquetas as $campo => $etiqueta) {
-            $anterior = null;
+            $anteriores = [];
 
             foreach ($this->repositorio->listar($entidad, $campo, $id) as $fila) {
                 $valor = $formatear($campo, $fila['valor']);
+                $grupo = in_array($campo, $agrupados, true) ? explode('|', (string) $fila['valor'])[0] : '';
 
                 $cambios[] = [
                     'campo'    => $campo,
                     'etiqueta' => $etiqueta,
-                    'anterior' => $anterior,
+                    'anterior' => $anteriores[$grupo] ?? null,
                     'nuevo'    => $valor,
                     'hechopor' => $fila['hechopor'] ?? '',
                     'fecha'    => $fila['fecha'],
                 ];
 
-                $anterior = $valor;
+                $anteriores[$grupo] = $valor;
             }
         }
         

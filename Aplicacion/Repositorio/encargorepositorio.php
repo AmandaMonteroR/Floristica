@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 require_once __DIR__ . '/../Modelo/encargo.php';
 require_once __DIR__ . '/../Modelo/solicitudencargoinsumo.php';
 
-// Solicitudes de encargo (tbsolicitudencargo) y sus productos (tbsolicitudencargoinsumo)
+// Solicitudes de pedido de arreglo (tbsolicitudencargo) y sus productos (tbsolicitudencargoinsumo)
 class encargorepositorio
 {
     private $conexion;
@@ -14,7 +14,7 @@ class encargorepositorio
         'tbsolicitudencargoprecioarreglo', 'tbsolicitudencargomodalidad', 'tbsolicitudencargopresupuesto',
         'tbsolicitudencargoexpress', 'tbzonaentregaid', 'tbsolicitudencargodireccionentrega',
         'tbsolicitudencargocostoexpress', 'tbsolicitudencargosubtotal', 'tbsolicitudencargototal',
-        'tbsolicitudencargofechaentrega', 'tbsolicitudencargonota',
+        'tbsolicitudencargofechaentrega', 'tbsolicitudencargonota', 'tbtemporadaid',
     ];
 
     public function __construct()
