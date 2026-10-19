@@ -9,6 +9,7 @@ require_once __DIR__ . '/../Aplicacion/Controlador/encargocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/clientecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/temporadacontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/ventacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/sesioncontrolador.php';
 require_once __DIR__ . '/../Configuracion/Seguridad.php';
 
@@ -96,6 +97,7 @@ if ($accion === '') {
         'cliente'    => 'clientevista.php',
         'zonaentrega' => 'zonaentregavista.php',
         'temporada'  => 'temporadavista.php',
+        'venta'      => 'ventavista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -112,7 +114,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
-    'activar', 'desactivar', 'guardarpreciostemporada'];
+    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -369,33 +371,35 @@ try {
         case 'temporada':
             $controlador = new temporadacontrolador();
 
+            // Temporada alta: hay una sola; se enciende, se apaga y se le ponen los precios del proveedor
             switch ($accion) {
-                case 'listar':
-                    $respuesta = $controlador->listar($_GET['texto'] ?? '', $_GET['estado'] ?? null);
-                    break;
-                case 'obtener':
-                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                case 'estado':
+                    $respuesta = $controlador->estado();
                     break;
                 case 'historial':
-                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
-                    break;
-                case 'crear':
-                    $respuesta = $controlador->crear($_POST, $usuarioactual);
-                    break;
-                case 'actualizar':
-                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
+                    $respuesta = $controlador->historial();
                     break;
                 case 'activar':
-                    $respuesta = $controlador->activar($_POST['id'] ?? 0, $usuarioactual);
+                    $respuesta = $controlador->activar($usuarioactual);
                     break;
                 case 'desactivar':
                     $respuesta = $controlador->desactivar($usuarioactual);
                     break;
-                case 'inactivar':
-                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
+                case 'guardarprecios':
+                    $respuesta = $controlador->guardarprecios($_POST, $usuarioactual);
                     break;
-                case 'reactivar':
-                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        // Ventas y ganancias (solo el propietario)
+        case 'venta':
+            $controlador = new ventacontrolador();
+
+            switch ($accion) {
+                case 'resumen':
+                    $respuesta = $controlador->resumen($_GET['desde'] ?? '', $_GET['hasta'] ?? '');
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -429,8 +433,10 @@ try {
 if ($modulo === 'catalogo' && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
     $quitarcostos = function ($arreglo) {
         unset($arreglo['costo']);
+        unset($arreglo['costoactual'], $arreglo['costoalto']);
         foreach ($arreglo['detalles'] ?? [] as $indice => $detalle) {
             unset($arreglo['detalles'][$indice]['tbinventariopreciounidad']);
+            unset($arreglo['detalles'][$indice]['costoalto']);
         }
         return $arreglo;
     };

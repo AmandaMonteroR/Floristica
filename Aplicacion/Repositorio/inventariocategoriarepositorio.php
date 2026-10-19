@@ -7,6 +7,7 @@ require_once __DIR__ . '/../Modelo/inventariocategoriachocolate.php';
 require_once __DIR__ . '/../Modelo/inventariocategoriapeluche.php';
 require_once __DIR__ . '/../Modelo/inventariocategoriatarjeta.php';
 require_once __DIR__ . '/../Modelo/inventariocategoriaspray.php';
+require_once __DIR__ . '/../Modelo/inventariocategoriaaccesorio.php';
 
 class inventariocategoriarepositorio
 {
@@ -20,6 +21,7 @@ class inventariocategoriarepositorio
         'Peluche'   => ['clase' => 'Inventariocategoriapeluche', 'campos' => ['tipo', 'tamano', 'color', 'diseno', 'material']],
         'Tarjeta'   => ['clase' => 'Inventariocategoriatarjeta', 'campos' => ['tipo', 'tematica', 'color', 'material', 'medida', 'personalizable', 'elaboracion']],
         'Spray'     => ['clase' => 'Inventariocategoriaspray', 'campos' => ['tipo', 'marca', 'color', 'aroma', 'contenido', 'fechavencimiento', 'cobroflor']],
+        'Accesorio' => ['clase' => 'Inventariocategoriaaccesorio', 'campos' => ['tipo', 'tamano', 'color', 'material']],
     ];
 
     public function __construct()

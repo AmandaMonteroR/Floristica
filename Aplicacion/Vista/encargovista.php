@@ -149,6 +149,24 @@
                     <input type="text" name="tbsolicitudencargopresupuesto" inputmode="decimal" maxlength="11" placeholder="15000" autocomplete="off">
                     <small class="error" data-error="tbsolicitudencargopresupuesto"></small>
                 </label>
+                <div class="campo campo-completo">
+                    <span id="etiquetaporcentaje">Ganancia sobre el costo (%) *</span>
+                    <div class="fila-porcentaje">
+                        <div class="contador">
+                            <button type="button" class="boton-contador" data-pasoporcentaje="-10" aria-label="Bajar 10%">−</button>
+                            <input type="text" name="tbsolicitudencargoporcentaje" inputmode="numeric" maxlength="3" autocomplete="off" aria-labelledby="etiquetaporcentaje">
+                            <button type="button" class="boton-contador" data-pasoporcentaje="10" aria-label="Subir 10%">+</button>
+                        </div>
+                        <div class="chips-porcentaje" role="group" aria-label="Porcentajes rápidos">
+                            <button type="button" class="chip" data-porcentaje="50">50%</button>
+                            <button type="button" class="chip" data-porcentaje="80">80%</button>
+                            <button type="button" class="chip" data-porcentaje="100">100%</button>
+                            <button type="button" class="chip" data-porcentaje="150">150%</button>
+                        </div>
+                    </div>
+                    <small class="nota-campo texto-suave">Cada producto se cobra a su costo más este %. Con 100% el precio es el doble del costo.</small>
+                    <small class="error" data-error="tbsolicitudencargoporcentaje"></small>
+                </div>
             </div>
         </fieldset>
 

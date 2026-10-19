@@ -5,10 +5,10 @@ require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 
-// Precios por temporada. Lo único que se escribe es lo que cobra el proveedor por el paquete
-// de cada producto en cada temporada. Todo lo demás se calcula solo:
-// - Precio de venta del producto: sube en la misma proporción que su costo (mismo % de ganancia).
-// - Precio de un arreglo: sube en la misma proporción que el costo de todo lo que lleva.
+// Precios de temporada alta. Lo único que se escribe es lo que cobra el proveedor por el paquete
+// de cada flor en temporada alta. Todo lo demás se calcula solo, con la misma ganancia en colones:
+// - Precio de venta del producto: el normal + lo que subió su costo por unidad.
+// - Precio de un arreglo: el normal + lo que subió el costo de todo lo que lleva.
 // Los precios calculados se redondean hacia arriba a ₡100.
 // Si un producto no tiene precio para la temporada, se usa el de temporada baja.
 class preciotemporadacontrolador
@@ -50,6 +50,19 @@ class preciotemporadacontrolador
         ] : null;
     }
 
+    // La temporada alta (hay una sola), esté encendida o no
+    public function alta()
+    {
+        $lista = $this->temporadas->listar();
+        return $lista[0] ?? null;
+    }
+
+    public function idalta()
+    {
+        $alta = $this->alta();
+        return $alta ? (int) $alta->getTbtemporadaid() : 0;
+    }
+
     // Redondea hacia arriba a ₡100 (así se cobran los precios calculados)
     public static function redondear($monto)
     {
@@ -77,11 +90,12 @@ class preciotemporadacontrolador
                 $paquete = (float) $producto->getTbinventariopreciopaquete();
                 $unidades = (int) $producto->getTbinventariounidadespaquete();
 
-                // El precio de venta sube en la misma proporción que el precio del paquete
+                // El precio de venta sube lo mismo que subió el costo por unidad (misma ganancia en colones)
                 $contemporada = false;
                 if (isset($paquetes[$id]) && $unidades > 0 && $paquete > 0 && abs($paquetes[$id] - $paquete) >= 0.01) {
-                    $venta = self::redondear($venta * $paquetes[$id] / $paquete);
-                    $costo = round($paquetes[$id] / $unidades, 2);
+                    $costonuevo = round($paquetes[$id] / $unidades, 2);
+                    $venta = self::redondear($venta + $costonuevo - $costo);
+                    $costo = $costonuevo;
                     $contemporada = true;
                 }
 
@@ -95,7 +109,7 @@ class preciotemporadacontrolador
     }
 
     // Precio y costo de un arreglo en una temporada (null = la que está en uso).
-    // El precio sube en la misma proporción que el costo de lo que lleva (mismo % de ganancia).
+    // El precio sube lo mismo que subió el costo de lo que lleva (misma ganancia en colones).
     public function arreglo($arreglo, $idtemporada = null)
     {
         $normales = $this->productos(0);
@@ -114,8 +128,9 @@ class preciotemporadacontrolador
         $cambia = $costonormal > 0 && abs($costo - $costonormal) >= 0.01;
 
         return [
-            'precio'       => $cambia ? self::redondear($precionormal * $costo / $costonormal) : $precionormal,
+            'precio'       => $cambia ? self::redondear($precionormal + $costo - $costonormal) : $precionormal,
             'costo'        => round($costo, 2),
+            'costonormal'  => round($costonormal, 2),
             'contemporada' => $cambia,
         ];
     }

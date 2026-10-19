@@ -1,31 +1,25 @@
+// Temporada alta: encenderla o apagarla, y lo que cobra el proveedor por cada flor en temporada alta.
+// La venta en temporada alta sube lo mismo que subió el costo por unidad (misma ganancia en colones).
 const rutabase = 'index.php?modulo=temporada';
-const clavebase = 'floristica.borrador.temporada.';
-const camposformulario = ['tbtemporadanombre', 'tbtemporadadescripcion'];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
 const busqueda = document.getElementById('busqueda');
-const filtroestado = document.getElementById('filtroestado');
 const aviso = document.getElementById('aviso');
-const dialogoformulario = document.getElementById('dialogoformulario');
-const formulario = document.getElementById('formulario');
-const tituloformulario = document.getElementById('tituloformulario');
-const avisoformulario = document.getElementById('avisoformulario');
-const avisoborrador = document.getElementById('avisoborrador');
+const bannertemporada = document.getElementById('bannertemporada');
+const textoestado = document.getElementById('textoestado');
+const notaestado = document.getElementById('notaestado');
+const botonalternar = document.getElementById('botonalternar');
 const botonguardar = document.getElementById('botonguardar');
+const resumenprecios = document.getElementById('resumenprecios');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
 const iconoconfirmacion = document.getElementById('iconoconfirmacion');
 const tituloconfirmacion = document.getElementById('tituloconfirmacion');
 const mensajeconfirmacion = document.getElementById('mensajeconfirmacion');
 const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmacion');
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
-const textovigente = document.getElementById('textovigente');
-const notavigente = document.getElementById('notavigente');
-const botondesactivar = document.getElementById('botondesactivar');
-const bannertemporada = document.getElementById('bannertemporada');
 
-let temporizadorbusqueda;
+let estado = null;
 let temporizadoraviso;
-let datosoriginales = {};
 
 function escapar(texto) {
     const div = document.createElement('div');
@@ -33,26 +27,32 @@ function escapar(texto) {
     return div.innerHTML;
 }
 
-function plural(cantidad, singular, varios) {
-    return `${cantidad} ${cantidad === 1 ? singular : varios}`;
+function formatearmonto(monto) {
+    return '₡' + Number(monto).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-async function peticion(accion, opciones = {}, parametros = {}) {
-    const url = `${rutabase}&accion=${accion}&${new URLSearchParams(parametros)}`;
+function montocorto(monto) {
+    return '₡' + Number(monto).toLocaleString('es-CR', { maximumFractionDigits: 2 });
+}
+
+function filtrardecimal(valor) {
+    const limpio = valor.replace(/,/g, '.').replace(/[^\d.]/g, '');
+    const [entera, ...resto] = limpio.split('.');
+    return resto.length > 0 ? `${entera}.${resto.join('').slice(0, 2)}` : entera;
+}
+
+// Igual que en el servidor: hacia arriba a ₡100
+function redondear(monto) {
+    return Math.ceil(Math.round(monto * 100) / 100 / 100) * 100;
+}
+
+async function peticion(accion, opciones = {}) {
     try {
-        const respuesta = await fetch(url, opciones);
+        const respuesta = await fetch(`${rutabase}&accion=${accion}`, opciones);
         return await respuesta.json();
     } catch (error) {
         return { exito: false, mensaje: 'No se pudo conectar con el servidor.', datos: [] };
     }
-}
-
-function consultar(accion, parametros) {
-    return peticion(accion, {}, parametros);
-}
-
-function enviar(accion, datos) {
-    return peticion(accion, { method: 'POST', body: datos });
 }
 
 function mostraraviso(mensaje, tipo) {
@@ -62,7 +62,7 @@ function mostraraviso(mensaje, tipo) {
     clearTimeout(temporizadoraviso);
     temporizadoraviso = setTimeout(() => {
         aviso.hidden = true;
-    }, 5000);
+    }, 6000);
 }
 
 function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
@@ -91,344 +91,174 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
     });
 }
 
-/* ---------- Borrador ---------- */
+/* ---------- Estado: encendida o apagada ---------- */
 
-function claveborrador() {
-    const id = formulario.elements.tbtemporadaid.value;
-    return clavebase + (id !== '' ? id : 'nuevo');
+function mostrarestado() {
+    const encendida = estado.encendida;
+    bannertemporada.classList.toggle('banner-vigente', encendida);
+    textoestado.innerHTML = encendida
+        ? '✿ Temporada alta <span class="estado estado-vigente">Encendida</span>'
+        : 'Temporada alta <span class="estado estado-inactivo">Apagada</span>';
+    notaestado.textContent = encendida
+        ? 'Las flores se cobran con el precio del proveedor en temporada alta y los arreglos suben solos según sus flores.'
+        : 'Se usan los precios normales. Escriba abajo lo que cobra el proveedor en temporada alta y enciéndala cuando empiece.';
+    botonalternar.textContent = encendida ? 'Apagar y volver a precios normales' : 'Encender temporada alta';
+    botonalternar.className = encendida ? 'boton' : 'boton boton-principal';
+    botonalternar.hidden = false;
+    resumenprecios.textContent = `${estado.conprecio} de ${estado.flores.length} con precio de temporada alta`;
 }
 
-function guardarborrador() {
-    const datos = {};
-    camposformulario.forEach((campo) => {
-        datos[campo] = formulario.elements[campo].value;
-    });
-    try {
-        localStorage.setItem(claveborrador(), JSON.stringify(datos));
-    } catch (error) {
-        return;
+/* ---------- Tabla de flores ---------- */
+
+// A cuánto se vende la unidad con ese precio del paquete
+function ventaalta(flor, paquete) {
+    if (!(paquete > 0) || Math.abs(paquete - flor.paquetenormal) < 0.01) {
+        return flor.ventanormal;
     }
+    const costonormal = flor.paquetenormal / flor.unidades;
+    const costoalto = Math.round(paquete / flor.unidades * 100) / 100;
+    return redondear(flor.ventanormal + costoalto - costonormal);
 }
 
-function leerborrador() {
-    try {
-        const texto = localStorage.getItem(claveborrador());
-        return texto ? JSON.parse(texto) : null;
-    } catch (error) {
-        return null;
+function textoventa(flor, valor) {
+    const paquete = parseFloat(valor);
+    if (valor === '' || !(paquete > 0)) {
+        return `${montocorto(flor.ventanormal)} <small class="texto-suave">(sin cambio)</small>`;
     }
+    const venta = ventaalta(flor, paquete);
+    return `${montocorto(flor.ventanormal)} → <strong>${montocorto(venta)}</strong>`;
 }
 
-function borrarborrador(clave = claveborrador()) {
-    try {
-        localStorage.removeItem(clave);
-    } catch (error) {
-        return;
-    }
-}
+function dibujarflores() {
+    const texto = busqueda.value.trim().toLowerCase();
+    const flores = estado.flores.filter((flor) => flor.nombre.toLowerCase().includes(texto));
 
-function asignarcampos(datos) {
-    camposformulario.forEach((campo) => {
-        formulario.elements[campo].value = datos[campo] ?? '';
-    });
-}
-
-function llenarformulario(datos) {
-    formulario.reset();
-    formulario.elements.tbtemporadaid.value = datos.tbtemporadaid ?? '';
-    asignarcampos(datos);
-}
-
-function aplicarborrador() {
-    const borrador = leerborrador();
-    avisoborrador.hidden = true;
-
-    if (!borrador) {
+    if (flores.length === 0) {
+        cuerpotabla.innerHTML = '<tr><td colspan="4" class="vacio">No hay flores que coincidan con la búsqueda.</td></tr>';
         return;
     }
 
-    const haycambios = camposformulario.some(
-        (campo) => String(borrador[campo] ?? '') !== String(datosoriginales[campo] ?? '')
-    );
-
-    if (!haycambios) {
-        borrarborrador();
-        return;
-    }
-
-    asignarcampos(borrador);
-    avisoborrador.hidden = false;
-}
-
-function descartarborrador() {
-    borrarborrador();
-    llenarformulario(datosoriginales);
-    limpiarerrores();
-    avisoborrador.hidden = true;
-}
-
-/* ---------- Tabla ---------- */
-
-// Arriba de la tabla: qué precios se están usando ahora
-function mostrarvigente(temporadas) {
-    const vigente = temporadas.find((temporada) => temporada.tbtemporadavigente === 1);
-
-    bannertemporada.classList.toggle('banner-vigente', Boolean(vigente));
-    botondesactivar.hidden = !vigente;
-    if (vigente) {
-        textovigente.textContent = `Se están usando los precios de ${vigente.tbtemporadanombre}`;
-        notavigente.textContent = 'Los arreglos se calculan solos con lo que cuestan sus flores. Las flores sin precio del proveedor para esta temporada se cobran al precio normal.';
-    } else {
-        textovigente.textContent = 'Se están usando los precios normales (temporada baja)';
-        notavigente.textContent = 'Use "Usar sus precios" en una temporada para empezar a cobrar con sus precios.';
-    }
-}
-
-async function cargartemporadas() {
-    const respuesta = await consultar('listar', {
-        texto: busqueda.value,
-        estado: filtroestado.value,
-    });
-
-    if (!respuesta.exito) {
-        cuerpotabla.innerHTML = `<tr><td colspan="5" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
-        return;
-    }
-
-    // El aviso de arriba se calcula con todas las temporadas, no solo con las filtradas
-    const todas = busqueda.value.trim() === '' && filtroestado.value === '' ? respuesta : await consultar('listar');
-    mostrarvigente(todas.exito ? todas.datos : []);
-
-    if (respuesta.datos.length === 0) {
-        const sinfiltros = busqueda.value.trim() === '' && filtroestado.value === '';
-        const mensaje = sinfiltros
-            ? 'Aún no hay temporadas. Use "Nueva temporada" para agregar la primera.'
-            : 'No hay temporadas que coincidan con la búsqueda.';
-        cuerpotabla.innerHTML = `<tr><td colspan="5" class="vacio">${mensaje}</td></tr>`;
-        return;
-    }
-
-    cuerpotabla.innerHTML = respuesta.datos.map((temporada) => {
-        const activa = temporada.tbtemporadaestado === 1;
-        const vigente = temporada.tbtemporadavigente === 1;
-        const id = temporada.tbtemporadaid;
-        const botonestado = activa
-            ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
-            : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
-        const botonprecios = vigente
-            ? '<button type="button" class="enlace" data-accion="desactivar">Volver a precios normales</button>'
-            : activa ? `<button type="button" class="enlace" data-accion="activar" data-id="${id}">Usar sus precios</button>` : '';
-        const estado = vigente
-            ? '<span class="estado estado-vigente">En uso</span>'
-            : `<span class="estado ${activa ? 'estado-activo' : 'estado-inactivo'}">${activa ? 'Activa' : 'Inactiva'}</span>`;
-
+    cuerpotabla.innerHTML = flores.map((flor) => {
+        const valor = flor.editado ?? (flor.paquetealto !== null ? String(flor.paquetealto) : '');
         return `
-            <tr class="${activa ? '' : 'fila-inactiva'}">
-                <td>${escapar(temporada.tbtemporadanombre)}</td>
-                <td>${temporada.tbtemporadadescripcion ? escapar(temporada.tbtemporadadescripcion) : '<span class="texto-suave">Sin descripción</span>'}</td>
-                <td>${plural(temporada.productosconprecio, 'producto', 'productos')}<br><small class="texto-suave">Los arreglos se calculan solos</small></td>
-                <td>${estado}</td>
-                <td class="columna-acciones">
-                    ${botonprecios}
-                    <button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
-                    <button type="button" class="enlace" data-accion="historial" data-id="${id}">Historial</button>
-                    ${vigente ? '' : botonestado}
-                </td>
-            </tr>`;
+        <tr data-id="${flor.id}">
+            <td>${escapar(flor.nombre)}<br><small class="texto-suave">Paquete de ${flor.unidades}</small></td>
+            <td>${formatearmonto(flor.paquetenormal)}</td>
+            <td>
+                <input type="text" name="precios[${flor.id}]" value="${escapar(valor)}" inputmode="decimal" maxlength="11"
+                       autocomplete="off" placeholder="${flor.paquetenormal}" aria-label="Paquete de ${escapar(flor.nombre)} en temporada alta">
+                <small class="error" data-error="${flor.id}"></small>
+            </td>
+            <td class="venta-alta">${textoventa(flor, valor)}</td>
+        </tr>`;
     }).join('');
 }
 
-/* ---------- Formulario ---------- */
-
-function limpiarerrores() {
-    formulario.querySelectorAll('[data-error]').forEach((error) => {
-        error.textContent = '';
-    });
-    formulario.querySelectorAll('[aria-invalid]').forEach((campo) => {
-        campo.removeAttribute('aria-invalid');
-    });
-    avisoformulario.hidden = true;
-}
-
-function mostrarerrores(errores) {
-    Object.entries(errores).forEach(([campo, mensaje]) => {
-        const error = formulario.querySelector(`[data-error="${campo}"]`);
-        if (error) {
-            error.textContent = mensaje;
-        }
-        if (formulario.elements[campo]) {
-            formulario.elements[campo].setAttribute('aria-invalid', 'true');
-        }
-    });
-
-    const primero = formulario.querySelector('[aria-invalid="true"]');
-    if (primero) {
-        primero.focus();
-    }
-}
-
-function abrirnuevo() {
-    datosoriginales = {};
-    llenarformulario(datosoriginales);
-    limpiarerrores();
-    aplicarborrador();
-    tituloformulario.textContent = 'Nueva temporada';
-    botonguardar.textContent = 'Guardar temporada';
-    dialogoformulario.showModal();
-}
-
-async function abrireditar(id) {
-    const respuesta = await consultar('obtener', { id });
+async function cargar() {
+    const respuesta = await peticion('estado');
 
     if (!respuesta.exito) {
-        mostraraviso(respuesta.mensaje, 'error');
+        textoestado.textContent = respuesta.mensaje;
+        cuerpotabla.innerHTML = `<tr><td colspan="4" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
         return;
     }
 
-    datosoriginales = respuesta.datos;
-    llenarformulario(datosoriginales);
-    limpiarerrores();
-    aplicarborrador();
-    tituloformulario.textContent = 'Editar temporada';
-    botonguardar.textContent = 'Guardar cambios';
-    dialogoformulario.showModal();
-}
-
-async function cambiarestado(accion, id, nombre) {
-    const configuraciones = {
-        inactivar: {
-            titulo: '¿Inactivar temporada?',
-            mensaje: `${nombre} ya no aparecerá al poner precios. Sus precios se conservan por si la reactiva.`,
-            textoaceptar: 'Inactivar',
-            peligro: true,
-        },
-        reactivar: {
-            titulo: '¿Reactivar temporada?',
-            mensaje: `${nombre} volverá a aparecer para ponerle precios y usarlos.`,
-            textoaceptar: 'Reactivar',
-        },
-        activar: {
-            titulo: `¿Usar los precios de ${nombre}?`,
-            mensaje: 'Desde ahora el catálogo y las solicitudes nuevas se cobran con los precios de esta temporada, hasta que vuelva a los precios normales. Las solicitudes ya registradas no cambian.',
-            textoaceptar: 'Usar sus precios',
-        },
-        desactivar: {
-            titulo: '¿Volver a los precios normales?',
-            mensaje: 'Desde ahora se cobra con los precios normales (temporada baja). Las solicitudes ya registradas no cambian.',
-            textoaceptar: 'Volver a precios normales',
-        },
-    };
-
-    if (!(await confirmar(configuraciones[accion]))) {
-        return;
-    }
-
-    const datos = new FormData();
-    datos.append('id', id ?? '');
-
-    const respuesta = await enviar(accion, datos);
-    mostraraviso(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
-
-    if (respuesta.exito) {
-        cargartemporadas();
-    }
+    estado = respuesta.datos;
+    mostrarestado();
+    dibujarflores();
+    botonguardar.disabled = true;
 }
 
 /* ---------- Eventos ---------- */
 
-formulario.addEventListener('input', (evento) => {
+cuerpotabla.addEventListener('input', (evento) => {
     const campo = evento.target;
-
-    const error = formulario.querySelector(`[data-error="${campo.name}"]`);
-    if (error) {
-        error.textContent = '';
+    const fila = campo.closest('tr[data-id]');
+    if (!fila) {
+        return;
     }
-    campo.removeAttribute('aria-invalid');
-    guardarborrador();
+
+    campo.value = filtrardecimal(campo.value);
+    const flor = estado.flores.find((item) => String(item.id) === fila.dataset.id);
+    flor.editado = campo.value;
+    fila.querySelector('.venta-alta').innerHTML = textoventa(flor, campo.value);
+
+    // Se revisa al momento: el precio debe ser mayor que 0
+    const error = fila.querySelector('[data-error]');
+    const malo = campo.value !== '' && !(parseFloat(campo.value) > 0);
+    error.textContent = malo ? 'Debe ser un monto mayor que 0.' : '';
+    campo.toggleAttribute('aria-invalid', malo);
+    botonguardar.disabled = false;
 });
 
-formulario.addEventListener('submit', async (evento) => {
-    evento.preventDefault();
+busqueda.addEventListener('input', dibujarflores);
 
-    const esedicion = formulario.elements.tbtemporadaid.value !== '';
-
-    if (esedicion) {
-        const nombre = formulario.elements.tbtemporadanombre.value.trim() || 'esta temporada';
-        const aceptado = await confirmar({
-            titulo: '¿Guardar los cambios?',
-            mensaje: `Se actualizarán los datos de ${nombre}.`,
-            textoaceptar: 'Guardar cambios',
+botonalternar.addEventListener('click', async () => {
+    const encender = !estado.encendida;
+    const aceptado = await confirmar(encender
+        ? {
+            titulo: '¿Encender la temporada alta?',
+            mensaje: `Las flores con precio de temporada alta (${estado.conprecio}) y los arreglos que las llevan subirán de precio. Las solicitudes ya registradas no cambian.`,
+            textoaceptar: 'Encender',
+        }
+        : {
+            titulo: '¿Apagar la temporada alta?',
+            mensaje: 'Se vuelve a los precios normales. Las solicitudes ya registradas no cambian.',
+            textoaceptar: 'Apagar',
+            peligro: true,
         });
 
-        if (!aceptado) {
-            return;
-        }
+    if (!aceptado) {
+        return;
     }
 
-    const clave = claveborrador();
-
-    limpiarerrores();
-    botonguardar.disabled = true;
-
-    const respuesta = await enviar(esedicion ? 'actualizar' : 'crear', new FormData(formulario));
-
-    botonguardar.disabled = false;
+    const respuesta = await peticion(encender ? 'activar' : 'desactivar', { method: 'POST', body: new FormData() });
+    mostraraviso(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
 
     if (respuesta.exito) {
-        borrarborrador(clave);
-        avisoborrador.hidden = true;
-        dialogoformulario.close();
-        mostraraviso(respuesta.mensaje, 'exito');
-        cargartemporadas();
+        // La barra de arriba muestra si está encendida, así que se recarga la página
+        setTimeout(() => window.location.reload(), 900);
+    }
+});
+
+botonguardar.addEventListener('click', async () => {
+    // Se envían todas las flores, también las que no se ven por el filtro o la página
+    const datos = new FormData();
+    estado.flores.forEach((flor) => {
+        const valor = flor.editado ?? (flor.paquetealto !== null ? String(flor.paquetealto) : '');
+        datos.append(`precios[${flor.id}]`, valor.replace(/\.$/, ''));
+    });
+
+    botonguardar.disabled = true;
+    const respuesta = await peticion('guardarprecios', { method: 'POST', body: datos });
+
+    if (!respuesta.exito) {
+        botonguardar.disabled = false;
+        const errores = respuesta.datos && respuesta.datos.errores ? respuesta.datos.errores : {};
+        Object.entries(errores).forEach(([id, mensaje]) => {
+            const error = cuerpotabla.querySelector(`[data-error="${id}"]`);
+            if (error) {
+                error.textContent = mensaje;
+            }
+        });
+        mostraraviso(Object.values(errores).join(' ') || respuesta.mensaje, 'error');
         return;
     }
 
-    if (respuesta.datos && respuesta.datos.errores) {
-        mostrarerrores(respuesta.datos.errores);
-    }
-
-    avisoformulario.textContent = respuesta.mensaje;
-    avisoformulario.hidden = false;
+    mostraraviso(respuesta.mensaje, 'exito');
+    cargar();
 });
 
-cuerpotabla.addEventListener('click', (evento) => {
-    const boton = evento.target.closest('button[data-accion]');
-    if (!boton) {
-        return;
-    }
+document.getElementById('botonhistorial').addEventListener('click', () => {
+    ventanahistorial.mostrar('temporada', estado ? estado.tbtemporadaid : 1, 'la temporada alta');
+});
 
-    const id = boton.dataset.id;
-    const nombre = boton.closest('tr').cells[0].textContent;
-
-    switch (boton.dataset.accion) {
-        case 'editar':
-            abrireditar(id);
-            break;
-        case 'historial':
-            ventanahistorial.mostrar('temporada', id, nombre);
-            break;
-        case 'inactivar':
-        case 'reactivar':
-        case 'activar':
-        case 'desactivar':
-            cambiarestado(boton.dataset.accion, id, nombre);
-            break;
+// Si quedan cambios sin guardar, se avisa antes de salir
+window.addEventListener('beforeunload', (evento) => {
+    if (!botonguardar.disabled) {
+        evento.preventDefault();
+        evento.returnValue = '';
     }
 });
 
-busqueda.addEventListener('input', () => {
-    clearTimeout(temporizadorbusqueda);
-    temporizadorbusqueda = setTimeout(cargartemporadas, 300);
-});
-
-filtroestado.addEventListener('change', cargartemporadas);
-document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
-document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
-document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
-botondesactivar.addEventListener('click', () => cambiarestado('desactivar', null, ''));
-
-filtrosdesdeurl({ estado: filtroestado });
-cargartemporadas();
-
-// Si se entró desde "Agregar nueva temporada" del menú, abre el formulario
-abrirformulariosipide(abrirnuevo);
+cargar();

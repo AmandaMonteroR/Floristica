@@ -15,7 +15,7 @@ class inventariocontrolador
     private $historico;
     private $temporadas;
     private $preciosvigentes = null;
-    private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray'];
+    private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray', 'Accesorio'];
 
     // Opciones de las listas de cada categoría. La vista las usa para llenar los select
     // y el controlador para validar, así las dos siempre coinciden.
@@ -48,6 +48,9 @@ class inventariocontrolador
             'elaboracionestarjeta'    => ['Hecha en el negocio', 'Comprada'],
             // Spray: la pintura floral se cobra por cada flor pintada
             'tiposspray'              => ['Pintura floral', 'Abrillantador de follaje', 'Aromatizante floral'],
+            // Accesorios que se le agregan a un arreglo
+            'tiposaccesorio'          => ['Corona', 'Perfume', 'Splash', 'Moño', 'Topper', 'Otro'],
+            'tamanosaccesorio'        => ['Pequeño', 'Mediano', 'Grande', 'Único'],
             // Personalizable (cinta y tarjeta): 1 = sí, 0 = no
             'personalizable'          => ['1' => 'Sí', '0' => 'No'],
         ];
@@ -234,7 +237,7 @@ class inventariocontrolador
             'proveedor'   => 'Proveedor',
             'precio'      => 'Precio del paquete',
             'precioventa' => 'Precio de venta',
-            'preciotemporada' => 'Precio del proveedor en temporada',
+            'preciotemporada' => 'Precio del proveedor en temporada alta',
             'stockminimo' => 'Stock mínimo',
             'estado'      => 'Estado',
         ];
@@ -446,6 +449,13 @@ class inventariocontrolador
             $limpios['tbinventariocategoriachocolatefechavencimiento'] = null;
         }
 
+        // Accesorio: el color y el material son opcionales
+        foreach (['tbinventariocategoriaaccesoriocolor', 'tbinventariocategoriaaccesoriomaterial'] as $campo) {
+            if (($limpios[$campo] ?? null) === '') {
+                $limpios[$campo] = null;
+            }
+        }
+
         // Spray: el color es de la pintura, el aroma del aromatizante y el cobro por flor solo de la pintura
         if (isset($limpios['tbinventariocategoriaspraytipo'])) {
             $tipo = $limpios['tbinventariocategoriaspraytipo'];
@@ -557,6 +567,9 @@ class inventariocontrolador
                 break;
             case 'Spray':
                 $errores += $this->validarspray($datos);
+                break;
+            case 'Accesorio':
+                $errores += $this->validaraccesorio($datos);
                 break;
         }
 
@@ -758,6 +771,23 @@ class inventariocontrolador
         $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetapersonalizable',
             'Si es personalizable', array_map('strval', array_keys($opciones['personalizable'])));
         $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetaelaboracion', 'La elaboración', $opciones['elaboracionestarjeta']);
+
+        return $errores;
+    }
+
+    private function validaraccesorio($datos)
+    {
+        $errores = [];
+        $opciones = self::opciones();
+
+        $this->validarlista($errores, $datos, 'tbinventariocategoriaaccesoriotipo', 'El tipo de accesorio', $opciones['tiposaccesorio']);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriaaccesoriotamano', 'El tamaño', $opciones['tamanosaccesorio']);
+        if ($datos['tbinventariocategoriaaccesoriocolor'] !== null) {
+            $this->validarletras($errores, $datos, 'tbinventariocategoriaaccesoriocolor', 'El color', 30, false);
+        }
+        if ($datos['tbinventariocategoriaaccesoriomaterial'] !== null) {
+            $this->validartexto($errores, $datos, 'tbinventariocategoriaaccesoriomaterial', 'El material', 30);
+        }
 
         return $errores;
     }

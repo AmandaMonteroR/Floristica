@@ -60,8 +60,8 @@ class arreglofloralcontrolador
         }
 
         $datos = $this->convertirarreglo($arreglo);
-        $datos['preciostemporada'] = $this->preciosportemporada($arreglo);
         $datos['detalles'] = [];
+        $costosalta = $this->temporadas->productos($this->temporadas->idalta());
 
         foreach ($this->repositorio->listardetalles($arreglo->getTbarreglofloralid()) as $detalle) {
             $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
@@ -71,6 +71,7 @@ class arreglofloralcontrolador
                 'tbinventariocategoria'          => $producto ? $producto->getTbinventariocategoria() : '',
                 'tbinventariopreciounidad'       => $producto ? (float) $producto->getTbinventariopreciounidad() : 0,
                 'tbarreglofloralinsumocantidad' => (int) $detalle->getTbarreglofloralinsumocantidad(),
+                'costoalto'                     => $costosalta[(int) $detalle->getTbinventarioid()]['costo'] ?? null,
             ];
         }
 
@@ -226,26 +227,6 @@ class arreglofloralcontrolador
         };
 
         return $this->respuesta(true, '', $this->historico->listar('arreglofloral', $id, $etiquetas, $formatear));
-    }
-
-    // Precio del arreglo en cada temporada activa, calculado con lo que cuestan sus productos en ella.
-    // Solo aparecen las temporadas en las que el precio cambia.
-    private function preciosportemporada(Arreglofloral $arreglo)
-    {
-        $lista = [];
-        foreach ((new temporadarepositorio())->listar('', 1) as $temporada) {
-            $calculo = $this->temporadas->arreglo($arreglo, (int) $temporada->getTbtemporadaid());
-            if ($calculo['contemporada']) {
-                $lista[] = [
-                    'tbtemporadanombre' => $temporada->getTbtemporadanombre(),
-                    'vigente'           => $temporada->estaVigente(),
-                    'precio'            => $calculo['precio'],
-                    'costo'             => $calculo['costo'],
-                ];
-            }
-        }
-
-        return $lista;
     }
 
     // Datos del arreglo que llevan histórico, tal como se guardan
@@ -446,11 +427,16 @@ class arreglofloralcontrolador
 
     private function convertirarreglo(Arreglofloral $arreglo)
     {
-        // Precio y costo de ahora: si hay una temporada en uso, se calculan con lo que cuestan sus flores en ella
+        // Precio y costo de ahora: si la temporada alta está encendida, se calculan con lo que cuestan sus flores en ella
         $actual = $this->temporadas->arreglo($arreglo);
         $vigente = $this->temporadas->datosvigente();
+        // Precio y costo en temporada alta, esté encendida o no (el catálogo muestra los dos precios)
+        $alta = $this->temporadas->arreglo($arreglo, $this->temporadas->idalta());
 
         return [
+            'precioalto'                 => $alta['precio'],
+            'costoalto'                  => $alta['costo'],
+            'altaencendida'              => $vigente !== null,
             'precioactual'               => $actual['precio'],
             'costoactual'                => $actual['costo'],
             'temporadaprecio'            => $actual['contemporada'] ? $vigente['tbtemporadanombre'] : '',

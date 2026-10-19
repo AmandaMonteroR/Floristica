@@ -16,7 +16,7 @@ class encargorepositorio
         'tbsolicitudencargocostoexpress', 'tbsolicitudencargosubtotal', 'tbsolicitudencargototal',
         'tbsolicitudencargofechaentrega', 'tbsolicitudencargonota', 'tbtemporadaid',
         'tbsolicitudencargosprayid', 'tbsolicitudencargoflorespintadas', 'tbsolicitudencargopreciopintura',
-        'tbsolicitudencargocostopintura',
+        'tbsolicitudencargocostopintura', 'tbsolicitudencargoporcentaje', 'tbsolicitudencargocosto',
     ];
 
     public function __construct()

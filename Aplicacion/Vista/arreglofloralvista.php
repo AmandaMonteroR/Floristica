@@ -128,26 +128,33 @@
 <dialog id="dialogodetalle" class="dialogo dialogo-ancho">
     <div class="detalle-arreglo">
         <img id="fotodetalle" class="foto-detalle" alt="">
-        <div>
+        <div class="detalle-info">
             <h2 id="titulodetalle"></h2>
-            <dl id="listadetalle" class="detalle"></dl>
+            <p id="descripciondetalle" class="descripcion-detalle"></p>
+            <div id="preciosdetalle" class="precios-detalle"></div>
+            <h3 class="subtitulo-seccion">Incluye</h3>
+            <ul id="incluyedetalle" class="lista-incluye"></ul>
         </div>
     </div>
-    <h3 class="subtitulo-seccion">Productos</h3>
-    <div class="tabla-contenedor">
-        <table class="tabla">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Categoría</th>
-                    <th>Unidades</th>
-                    <th>Costo unidad</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody id="cuerpodetalle"></tbody>
-        </table>
-    </div>
+    <?php if (Seguridad::espropietario()): ?>
+        <details class="costos-detalle">
+            <summary>Costo y ganancia</summary>
+            <div id="resumencostos" class="resumen-costos"></div>
+            <div class="tabla-contenedor">
+                <table class="tabla">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Unidades</th>
+                            <th>Costo normal</th>
+                            <th>Costo en temporada alta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpodetalle"></tbody>
+                </table>
+            </div>
+        </details>
+    <?php endif; ?>
     <div class="acciones-dialogo">
         <?php if (Seguridad::espropietario()): ?>
             <button type="button" class="boton" id="botonverhistorial">Ver historial</button>

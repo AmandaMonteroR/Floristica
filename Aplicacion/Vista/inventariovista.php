@@ -25,6 +25,7 @@ $categoriasinventario = [
     'Peluche'   => 'Peluche',
     'Tarjeta'   => 'Tarjeta',
     'Spray'     => 'Spray (pintura, abrillantador o aromatizante)',
+    'Accesorio' => 'Accesorio (corona, perfume, splash…)',
 ];
 ?>
 <!DOCTYPE html>
@@ -43,7 +44,7 @@ $categoriasinventario = [
     <header class="encabezado">
         <div>
             <h1>Inventario</h1>
-            <p class="subtitulo">Flores, papel, cintas, bases, chocolates, peluches, tarjetas y sprays de la floristería.</p>
+            <p class="subtitulo">Flores, papel, cintas, bases, chocolates, peluches, tarjetas, sprays y accesorios de la floristería.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo producto</button>
     </header>
@@ -505,10 +506,43 @@ $categoriasinventario = [
             </div>
         </fieldset>
 
+        <fieldset class="seccion-categoria" data-categoria="Accesorio" hidden>
+            <legend>Datos del accesorio</legend>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>Tipo de accesorio *</span>
+                    <select name="tbinventariocategoriaaccesoriotipo">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['tiposaccesorio']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriaaccesoriotipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Tamaño *</span>
+                    <select name="tbinventariocategoriaaccesoriotamano">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['tamanosaccesorio']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriaaccesoriotamano"></small>
+                </label>
+                <label class="campo">
+                    <span>Color</span>
+                    <input type="text" name="tbinventariocategoriaaccesoriocolor" maxlength="30" data-filtro="letras" placeholder="Dorado, plateado…">
+                    <small class="error" data-error="tbinventariocategoriaaccesoriocolor"></small>
+                </label>
+                <label class="campo">
+                    <span>Material</span>
+                    <input type="text" name="tbinventariocategoriaaccesoriomaterial" maxlength="30" data-filtro="texto" placeholder="Metal, plástico, vidrio…">
+                    <small class="error" data-error="tbinventariocategoriaaccesoriomaterial"></small>
+                </label>
+            </div>
+        </fieldset>
+
         <fieldset class="seccion-categoria">
-            <legend>Precio del proveedor en temporada</legend>
-            <p class="nota">Escriba cuánto le cobra el proveedor por el paquete en cada temporada. El precio de venta sube solo,
-                con el mismo porcentaje de ganancia, y también el de los arreglos que lo llevan. Si lo deja vacío, se usa el precio normal.</p>
+            <legend>Precio del proveedor en temporada alta</legend>
+            <p class="nota">Escriba cuánto le cobra el proveedor por el paquete en temporada alta. El precio de venta sube solo
+                lo mismo que subió el costo (se mantiene la ganancia en colones), y también el de los arreglos que lo llevan.
+                Si lo deja vacío, se usa el precio normal.</p>
             <div class="rejilla-temporadas" id="preciostemporada"></div>
             <small class="error" data-error="temporadas"></small>
         </fieldset>

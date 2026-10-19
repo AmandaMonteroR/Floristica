@@ -205,6 +205,18 @@ CREATE TABLE tbinventariocategoriaspray (
     PRIMARY KEY (tbinventariocategoriasprayid)
 );
 
+-- Accesorios que se le agregan a un arreglo: corona, perfume, splash, moño...
+-- Tipo: Corona, Perfume, Splash, Moño, Topper u Otro. Tamaño: Pequeño, Mediano, Grande o Único.
+CREATE TABLE tbinventariocategoriaaccesorio (
+    tbinventariocategoriaaccesorioid INT,
+    tbinventarioid INT,
+    tbinventariocategoriaaccesoriotipo VARCHAR(30),
+    tbinventariocategoriaaccesoriotamano VARCHAR(20),
+    tbinventariocategoriaaccesoriocolor VARCHAR(30),
+    tbinventariocategoriaaccesoriomaterial VARCHAR(30),
+    PRIMARY KEY (tbinventariocategoriaaccesorioid)
+);
+
 CREATE TABLE tbpedido (
     tbpedidoid INT,
     tbproveedorid INT,
@@ -320,6 +332,10 @@ CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargoflorespintadas INT,
     tbsolicitudencargopreciopintura DECIMAL(10,2),
     tbsolicitudencargocostopintura DECIMAL(10,2),
+    -- Personalizados: % de ganancia sobre el costo (100 = el precio es el doble del costo)
+    tbsolicitudencargoporcentaje DECIMAL(6,2),
+    -- Lo que costaron las flores y productos (para calcular la ganancia en Ventas)
+    tbsolicitudencargocosto DECIMAL(10,2),
     PRIMARY KEY (tbsolicitudencargoid)
 );
 
@@ -614,9 +630,9 @@ CREATE TABLE tbzonaentregaestadohistorico (
 );
 
 
--- ---------- Temporadas (San Valentín, Día de la Madre...) ----------
--- tbtemporadavigente = 1 es la temporada cuyos precios se están usando. Solo puede haber una.
--- Si ninguna está vigente, se usan los precios normales (temporada baja).
+-- ---------- Temporada alta ----------
+-- Hay una sola: "Temporada alta". tbtemporadavigente = 1 cuando está encendida.
+-- Apagada, se usan los precios normales (temporada baja).
 CREATE TABLE tbtemporada (
     tbtemporadaid INT,
     tbtemporadanombre VARCHAR(100),
@@ -626,9 +642,9 @@ CREATE TABLE tbtemporada (
     PRIMARY KEY (tbtemporadaid)
 );
 
--- Lo que cobra el proveedor por el paquete de un producto en una temporada.
--- El precio de venta del producto y el de los arreglos que lo llevan se calculan solos,
--- con el mismo porcentaje de ganancia que tienen en temporada baja.
+-- Lo que cobra el proveedor por el paquete de un producto en temporada alta.
+-- El precio de venta del producto y el de los arreglos que lo llevan se calculan solos:
+-- suben lo mismo que subió el costo (se mantiene la ganancia en colones).
 CREATE TABLE tbinventariotemporada (
     tbinventariotemporadaid INT,
     tbinventarioid INT,

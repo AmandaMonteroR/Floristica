@@ -16,6 +16,8 @@ require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 // - Predefinida: un arreglo del catálogo (el cliente lo eligió del catálogo de WhatsApp) + adicionales.
 // - Personalizada: el cliente elige los productos. "Presupuesto": no se puede pasar del monto que dio.
 //   "Libre": se eligen los productos y el sistema calcula el total para cotizarle.
+//   Cada producto se cobra a su costo + el % de ganancia que se elige (100% = el doble del costo).
+// - Cada solicitud guarda lo que costaron sus flores y productos, para la ganancia en Ventas.
 // - Express: se cobra el precio de la zona de entrega (lo define el propietario).
 class encargocontrolador
 {
@@ -57,6 +59,12 @@ class encargocontrolador
         return $productos[(int) $id]['venta'] ?? (float) $precionormal;
     }
 
+    // Personalizados: costo por unidad + el % de ganancia, redondeado hacia arriba a ₡10
+    public static function preciopersonalizado($costo, $porcentaje)
+    {
+        return (float) (ceil(round($costo * (1 + $porcentaje / 100), 2) / 10) * 10);
+    }
+
     // Cuántas flores y follajes lleva un arreglo del catálogo (las que se pueden pintar)
     private function floresdearreglo($idarreglo)
     {
@@ -95,13 +103,19 @@ class encargocontrolador
     public function opciones()
     {
         $datos = ['arreglos' => [], 'empleados' => [], 'clientes' => [], 'zonas' => [], 'productos' => [],
-            'temporada' => $this->temporadas->datosvigente(), 'pinturas' => $this->pinturas()];
+            'temporada' => $this->temporadas->datosvigente(), 'pinturas' => $this->pinturas(), 'porcentaje' => 100];
+
+        $idalta = $this->temporadas->idalta();
+        $normales = $this->temporadas->productos(0);
+        $altos = $this->temporadas->productos($idalta);
 
         foreach ($this->arreglos->listar('', 1) as $arreglo) {
             $datos['arreglos'][] = [
                 'tbarreglofloralid'     => (int) $arreglo->getTbarreglofloralid(),
                 'tbarreglofloralnombre' => $arreglo->getTbarreglofloralnombre(),
                 'tbarreglofloralprecio' => $this->precioactual('arreglofloral', $arreglo->getTbarreglofloralid(), $arreglo->getTbarreglofloralprecio()),
+                'precionormal'          => (float) $arreglo->getTbarreglofloralprecio(),
+                'precioalto'            => $this->temporadas->arreglo($arreglo, $idalta)['precio'],
                 'tbarreglofloralfoto'   => $arreglo->getTbarreglofloralfoto(),
                 'flores'                => $this->floresdearreglo($arreglo->getTbarreglofloralid()),
             ];
@@ -143,6 +157,11 @@ class encargocontrolador
                 'tbinventariocategoria'   => $producto->getTbinventariocategoria(),
                 'tbinventarioprecioventa' => $this->precioactual('inventario', $producto->getTbinventarioid(), $producto->getTbinventarioprecioventa()),
                 'tbinventariostock'       => (int) $producto->getTbinventariostock(),
+                // Costo por unidad y venta, normal y en temporada alta
+                'costonormal'             => $normales[(int) $producto->getTbinventarioid()]['costo'] ?? 0,
+                'costoalto'               => $altos[(int) $producto->getTbinventarioid()]['costo'] ?? 0,
+                'ventanormal'             => $normales[(int) $producto->getTbinventarioid()]['venta'] ?? 0,
+                'ventaalta'               => $altos[(int) $producto->getTbinventarioid()]['venta'] ?? 0,
             ];
         }
 
@@ -573,6 +592,7 @@ class encargocontrolador
             'tbsolicitudencargonota'             => $texto('tbsolicitudencargonota'),
             'tbsolicitudencargosprayid'          => $texto('tbsolicitudencargosprayid'),
             'tbsolicitudencargoflorespintadas'   => $texto('tbsolicitudencargoflorespintadas'),
+            'tbsolicitudencargoporcentaje'       => $texto('tbsolicitudencargoporcentaje'),
             'insumos'                            => [],
         ];
 
@@ -616,7 +636,24 @@ class encargocontrolador
             $errores['tbsolicitudencargotipo'] = 'El tipo de solicitud no es válido.';
         }
 
-        // Productos (adicionales o los del arreglo personalizado), con el precio de venta de cada uno
+        // % de ganancia de los personalizados: de 0 a 500 (100 = el precio es el doble del costo)
+        $porcentaje = $datos['tbsolicitudencargoporcentaje'];
+        $porcentajevalido = ctype_digit($porcentaje) && (int) $porcentaje <= 500;
+        if ($tipo === 'Personalizado') {
+            if ($porcentaje === '') {
+                $errores['tbsolicitudencargoporcentaje'] = 'Escriba el % de ganancia.';
+            } elseif (!$porcentajevalido) {
+                $errores['tbsolicitudencargoporcentaje'] = 'El % de ganancia debe ser un número entero entre 0 y 500.';
+            }
+        }
+        $porcentaje = $porcentajevalido ? (int) $porcentaje : 100;
+        // Al editar, si no cambió el %, cada producto conserva el precio con que se cotizó
+        $mismoporcentaje = !$esnuevo && $actual->esPersonalizado()
+            && (float) $actual->getTbsolicitudencargoporcentaje() === (float) $porcentaje;
+        $costos = $this->temporadas->productos();
+        $costo = 0;
+
+        // Productos (adicionales o los del arreglo personalizado), con el precio de cada uno
         $preciosanteriores = [];
         if (!$esnuevo) {
             foreach ($this->repositorio->listarinsumos($actual->getTbsolicitudencargoid()) as $insumo) {
@@ -660,8 +697,18 @@ class encargocontrolador
             if ($producto->getTbinventariocategoria() === 'Flor') {
                 $flores += (int) $fila['cantidad'];
             }
-            $lineas[$idproducto] = $preciosanteriores[$idproducto]
-                ?? $this->precioactual('inventario', $idproducto, $producto->getTbinventarioprecioventa());
+            $costounidad = $costos[$idproducto]['costo'] ?? (float) $producto->getTbinventariopreciounidad();
+            $costo += (int) $fila['cantidad'] * $costounidad;
+
+            if ($tipo === 'Personalizado') {
+                // Personalizado: costo + % de ganancia
+                $lineas[$idproducto] = $mismoporcentaje && isset($preciosanteriores[$idproducto])
+                    ? $preciosanteriores[$idproducto] : self::preciopersonalizado($costounidad, $porcentaje);
+            } else {
+                // Adicional de un predefinido: su precio de venta
+                $lineas[$idproducto] = $preciosanteriores[$idproducto]
+                    ?? $this->precioactual('inventario', $idproducto, $producto->getTbinventarioprecioventa());
+            }
         }
 
         $subtotalproductos = 0;
@@ -702,6 +749,7 @@ class encargocontrolador
 
             if ($arreglo) {
                 $flores += $this->floresdearreglo($arreglo->getTbarreglofloralid()) * max(1, (int) $datos['tbsolicitudencargocantidad']);
+                $costo += $this->temporadas->arreglo($arreglo)['costo'] * max(1, (int) $datos['tbsolicitudencargocantidad']);
             }
 
             $precioarreglo = $arreglo ? ($mismoarreglo ? (float) $actual->getTbsolicitudencargoprecioarreglo()
@@ -711,6 +759,7 @@ class encargocontrolador
             $datos['tbsolicitudencargoprecioarreglo'] = $precioarreglo;
             $datos['tbsolicitudencargomodalidad'] = null;
             $datos['tbsolicitudencargopresupuesto'] = null;
+            $datos['tbsolicitudencargoporcentaje'] = null;
         } elseif ($tipo === 'Personalizado') {
             $modalidad = $datos['tbsolicitudencargomodalidad'];
 
@@ -743,6 +792,7 @@ class encargocontrolador
             $datos['tbarreglofloralid'] = null;
             $datos['tbsolicitudencargocantidad'] = 1;
             $datos['tbsolicitudencargoprecioarreglo'] = null;
+            $datos['tbsolicitudencargoporcentaje'] = $porcentaje;
         }
 
         // Servicio express
@@ -838,6 +888,7 @@ class encargocontrolador
         $datos['tbsolicitudencargocostoexpress'] = $costoexpress;
         $datos['tbsolicitudencargosubtotal'] = round($subtotal, 2);
         $datos['tbsolicitudencargototal'] = round($subtotal + $costopintura + $costoexpress, 2);
+        $datos['tbsolicitudencargocosto'] = round($costo, 2);
         $datos['lineas'] = $insumos;
 
         return $errores;
@@ -930,6 +981,8 @@ class encargocontrolador
             'tbsolicitudencargoflorespintadas'   => (int) $encargo->getTbsolicitudencargoflorespintadas(),
             'tbsolicitudencargopreciopintura'    => (float) $encargo->getTbsolicitudencargopreciopintura(),
             'tbsolicitudencargocostopintura'     => (float) $encargo->getTbsolicitudencargocostopintura(),
+            'tbsolicitudencargoporcentaje'       => $encargo->getTbsolicitudencargoporcentaje() !== null ? (float) $encargo->getTbsolicitudencargoporcentaje() : null,
+            'tbsolicitudencargocosto'            => (float) $encargo->getTbsolicitudencargocosto(),
             'descripcion'                        => $descripcion,
             'alcanzastock'                       => $alcanza,
         ];

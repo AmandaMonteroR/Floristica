@@ -3,7 +3,7 @@ const clavebase = 'floristica.borrador.encargo.';
 const camposformulario = ['tbclienteid', 'tbsolicitudencargotipo', 'tbarreglofloralid', 'tbsolicitudencargocantidad',
     'tbsolicitudencargomodalidad', 'tbsolicitudencargopresupuesto', 'tbzonaentregaid', 'tbsolicitudencargodireccionentrega',
     'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota',
-    'tbsolicitudencargosprayid', 'tbsolicitudencargoflorespintadas'];
+    'tbsolicitudencargosprayid', 'tbsolicitudencargoflorespintadas', 'tbsolicitudencargoporcentaje'];
 const categoriasproducto = [
     ['Flor', 'Flores y follaje'],
     ['Envoltura', 'Papel y cintas'],
@@ -11,6 +11,7 @@ const categoriasproducto = [
     ['Chocolate', 'Chocolates'],
     ['Peluche', 'Peluches'],
     ['Tarjeta', 'Tarjetas'],
+    ['Accesorio', 'Accesorios'],
 ];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
@@ -242,13 +243,42 @@ function lineavacia() {
     return { tbinventarioid: '', cantidad: '1', nombre: '', precioguardado: null };
 }
 
-// El precio que se cobra: el que quedó guardado en la solicitud o el precio de venta actual
+// % de ganancia de los personalizados (100 si el campo está vacío o no es válido)
+function porcentaje() {
+    const valor = parseInt(formulario.elements.tbsolicitudencargoporcentaje.value, 10);
+    return Number.isNaN(valor) ? 100 : Math.min(500, Math.max(0, valor));
+}
+
+// Igual que en el servidor: costo + %, hacia arriba a ₡10
+function precioporcentaje(costo, por = porcentaje()) {
+    return Math.ceil(Math.round(costo * (1 + por / 100) * 100) / 100 / 10) * 10;
+}
+
+// Precio por unidad de un producto con los precios normales ('normal'), de temporada alta ('alta')
+// o los que se usan ahora (sin modo)
+function preciounidad(producto, modo = opciones.temporada ? 'alta' : 'normal') {
+    if (esPersonalizado()) {
+        return precioporcentaje(modo === 'alta' ? producto.costoalto : producto.costonormal);
+    }
+    return modo === 'alta' ? producto.ventaalta : producto.ventanormal;
+}
+
+// Al editar: si no cambió el %, los productos conservan el precio con que se cotizaron
+function usaprecioguardado(linea) {
+    if (linea.precioguardado === null || linea.precioguardado === undefined) {
+        return false;
+    }
+    return !esPersonalizado() || (datosservidor.tbsolicitudencargotipo === 'Personalizado'
+        && Number(datosservidor.tbsolicitudencargoporcentaje) === porcentaje());
+}
+
+// El precio que se cobra: el que quedó guardado en la solicitud o el de ahora
 function preciolinea(linea) {
-    if (linea.precioguardado !== null && linea.precioguardado !== undefined) {
+    if (usaprecioguardado(linea)) {
         return Number(linea.precioguardado);
     }
     const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
-    return producto ? producto.tbinventarioprecioventa : 0;
+    return producto ? preciounidad(producto) : 0;
 }
 
 function subtotallinea(linea) {
@@ -289,11 +319,11 @@ function opcionesproducto(linea) {
         grupo.forEach((producto) => {
             const id = String(producto.tbinventarioid);
             const seleccionado = id === String(linea.tbinventarioid);
-            const nocabe = disponible !== null && !seleccionado && producto.tbinventarioprecioventa > disponible;
+            const nocabe = disponible !== null && !seleccionado && preciounidad(producto) > disponible;
             const desactivado = !seleccionado && (usados.includes(id) || nocabe);
             const extra = producto.tbinventariostock <= 0 ? ' (sin stock)' : nocabe ? ' (no alcanza)' : '';
             html += `<option value="${id}"${seleccionado ? ' selected' : ''}${desactivado ? ' disabled' : ''}>`
-                + `${escapar(producto.tbinventarionombre)} · ${montocorto(producto.tbinventarioprecioventa)}${extra}</option>`;
+                + `${escapar(producto.tbinventarionombre)} · ${montocorto(preciounidad(producto))}${extra}</option>`;
         });
         html += '</optgroup>';
     });
@@ -441,23 +471,65 @@ function calcular() {
     };
 }
 
-// Debajo de las flores pintadas: cuántas lleva el arreglo, y aviso si se pasa
+// Total de lo que se está cotizando con los precios normales o con los de temporada alta
+function totalen(modo) {
+    const cuentas = calcular();
+    let total = cuentas.pintura + cuentas.express;
+
+    if (cuentas.tipo === 'Predefinido') {
+        const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value);
+        total += arreglo ? (modo === 'alta' ? arreglo.precioalto : arreglo.precionormal) * cuentas.cantidad : 0;
+    }
+    lineas.forEach((linea) => {
+        const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+        if (producto) {
+            total += preciounidad(producto, modo) * (parseInt(linea.cantidad, 10) || 0);
+        }
+    });
+
+    return total;
+}
+
+// Lo que cuesta lo que se está cotizando (para ver la ganancia)
+function costocotizado() {
+    let costo = 0;
+    const campo = opciones.temporada ? 'costoalto' : 'costonormal';
+    lineas.forEach((linea) => {
+        const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+        if (producto) {
+            costo += producto[campo] * (parseInt(linea.cantidad, 10) || 0);
+        }
+    });
+    return costo;
+}
+
+// Cuántas flores se pueden pintar como máximo (null si todavía no se sabe)
+function topeflores() {
+    const tipo = formulario.elements.tbsolicitudencargotipo.value;
+    if (tipo === 'Personalizado' || (tipo === 'Predefinido' && formulario.elements.tbarreglofloralid.value)) {
+        return florescotizadas();
+    }
+    return null;
+}
+
+// Debajo de las flores pintadas: cuántas lleva el arreglo. No deja pintar más de las que hay.
 function revisarpintura(cuentas) {
     const flores = florescotizadas();
-    const error = formulario.querySelector('[data-error="tbsolicitudencargoflorespintadas"]');
+    const tope = topeflores();
     const campo = formulario.elements.tbsolicitudencargoflorespintadas;
     const pintadas = parseInt(campo.value, 10) || 0;
 
-    notapintura.textContent = formulario.elements.tbsolicitudencargotipo.value === ''
-        ? '' : `Lleva ${flores} ${flores === 1 ? 'flor' : 'flores y follajes'} que se pueden pintar.`;
-
-    if (pintadas > flores && (formulario.elements.tbsolicitudencargotipo.value === 'Personalizado' || formulario.elements.tbarreglofloralid.value)) {
-        error.textContent = flores === 0 ? 'El arreglo no lleva flores para pintar.' : `Lleva ${flores} flores; no se pueden pintar más.`;
-        campo.setAttribute('aria-invalid', 'true');
-    } else if (error.textContent.startsWith('Lleva') || error.textContent.startsWith('El arreglo no lleva')) {
-        error.textContent = '';
-        campo.removeAttribute('aria-invalid');
+    if (tope !== null && pintadas > tope) {
+        campo.value = tope > 0 ? String(tope) : '';
     }
+
+    notapintura.textContent = formulario.elements.tbsolicitudencargotipo.value === ''
+        ? '' : flores === 0
+            ? 'No lleva flores para pintar.'
+            : `Se pueden pintar hasta ${flores} ${flores === 1 ? 'flor' : 'flores y follajes'}.`;
+
+    const mas = formulario.querySelector('[data-pasoflores="1"]');
+    mas.disabled = tope !== null && (parseInt(campo.value, 10) || 0) >= tope;
 
     return cuentas;
 }
@@ -472,7 +544,7 @@ function actualizarresumen() {
         filas.push([formulario.elements.tbarreglofloralid.value ? `${cuentas.cantidad} × ${nombre}` : 'Arreglo', formatearmonto(cuentas.arreglo)]);
         filas.push(['Adicionales', formatearmonto(cuentas.productos)]);
     } else if (cuentas.tipo === 'Personalizado') {
-        filas.push(['Productos', formatearmonto(cuentas.productos)]);
+        filas.push([`Productos (costo + ${porcentaje()}%)`, formatearmonto(cuentas.productos)]);
     }
 
     if (cuentas.pintadas > 0) {
@@ -490,8 +562,24 @@ function actualizarresumen() {
         filas.unshift(['Precios de temporada', escapar(opciones.temporada.tbtemporadanombre)]);
     }
 
+    // Los dos precios: normal y temporada alta (el que se cobra ahora va marcado)
+    let comparar = '';
+    if (cuentas.tipo !== '') {
+        const alta = Boolean(opciones.temporada);
+        comparar = `
+            <div class="resumen-comparar">
+                <span class="${alta ? '' : 'precio-activo'}">Precio normal <strong>${montocorto(totalen('normal'))}</strong></span>
+                <span class="${alta ? 'precio-activo' : ''}">Temporada alta <strong>${montocorto(totalen('alta'))}</strong></span>
+            </div>`;
+        // Ganancia del personalizado (solo el propietario ve el costo)
+        if (cuentas.tipo === 'Personalizado' && espropietario && cuentas.productos > 0) {
+            const costo = costocotizado();
+            comparar += `<div class="resumen-ganancia">Costo de los productos ${formatearmonto(costo)} · Ganancia ${formatearmonto(cuentas.productos - costo)}</div>`;
+        }
+    }
+
     resumentotal.innerHTML = filas.map(([etiqueta, valor]) => `<div><dt>${escapar(etiqueta)}</dt><dd>${valor}</dd></div>`).join('')
-        + `<div class="resumen-total"><dt>Total a cobrar</dt><dd>${formatearmonto(cuentas.total)}</dd></div>`;
+        + `<div class="resumen-total"><dt>Total a cobrar</dt><dd>${formatearmonto(cuentas.total)}</dd></div>` + comparar;
 
     // Con presupuesto: cuánto queda o cuánto se pasa
     const tope = presupuesto();
@@ -586,10 +674,22 @@ function borrarborrador(clave = claveborrador()) {
     }
 }
 
+// Resalta el porcentaje rápido que coincide con el que está escrito
+function marcarporcentaje() {
+    formulario.querySelectorAll('[data-porcentaje]').forEach((chip) => {
+        chip.classList.toggle('chip-activo', Number(chip.dataset.porcentaje) === porcentaje()
+            && formulario.elements.tbsolicitudencargoporcentaje.value !== '');
+    });
+}
+
 function asignarcampos(datos) {
     camposformulario.forEach((campo) => {
         formulario.elements[campo].value = datos[campo] ?? '';
     });
+    if (formulario.elements.tbsolicitudencargoporcentaje.value === '') {
+        formulario.elements.tbsolicitudencargoporcentaje.value = String(opciones.porcentaje ?? 100);
+    }
+    marcarporcentaje();
     casillaexpress.checked = datos.tbsolicitudencargoexpress === '1';
     lineas = (datos.lineas ?? []).map((linea) => ({ ...linea }));
     actualizarsecciones();
@@ -619,6 +719,8 @@ function llenarformulario(datos) {
         tbsolicitudencargonota: datos.tbsolicitudencargonota ?? '',
         tbsolicitudencargosprayid: datos.tbsolicitudencargosprayid ? String(datos.tbsolicitudencargosprayid) : '',
         tbsolicitudencargoflorespintadas: datos.tbsolicitudencargoflorespintadas ? String(datos.tbsolicitudencargoflorespintadas) : '',
+        tbsolicitudencargoporcentaje: datos.tbsolicitudencargoporcentaje !== null && datos.tbsolicitudencargoporcentaje !== undefined
+            ? String(Math.round(datos.tbsolicitudencargoporcentaje)) : String(opciones.porcentaje ?? 100),
         lineas: (datos.insumos ?? []).map((insumo) => ({
             tbinventarioid: String(insumo.tbinventarioid),
             cantidad: String(insumo.cantidad),
@@ -859,13 +961,18 @@ async function verdetalle(id) {
     const filas = [
         ['Cliente', `${encargo.tbclientenombre} · ${encargo.tbclientetelefono}`],
         ['Tipo', encargo.tbsolicitudencargotipo === 'Personalizado'
-            ? `Personalizado (${encargo.tbsolicitudencargomodalidad === 'Presupuesto' ? 'presupuesto de ' + formatearmonto(encargo.tbsolicitudencargopresupuesto) : 'libre'})`
+            ? `Personalizado (${encargo.tbsolicitudencargomodalidad === 'Presupuesto' ? 'presupuesto de ' + formatearmonto(encargo.tbsolicitudencargopresupuesto) : 'libre'}, `
+                + `${encargo.tbsolicitudencargoporcentaje ?? 100}% de ganancia)`
             : 'Predefinido (del catálogo)'],
         ['Fecha de entrega', formatearfecha(encargo.tbsolicitudencargofechaentrega)],
         ['Entrega', encargo.tbsolicitudencargoexpress === 1
             ? `Express a ${encargo.tbzonaentreganombre}: ${encargo.tbsolicitudencargodireccionentrega}`
             : 'El cliente lo recoge en el local'],
         ['Total', formatearmonto(encargo.tbsolicitudencargototal)],
+        ...(espropietario ? [
+            ['Costo de flores y productos', formatearmonto(encargo.tbsolicitudencargocosto)],
+            ['Ganancia', formatearmonto(encargo.tbsolicitudencargototal - encargo.tbsolicitudencargocosto)],
+        ] : []),
         ['Cotizada con', encargo.tbtemporadanombre ? `Precios de ${encargo.tbtemporadanombre}` : 'Precios normales'],
         ['Asignado a', encargo.tbempleadoid ? `${encargo.tbempleadonombre}${encargo.tbempleadorol === 'Propietario' ? ' (Propietario)' : ''}` : 'Sin asignar'],
         ['Estado', encargo.tbsolicitudencargoestado],
@@ -1003,6 +1110,22 @@ formulario.addEventListener('input', (evento) => {
     }
     if (campo.name === 'tbsolicitudencargoflorespintadas') {
         campo.value = campo.value.replace(/\D/g, '').slice(0, 3);
+        const tope = topeflores();
+        if (tope !== null && (parseInt(campo.value, 10) || 0) > tope) {
+            campo.value = tope > 0 ? String(tope) : '';
+        }
+    }
+    // El % cambia el precio de cada producto del personalizado
+    if (campo.name === 'tbsolicitudencargoporcentaje') {
+        campo.value = campo.value.replace(/\D/g, '').slice(0, 3);
+        if (Number(campo.value) > 500) {
+            campo.value = '500';
+        }
+        marcarporcentaje();
+        limpiarerrorcampo(campo.name);
+        dibujarlineas();
+        guardarborrador();
+        return;
     }
     if (campo.name === 'tbsolicitudencargopresupuesto') {
         campo.value = filtrardecimal(campo.value);
@@ -1057,9 +1180,25 @@ formulario.addEventListener('click', (evento) => {
     if (pasoflores) {
         const campo = formulario.elements.tbsolicitudencargoflorespintadas;
         const actual = parseInt(campo.value, 10) || 0;
-        campo.value = String(Math.min(999, Math.max(0, actual + Number(pasoflores.dataset.pasoflores))));
+        const tope = topeflores() ?? 999;
+        campo.value = String(Math.min(tope, 999, Math.max(0, actual + Number(pasoflores.dataset.pasoflores))));
         limpiarerrorcampo('tbsolicitudencargoflorespintadas');
         actualizarresumen();
+        guardarborrador();
+        return;
+    }
+
+    // % de ganancia: + y − de 10 en 10, o uno de los porcentajes rápidos
+    const pasoporcentaje = evento.target.closest('button[data-pasoporcentaje]');
+    const chipporcentaje = evento.target.closest('button[data-porcentaje]');
+    if (pasoporcentaje || chipporcentaje) {
+        const campo = formulario.elements.tbsolicitudencargoporcentaje;
+        campo.value = String(chipporcentaje
+            ? Number(chipporcentaje.dataset.porcentaje)
+            : Math.min(500, Math.max(0, porcentaje() + Number(pasoporcentaje.dataset.pasoporcentaje))));
+        marcarporcentaje();
+        limpiarerrorcampo('tbsolicitudencargoporcentaje');
+        dibujarlineas();
         guardarborrador();
         return;
     }

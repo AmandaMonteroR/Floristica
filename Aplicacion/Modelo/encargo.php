@@ -28,6 +28,8 @@ class Encargo
     private $tbsolicitudencargoflorespintadas;
     private $tbsolicitudencargopreciopintura;
     private $tbsolicitudencargocostopintura;
+    private $tbsolicitudencargoporcentaje;
+    private $tbsolicitudencargocosto;
 
     public function __construct($datos = [])
     {
@@ -55,6 +57,8 @@ class Encargo
         $this->tbsolicitudencargoflorespintadas   = $datos['tbsolicitudencargoflorespintadas'] ?? 0;
         $this->tbsolicitudencargopreciopintura    = $datos['tbsolicitudencargopreciopintura'] ?? 0;
         $this->tbsolicitudencargocostopintura     = $datos['tbsolicitudencargocostopintura'] ?? 0;
+        $this->tbsolicitudencargoporcentaje       = $datos['tbsolicitudencargoporcentaje'] ?? null;
+        $this->tbsolicitudencargocosto            = $datos['tbsolicitudencargocosto'] ?? 0;
     }
 
     public function getTbsolicitudencargoid() {
@@ -200,6 +204,18 @@ class Encargo
 
     public function setTbsolicitudencargocostopintura($valor) {
         $this->tbsolicitudencargocostopintura = $valor; }
+
+    public function getTbsolicitudencargoporcentaje() {
+        return $this->tbsolicitudencargoporcentaje; }
+
+    public function setTbsolicitudencargoporcentaje($valor) {
+        $this->tbsolicitudencargoporcentaje = $valor; }
+
+    public function getTbsolicitudencargocosto() {
+        return $this->tbsolicitudencargocosto; }
+
+    public function setTbsolicitudencargocosto($valor) {
+        $this->tbsolicitudencargocosto = $valor; }
 
     public function estaAbierto()
     {

@@ -22,7 +22,8 @@ $opcionesmenu = [
         ['texto' => 'Catálogo de arreglos', 'modulo' => 'catalogo'],
         ['texto' => 'Solicitudes de pedido de arreglo', 'modulo' => 'encargo'],
         ['texto' => 'Zonas de entrega (express)', 'modulo' => 'zonaentrega'],
-        ['texto' => 'Temporadas y precios', 'modulo' => 'temporada'],
+        ['texto' => 'Temporada alta', 'modulo' => 'temporada'],
+        ['texto' => 'Ventas y ganancias', 'modulo' => 'venta'],
     ]],
     ['texto' => 'Compras', 'hijos' => [
         ['texto' => 'Proveedores', 'hijos' => [

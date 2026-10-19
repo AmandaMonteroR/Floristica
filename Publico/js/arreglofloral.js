@@ -23,7 +23,10 @@ const etiquetafoto = document.getElementById('etiquetafoto');
 const dialogodetalle = document.getElementById('dialogodetalle');
 const fotodetalle = document.getElementById('fotodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
-const listadetalle = document.getElementById('listadetalle');
+const descripciondetalle = document.getElementById('descripciondetalle');
+const preciosdetalle = document.getElementById('preciosdetalle');
+const incluyedetalle = document.getElementById('incluyedetalle');
+const resumencostos = document.getElementById('resumencostos');
 const cuerpodetalle = document.getElementById('cuerpodetalle');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
 const iconoconfirmacion = document.getElementById('iconoconfirmacion');
@@ -213,7 +216,7 @@ function opcionesproducto(linea) {
 
     let opciones = '<option value="">Seleccione…</option>';
 
-    ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta'].forEach((categoria) => {
+    ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'].forEach((categoria) => {
         const grupo = productos.filter((producto) => producto.tbinventariocategoria === categoria);
         if (grupo.length === 0) {
             return;
@@ -371,6 +374,21 @@ function descartarborrador() {
 
 /* ---------- Galería ---------- */
 
+// Monto sin decimales cuando no hacen falta: ₡12 000
+function montocorto(monto) {
+    return '₡' + Number(monto).toLocaleString('es-CR', { maximumFractionDigits: 2 });
+}
+
+// Precio normal y de temporada alta; el que se cobra ahora va resaltado
+function dosprecios(arreglo) {
+    const alta = arreglo.altaencendida;
+    return `
+        <div class="tarjeta-precios">
+            <span class="${alta ? '' : 'precio-activo'}"><small>Normal</small> ${montocorto(arreglo.tbarreglofloralprecio)}</span>
+            <span class="${alta ? 'precio-activo' : ''}" title="Temporada alta"><small>Temp. alta</small> ${montocorto(arreglo.precioalto)}</span>
+        </div>`;
+}
+
 async function cargararreglos() {
     const respuesta = await consultar('listar', {
         texto: busqueda.value,
@@ -394,10 +412,7 @@ async function cargararreglos() {
         const activo = arreglo.tbarreglofloralestado === 1;
         const id = arreglo.tbarreglofloralid;
         const ganancia = arreglo.precioactual - arreglo.costoactual;
-        const precio = arreglo.temporadaprecio
-            ? `${formatearmonto(arreglo.precioactual)} <span class="estado estado-vigente">${escapar(arreglo.temporadaprecio)}</span>
-               <small class="precio-normal">Normal ${formatearmonto(arreglo.tbarreglofloralprecio)}</small>`
-            : formatearmonto(arreglo.precioactual);
+        const precio = dosprecios(arreglo);
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
             : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
@@ -414,7 +429,7 @@ async function cargararreglos() {
                         <h2>${escapar(arreglo.tbarreglofloralnombre)}</h2>
                         <span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span>
                     </div>
-                    <p class="tarjeta-precio">${precio}</p>
+                    ${precio}
                     ${espropietario ? `<p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costoactual)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>` : ''}
                     <div class="tarjeta-acciones">
                         <button type="button" class="enlace" data-accion="ver" data-id="${id}">Ver</button>
@@ -504,43 +519,50 @@ async function verdetalle(id) {
     }
 
     const arreglo = respuesta.datos;
-    const filas = [
-        ['Descripción', arreglo.tbarreglofloraldescripcion],
-        ['Precio normal', formatearmonto(arreglo.tbarreglofloralprecio)],
-    ];
-
-    // Precio calculado en cada temporada (solo las que lo cambian)
-    (arreglo.preciostemporada ?? []).forEach((temporada) => {
-        filas.push([`Precio en ${temporada.tbtemporadanombre}${temporada.vigente ? ' (en uso)' : ''}`,
-            `${formatearmonto(temporada.precio)} (precio calculado)`]);
-    });
-
-    // El costo y la ganancia solo los ve el propietario
-    if (espropietario) {
-        filas.push(['Costo de productos', formatearmonto(arreglo.costo)]);
-        if (arreglo.temporadaprecio) {
-            filas.push([`Costo en ${arreglo.temporadaprecio}`, formatearmonto(arreglo.costoactual)]);
-        }
-        filas.push(['Ganancia con el precio actual', formatearmonto(arreglo.precioactual - arreglo.costoactual)]);
-    }
-
-    filas.push(['Estado', arreglo.tbarreglofloralestado === 1 ? 'Activo' : 'Inactivo']);
+    const alta = arreglo.altaencendida;
 
     fotodetalle.src = arreglo.tbarreglofloralfoto;
     fotodetalle.alt = arreglo.tbarreglofloralnombre;
-    titulodetalle.textContent = arreglo.tbarreglofloralnombre;
-    listadetalle.innerHTML = filas
-        .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
-        .join('');
+    titulodetalle.innerHTML = escapar(arreglo.tbarreglofloralnombre)
+        + (arreglo.tbarreglofloralestado === 1 ? '' : ' <span class="estado estado-inactivo">Inactivo</span>');
+    descripciondetalle.textContent = arreglo.tbarreglofloraldescripcion || '';
+    descripciondetalle.hidden = !arreglo.tbarreglofloraldescripcion;
 
-    cuerpodetalle.innerHTML = arreglo.detalles.map((detalle) => `
-        <tr>
-            <td>${escapar(detalle.tbinventarionombre)}</td>
-            <td>${escapar(detalle.tbinventariocategoria)}</td>
-            <td>${detalle.tbarreglofloralinsumocantidad}</td>
-            <td>${espropietario ? formatearmonto(detalle.tbinventariopreciounidad) : '—'}</td>
-            <td>${espropietario ? formatearmonto(detalle.tbarreglofloralinsumocantidad * detalle.tbinventariopreciounidad) : '—'}</td>
-        </tr>`).join('');
+    preciosdetalle.innerHTML = `
+        <div class="${alta ? '' : 'precio-activo'}">
+            <span>Precio normal</span>
+            <strong>${montocorto(arreglo.tbarreglofloralprecio)}</strong>
+            ${alta ? '' : '<small>Se cobra ahora</small>'}
+        </div>
+        <div class="${alta ? 'precio-activo' : ''}">
+            <span>Temporada alta</span>
+            <strong>${montocorto(arreglo.precioalto)}</strong>
+            ${alta ? '<small>Se cobra ahora</small>' : '<small>Sube solo con sus flores</small>'}
+        </div>`;
+
+    incluyedetalle.innerHTML = arreglo.detalles.map((detalle) => `
+        <li><strong>${detalle.tbarreglofloralinsumocantidad}</strong> ${escapar(detalle.tbinventarionombre)}</li>`).join('');
+
+    // El costo y la ganancia solo los ve el propietario, y quedan cerrados hasta que los abra
+    if (espropietario && resumencostos) {
+        const fila = (titulo, precio, costo) => `
+            <div>
+                <span>${titulo}</span>
+                <span>Costo ${formatearmonto(costo)}</span>
+                <strong class="${precio - costo < 0 ? 'texto-peligro' : ''}">Ganancia ${formatearmonto(precio - costo)}</strong>
+            </div>`;
+        resumencostos.innerHTML = fila('Normal', arreglo.tbarreglofloralprecio, arreglo.costo)
+            + fila('Temporada alta', arreglo.precioalto, arreglo.costoalto);
+
+        cuerpodetalle.innerHTML = arreglo.detalles.map((detalle) => `
+            <tr>
+                <td>${escapar(detalle.tbinventarionombre)}</td>
+                <td>${detalle.tbarreglofloralinsumocantidad}</td>
+                <td>${formatearmonto(detalle.tbarreglofloralinsumocantidad * detalle.tbinventariopreciounidad)}</td>
+                <td>${formatearmonto(detalle.tbarreglofloralinsumocantidad * (detalle.costoalto ?? detalle.tbinventariopreciounidad))}</td>
+            </tr>`).join('');
+        dialogodetalle.querySelector('.costos-detalle').open = false;
+    }
 
     dialogodetalle.showModal();
 }
@@ -751,7 +773,8 @@ document.getElementById('botoncerrardetalle').addEventListener('click', () => di
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {
-    botonverhistorial.addEventListener('click', () => ventanahistorial.mostrar('catalogo', iddetalle, titulodetalle.textContent));
+    botonverhistorial.addEventListener('click', () => ventanahistorial.mostrar('catalogo', iddetalle,
+        titulodetalle.textContent.replace(' Inactivo', '')));
 }
 
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);

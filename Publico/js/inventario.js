@@ -72,6 +72,12 @@ const etiquetascategoria = {
         tbinventariocategoriasprayfechavencimiento: 'Fecha de vencimiento',
         tbinventariocategoriaspraycobroflor: 'Cobro por flor pintada',
     },
+    Accesorio: {
+        tbinventariocategoriaaccesoriotipo: 'Tipo de accesorio',
+        tbinventariocategoriaaccesoriotamano: 'Tamaño',
+        tbinventariocategoriaaccesoriocolor: 'Color',
+        tbinventariocategoriaaccesoriomaterial: 'Material',
+    },
 };
 
 const cuerpotabla = document.getElementById('cuerpotabla');

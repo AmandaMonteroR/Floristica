@@ -2302,3 +2302,319 @@ h1 {
         padding: 0.35rem 0.6rem;
     }
 }
+
+
+/* ---------- Parte 10: dos precios, Ver más sencillo, % de ganancia, temporada alta y ventas ---------- */
+
+/* Botones pequeños redondeados (períodos, porcentajes rápidos) */
+.chip {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    background: var(--superficie);
+    color: var(--texto);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.chip:hover {
+    border-color: var(--principal);
+}
+
+.chip-activo {
+    background: var(--principal);
+    border-color: var(--principal);
+    color: #ffffff;
+}
+
+/* Tarjeta del catálogo: precio normal y de temporada alta; el que se cobra ahora resaltado */
+.tarjeta-precios {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.3rem;
+}
+
+.tarjeta-precios span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: var(--texto-suave);
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.tarjeta-precios small {
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tarjeta-precios .precio-activo {
+    border-color: var(--principal);
+    background: var(--rosa-claro);
+    color: var(--principal-oscuro);
+}
+
+/* Ver un arreglo: foto, precios y lo que incluye */
+.detalle-info h2 {
+    margin: 0 0 0.25rem;
+}
+
+.descripcion-detalle {
+    margin: 0 0 0.75rem;
+    color: var(--texto-suave);
+}
+
+.precios-detalle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+
+.precios-detalle div {
+    display: flex;
+    flex-direction: column;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.precios-detalle span {
+    font-size: 0.8rem;
+    color: var(--texto-suave);
+}
+
+.precios-detalle strong {
+    font-size: 1.35rem;
+    color: var(--texto);
+}
+
+.precios-detalle small {
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+}
+
+.precios-detalle .precio-activo {
+    border-color: var(--principal);
+    background: var(--rosa-claro);
+}
+
+.precios-detalle .precio-activo strong,
+.precios-detalle .precio-activo small {
+    color: var(--principal-oscuro);
+}
+
+.lista-incluye {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.lista-incluye li {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: var(--fondo);
+    border: 1px solid var(--borde);
+    font-size: 0.85rem;
+}
+
+.costos-detalle {
+    margin-top: 1rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    padding: 0.5rem 0.75rem;
+}
+
+.costos-detalle summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--principal-oscuro);
+}
+
+.resumen-costos {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0.6rem 0;
+    font-size: 0.9rem;
+}
+
+.resumen-costos div {
+    display: grid;
+    grid-template-columns: 8rem 1fr auto;
+    gap: 0.75rem;
+}
+
+/* Solicitud: % de ganancia y los dos totales */
+.fila-porcentaje {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.fila-porcentaje .contador input {
+    width: 4rem;
+    text-align: center;
+}
+
+.chips-porcentaje {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.resumen-solicitud .resumen-comparar {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.resumen-comparar span {
+    padding: 0.15rem 0.55rem;
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    font-size: 0.82rem;
+    color: var(--texto-suave);
+    background: var(--superficie);
+}
+
+.resumen-comparar .precio-activo {
+    border-color: var(--principal);
+    color: var(--principal-oscuro);
+}
+
+.resumen-solicitud .resumen-ganancia {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.82rem;
+    color: var(--verde);
+}
+
+.boton-contador:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.boton-contador:disabled:hover {
+    background: var(--rosa-claro);
+    color: var(--principal-oscuro);
+}
+
+/* Temporada alta: buscar y guardar en la misma línea */
+.filtros-temporada {
+    align-items: flex-end;
+}
+
+.acciones-temporada {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-left: auto;
+}
+
+.tabla-temporada input {
+    width: 9rem;
+    max-width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    font: inherit;
+    background: var(--superficie);
+}
+
+.tabla-temporada input:focus {
+    outline: 2px solid var(--principal);
+    outline-offset: 1px;
+}
+
+.tabla-temporada input[aria-invalid] {
+    border-color: var(--peligro);
+}
+
+.tabla-temporada .error {
+    display: block;
+}
+
+/* Ventas y ganancias */
+.chips-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.tarjetas-ventas {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.tarjeta-dato {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem 1rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.tarjeta-dato span {
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+}
+
+.tarjeta-dato strong {
+    font-size: 1.6rem;
+    line-height: 1.2;
+}
+
+.tarjeta-dato small {
+    color: var(--texto-suave);
+}
+
+.tarjeta-ganancia {
+    border-color: var(--verde);
+    background: var(--verde-fondo);
+}
+
+.tarjeta-ganancia strong {
+    color: var(--verde);
+}
+
+.texto-ganancia {
+    color: var(--verde);
+    font-weight: 600;
+}
+
+@media (max-width: 700px) {
+    .tarjetas-ventas {
+        grid-template-columns: 1fr;
+    }
+
+    .tarjeta-dato strong {
+        font-size: 1.3rem;
+    }
+
+    .precios-detalle {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .acciones-temporada {
+        margin-left: 0;
+    }
+}
