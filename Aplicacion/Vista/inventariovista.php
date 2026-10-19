@@ -24,6 +24,7 @@ $categoriasinventario = [
     'Chocolate' => 'Chocolate',
     'Peluche'   => 'Peluche',
     'Tarjeta'   => 'Tarjeta',
+    'Spray'     => 'Spray (pintura, abrillantador o aromatizante)',
 ];
 ?>
 <!DOCTYPE html>
@@ -42,7 +43,7 @@ $categoriasinventario = [
     <header class="encabezado">
         <div>
             <h1>Inventario</h1>
-            <p class="subtitulo">Flores, papel, cintas, bases, chocolates, peluches y tarjetas de la floristería.</p>
+            <p class="subtitulo">Flores, papel, cintas, bases, chocolates, peluches, tarjetas y sprays de la floristería.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo producto</button>
     </header>
@@ -459,9 +460,55 @@ $categoriasinventario = [
             </div>
         </fieldset>
 
+        <fieldset class="seccion-categoria" data-categoria="Spray" hidden>
+            <legend>Datos del spray</legend>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>Tipo de spray *</span>
+                    <select name="tbinventariocategoriaspraytipo">
+                        <option value="">Seleccione…</option>
+                        <?php opcionesinventario($opciones['tiposspray']); ?>
+                    </select>
+                    <small class="error" data-error="tbinventariocategoriaspraytipo"></small>
+                </label>
+                <label class="campo">
+                    <span>Marca *</span>
+                    <input type="text" name="tbinventariocategoriaspraymarca" maxlength="50" data-filtro="texto" placeholder="Design Master, Chrysal…">
+                    <small class="error" data-error="tbinventariocategoriaspraymarca"></small>
+                </label>
+                <label class="campo" id="campospraycolor" hidden>
+                    <span>Color de la pintura *</span>
+                    <input type="text" name="tbinventariocategoriaspraycolor" maxlength="30" data-filtro="letras" placeholder="Azul, dorado, plateado…">
+                    <small class="error" data-error="tbinventariocategoriaspraycolor"></small>
+                </label>
+                <label class="campo" id="camposprayaroma" hidden>
+                    <span>Aroma *</span>
+                    <input type="text" name="tbinventariocategoriasprayaroma" maxlength="30" data-filtro="letras" placeholder="Rosas, lavanda…">
+                    <small class="error" data-error="tbinventariocategoriasprayaroma"></small>
+                </label>
+                <label class="campo">
+                    <span>Contenido (ml) *</span>
+                    <input type="text" name="tbinventariocategoriaspraycontenido" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="340" data-filtro="entero">
+                    <small class="error" data-error="tbinventariocategoriaspraycontenido"></small>
+                </label>
+                <label class="campo">
+                    <span>Fecha de vencimiento</span>
+                    <input type="date" name="tbinventariocategoriasprayfechavencimiento">
+                    <small class="error" data-error="tbinventariocategoriasprayfechavencimiento"></small>
+                </label>
+                <label class="campo" id="campospraycobro" hidden>
+                    <span>Cobro por flor pintada (₡) *</span>
+                    <input type="text" name="tbinventariocategoriaspraycobroflor" inputmode="decimal" maxlength="11" autocomplete="off" placeholder="300" data-filtro="decimal">
+                    <small class="nota-campo texto-suave">Lo que se le suma al cliente por cada flor que se pinta con esta pintura.</small>
+                    <small class="error" data-error="tbinventariocategoriaspraycobroflor"></small>
+                </label>
+            </div>
+        </fieldset>
+
         <fieldset class="seccion-categoria">
-            <legend>Precio de venta por temporada</legend>
-            <p class="nota">Precio por unidad en cada temporada (no puede ser menor que el costo). Si lo deja vacío, en esa temporada se cobra el precio de venta normal.</p>
+            <legend>Precio del proveedor en temporada</legend>
+            <p class="nota">Escriba cuánto le cobra el proveedor por el paquete en cada temporada. El precio de venta sube solo,
+                con el mismo porcentaje de ganancia, y también el de los arreglos que lo llevan. Si lo deja vacío, se usa el precio normal.</p>
             <div class="rejilla-temporadas" id="preciostemporada"></div>
             <small class="error" data-error="temporadas"></small>
         </fieldset>

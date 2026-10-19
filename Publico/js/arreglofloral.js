@@ -32,7 +32,6 @@ const mensajeconfirmacion = document.getElementById('mensajeconfirmacion');
 const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmacion');
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 const camposformulario = ['tbarreglofloralnombre', 'tbarreglofloraldescripcion', 'tbarreglofloralprecio'];
-const contenedortemporadas = document.getElementById('preciostemporada');
 
 // usuarioactual viene de menu.php. Un empleado solo puede ver el catálogo.
 const espropietario = usuarioactual.rol === 'Propietario';
@@ -343,7 +342,6 @@ function llenarformulario(datos) {
         })),
     });
 
-    preciostemporada.dibujar(contenedortemporadas, datos.preciostemporada);
     datosoriginales = JSON.stringify(leerformulario());
 }
 
@@ -395,7 +393,7 @@ async function cargararreglos() {
     galeria.innerHTML = respuesta.datos.map((arreglo) => {
         const activo = arreglo.tbarreglofloralestado === 1;
         const id = arreglo.tbarreglofloralid;
-        const ganancia = arreglo.precioactual - arreglo.costo;
+        const ganancia = arreglo.precioactual - arreglo.costoactual;
         const precio = arreglo.temporadaprecio
             ? `${formatearmonto(arreglo.precioactual)} <span class="estado estado-vigente">${escapar(arreglo.temporadaprecio)}</span>
                <small class="precio-normal">Normal ${formatearmonto(arreglo.tbarreglofloralprecio)}</small>`
@@ -417,7 +415,7 @@ async function cargararreglos() {
                         <span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span>
                     </div>
                     <p class="tarjeta-precio">${precio}</p>
-                    ${espropietario ? `<p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costo)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>` : ''}
+                    ${espropietario ? `<p class="tarjeta-costo">Costo ${formatearmonto(arreglo.costoactual)} · Ganancia <span class="${ganancia < 0 ? 'texto-peligro' : ''}">${formatearmonto(ganancia)}</span></p>` : ''}
                     <div class="tarjeta-acciones">
                         <button type="button" class="enlace" data-accion="ver" data-id="${id}">Ver</button>
                         ${botonespropietario}
@@ -465,8 +463,7 @@ async function abrirnuevo() {
     }
 
     await cargarproductos();
-    const temporadas = await consultar('temporadas');
-    datosservidor = { preciostemporada: temporadas.exito ? temporadas.datos : [] };
+    datosservidor = {};
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
@@ -512,14 +509,19 @@ async function verdetalle(id) {
         ['Precio normal', formatearmonto(arreglo.tbarreglofloralprecio)],
     ];
 
-    (arreglo.preciostemporada ?? []).filter((temporada) => temporada.precio !== null).forEach((temporada) => {
-        filas.push([`Precio de ${temporada.tbtemporadanombre}${temporada.vigente ? ' (en uso)' : ''}`, formatearmonto(temporada.precio)]);
+    // Precio calculado en cada temporada (solo las que lo cambian)
+    (arreglo.preciostemporada ?? []).forEach((temporada) => {
+        filas.push([`Precio en ${temporada.tbtemporadanombre}${temporada.vigente ? ' (en uso)' : ''}`,
+            `${formatearmonto(temporada.precio)} (precio calculado)`]);
     });
 
     // El costo y la ganancia solo los ve el propietario
     if (espropietario) {
         filas.push(['Costo de productos', formatearmonto(arreglo.costo)]);
-        filas.push(['Ganancia con el precio actual', formatearmonto(arreglo.precioactual - arreglo.costo)]);
+        if (arreglo.temporadaprecio) {
+            filas.push([`Costo en ${arreglo.temporadaprecio}`, formatearmonto(arreglo.costoactual)]);
+        }
+        filas.push(['Ganancia con el precio actual', formatearmonto(arreglo.precioactual - arreglo.costoactual)]);
     }
 
     filas.push(['Estado', arreglo.tbarreglofloralestado === 1 ? 'Activo' : 'Inactivo']);
@@ -591,20 +593,11 @@ formulario.addEventListener('input', (evento) => {
         actualizartotales();
     }
 
-    if (preciostemporada.filtrar(campo)) {
-        preciostemporada.revisar(contenedortemporadas, formulario.querySelector('[data-error="temporadas"]'));
-        campo.dataset.revisado = '1';
-    }
-
     const error = formulario.querySelector(`[data-error="${campo.name}"]`);
     if (error && campo.type !== 'file') {
         error.textContent = '';
     }
-    if (campo.dataset.revisado) {
-        delete campo.dataset.revisado;
-    } else {
-        campo.removeAttribute('aria-invalid');
-    }
+    campo.removeAttribute('aria-invalid');
 
     if (camposformulario.includes(campo.name)) {
         guardarborrador();
@@ -686,7 +679,6 @@ formulario.addEventListener('submit', async (evento) => {
     if (campofoto.files[0]) {
         datos.append('tbarreglofloralfoto', campofoto.files[0]);
     }
-    preciostemporada.agregar(contenedortemporadas, datos);
     lineas.forEach((linea, indice) => {
         datos.append(`detalles[${indice}][tbinventarioid]`, linea.tbinventarioid);
         datos.append(`detalles[${indice}][tbarreglofloralinsumocantidad]`, linea.tbarreglofloralinsumocantidad);
@@ -766,15 +758,3 @@ document.getElementById('botondescartarborrador').addEventListener('click', desc
 
 cargararreglos();
 
-// Si hay una temporada en uso y hay arreglos sin precio para ella, se avisa
-if (espropietario) {
-    preciostemporada.aviso({
-        modulo: 'catalogo',
-        singular: 'arreglo',
-        plural: 'arreglos',
-        alguardar: (mensaje) => {
-            mostraraviso(mensaje, 'exito');
-            cargararreglos();
-        },
-    });
-}

@@ -24,6 +24,10 @@ class Encargo
     private $tbsolicitudencargoestado;
     private $tbsolicitudencargofecharegistro;
     private $tbtemporadaid;
+    private $tbsolicitudencargosprayid;
+    private $tbsolicitudencargoflorespintadas;
+    private $tbsolicitudencargopreciopintura;
+    private $tbsolicitudencargocostopintura;
 
     public function __construct($datos = [])
     {
@@ -47,6 +51,10 @@ class Encargo
         $this->tbsolicitudencargoestado           = $datos['tbsolicitudencargoestado'] ?? 'Pendiente';
         $this->tbsolicitudencargofecharegistro    = $datos['tbsolicitudencargofecharegistro'] ?? null;
         $this->tbtemporadaid                      = $datos['tbtemporadaid'] ?? null;
+        $this->tbsolicitudencargosprayid          = $datos['tbsolicitudencargosprayid'] ?? null;
+        $this->tbsolicitudencargoflorespintadas   = $datos['tbsolicitudencargoflorespintadas'] ?? 0;
+        $this->tbsolicitudencargopreciopintura    = $datos['tbsolicitudencargopreciopintura'] ?? 0;
+        $this->tbsolicitudencargocostopintura     = $datos['tbsolicitudencargocostopintura'] ?? 0;
     }
 
     public function getTbsolicitudencargoid() {
@@ -168,6 +176,30 @@ class Encargo
 
     public function setTbtemporadaid($valor) {
         $this->tbtemporadaid = $valor; }
+
+    public function getTbsolicitudencargosprayid() {
+        return $this->tbsolicitudencargosprayid; }
+
+    public function setTbsolicitudencargosprayid($valor) {
+        $this->tbsolicitudencargosprayid = $valor; }
+
+    public function getTbsolicitudencargoflorespintadas() {
+        return $this->tbsolicitudencargoflorespintadas; }
+
+    public function setTbsolicitudencargoflorespintadas($valor) {
+        $this->tbsolicitudencargoflorespintadas = $valor; }
+
+    public function getTbsolicitudencargopreciopintura() {
+        return $this->tbsolicitudencargopreciopintura; }
+
+    public function setTbsolicitudencargopreciopintura($valor) {
+        $this->tbsolicitudencargopreciopintura = $valor; }
+
+    public function getTbsolicitudencargocostopintura() {
+        return $this->tbsolicitudencargocostopintura; }
+
+    public function setTbsolicitudencargocostopintura($valor) {
+        $this->tbsolicitudencargocostopintura = $valor; }
 
     public function estaAbierto()
     {

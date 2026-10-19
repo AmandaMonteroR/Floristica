@@ -74,12 +74,12 @@ Si la base se crea sin datos de prueba, la primera vez que se abre el sistema ap
 
 Los datos de prueba también traen:
 
-- 8 proveedores y 32 productos de inventario de las 6 categorías;
+- 8 proveedores y 57 productos de inventario de las 7 categorías. Las flores y follajes tienen los precios reales de un proveedor de la zona (temporada baja), y hay 4 sprays;
 - 7 arreglos con foto (en `Publico/imagenes/muestras/`);
 - 4 pedidos y 8 clientes;
 - 6 zonas de entrega, de El Humo de Roxana (₡1 000) a Limón centro (₡6 000);
 - 12 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express;
-- 6 temporadas (Temporada alta, San Valentín, Día de la Madre, Día de la Novia, Día de las Flores Amarillas y Día de los Hot Wheels), algunas con precios cargados y ninguna en uso.
+- 6 temporadas (Temporada alta, San Valentín, Día de la Madre, Día de la Novia, Día de las Flores Amarillas y Día de los Hot Wheels), ninguna en uso. Temporada alta trae los precios reales del proveedor en temporada alta (por ejemplo, 24 rosas pasan de ₡7 000 a ₡14 000).
 
 ## Configuración
 
@@ -171,6 +171,7 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 | Chocolate | Tipo, marca, presentación, peso, sabor y fecha de vencimiento (no anterior a hoy) |
 | Peluche | Tipo, tamaño, color, diseño y material |
 | Tarjeta | Tipo, temática, color, material, medidas, si es personalizable y elaboración (hecha en el negocio o comprada) |
+| Spray | Tipo (pintura floral, abrillantador de follaje o aromatizante floral), marca, contenido (ml) y fecha de vencimiento (opcional). La pintura lleva color y **cobro por flor pintada**; el aromatizante, aroma |
 
 - **Listas:** las opciones de cada lista están en `inventariocontrolador::opciones()`. La pantalla y la validación usan las mismas.
 - **Medidas:** en centímetros, con formato `20` o `20 x 30`.
@@ -226,7 +227,8 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
   - **Con presupuesto:** los productos no pueden pasarse del monto que dio el cliente. La pantalla muestra cuánto queda y desactiva los productos que ya no alcanzan.
   - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo.
 - **Servicio express:** se elige la zona y se cobra su precio. La dirección de entrega es obligatoria.
-- **Total:** arreglo × cantidad + productos + express. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
+- **Flores pintadas (opcional):** se elige la pintura floral (spray) y cuántas flores se pintan; se cobra el "cobro por flor" de esa pintura por cada una. No se pueden pintar más flores de las que lleva el arreglo. El spray no se agrega como producto ni va dentro de los arreglos del catálogo.
+- **Total:** arreglo × cantidad + productos + flores pintadas + express. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
 - **Precios guardados:** se guardan los precios del momento. Si después cambian en el catálogo, el inventario o las zonas, las solicitudes ya registradas no cambian, ni siquiera al editarlas.
 - **Estados:** Pendiente → En proceso → Terminado; también puede pasar a Cancelado.
   - Para iniciarla, debe estar asignada a alguien.
@@ -236,16 +238,17 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 ### Temporadas y precios por temporada
 
 - **Qué son:** fechas con precios especiales, como San Valentín, Día de la Madre, Día de la Novia o Día de las Flores Amarillas. El propietario puede crear todas las que necesite.
-- **Precios:**
-  - Cada arreglo del catálogo puede tener un precio por temporada (tabla `tbarreglofloraltemporada`).
-  - Cada producto del inventario puede tener un precio de venta por temporada (tabla `tbinventariotemporada`), que no puede ser menor que su costo por unidad.
-  - Se ponen en el formulario del arreglo o del producto, en "Precios por temporada". Si se deja vacío, en esa temporada se cobra el precio normal.
+- **Precios:** lo único que se escribe es **lo que cobra el proveedor por el paquete** en cada temporada (tabla `tbinventariotemporada`), en el formulario del producto, sección "Precio del proveedor en temporada". Lo demás se calcula solo:
+  - **Precio de venta del producto:** sube en la misma proporción que el precio del paquete (mismo porcentaje de ganancia). Por ejemplo, si el paquete de rosas pasa de ₡7 000 a ₡14 000, la rosa pasa de ₡600 a ₡1 200.
+  - **Precio de los arreglos:** sube en la misma proporción que el costo de todo lo que lleva el arreglo. Por ejemplo, el jarrón de rosas rojas cuesta ₡9 400 en temporada baja y ₡16 600 en temporada alta, así que su precio pasa de ₡35 000 a ₡61 900.
+  - Los precios calculados se redondean hacia arriba a ₡100.
+  - Si un producto no tiene precio del proveedor para la temporada, se usa el normal.
 - **Activar:** se hace a mano, en **Temporadas y precios → Usar sus precios**.
   - Solo puede haber una temporada en uso. Al activar otra, la anterior se desactiva.
   - Mientras esté en uso, el catálogo, el inventario y las solicitudes nuevas usan sus precios.
   - En la barra de arriba aparece "Precios de …" para que todos lo vean.
   - **Volver a precios normales** regresa a la temporada baja.
-- **Aviso flotante:** si hay una temporada en uso y hay arreglos o productos sin precio para ella, el catálogo y el inventario lo avisan. Con **Agregar precios** se ponen todos desde una sola ventana.
+- **Aviso flotante:** si hay una temporada en uso y hay flores o follajes sin el precio del proveedor para ella, el inventario lo avisa. Con **Agregar precios** se ponen todos desde una sola ventana. Los arreglos no necesitan aviso porque se calculan solos.
 - **Solicitudes:** guardan con qué temporada se cotizaron (`tbtemporadaid`) y sus precios no cambian después.
 - **Inactivar:** no se puede inactivar la temporada que está en uso.
 
@@ -285,8 +288,8 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 
 | Módulo | Datos con histórico |
 |--------|---------------------|
-| Inventario | Nombre, proveedor, precio del paquete, precio de venta, precio de cada temporada, stock mínimo y estado |
-| Catálogo | Nombre, precio, precio de cada temporada y estado |
+| Inventario | Nombre, proveedor, precio del paquete, precio de venta, precio del proveedor en cada temporada, stock mínimo y estado |
+| Catálogo | Nombre, precio y estado |
 | Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
 | Clientes | Nombre, teléfono, dirección y estado |
 | Zonas de entrega | Nombre, precio y estado |

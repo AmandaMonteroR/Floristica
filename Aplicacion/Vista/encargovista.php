@@ -176,6 +176,30 @@
             </div>
         </section>
 
+        <fieldset class="seccion-categoria" id="seccionpintura" hidden>
+            <legend>Flores pintadas (opcional)</legend>
+            <p class="nota">Si el cliente quiere flores pintadas, elija la pintura y cuántas flores. Se cobra cada flor pintada.</p>
+            <div class="rejilla">
+                <label class="campo">
+                    <span>Pintura</span>
+                    <select name="tbsolicitudencargosprayid">
+                        <option value="">Sin flores pintadas</option>
+                    </select>
+                    <small class="error" data-error="tbsolicitudencargosprayid"></small>
+                </label>
+                <div class="campo">
+                    <span id="etiquetaflorespintadas">Flores pintadas</span>
+                    <div class="contador">
+                        <button type="button" class="boton-contador" data-pasoflores="-1" aria-label="Una flor pintada menos">−</button>
+                        <input type="text" name="tbsolicitudencargoflorespintadas" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="0" aria-labelledby="etiquetaflorespintadas">
+                        <button type="button" class="boton-contador" data-pasoflores="1" aria-label="Una flor pintada más">+</button>
+                    </div>
+                    <small class="nota-campo texto-suave" id="notapintura"></small>
+                    <small class="error" data-error="tbsolicitudencargoflorespintadas"></small>
+                </div>
+            </div>
+        </fieldset>
+
         <fieldset class="seccion-categoria">
             <legend>Entrega</legend>
             <div class="rejilla">

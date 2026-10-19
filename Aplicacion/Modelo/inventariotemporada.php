@@ -1,19 +1,19 @@
 <?php
 
-// Precio de venta por unidad de un producto del inventario en una temporada
+// Precio del paquete de un producto del inventario en una temporada (lo que cobra el proveedor)
 class Inventariotemporada
 {
     private $tbinventariotemporadaid;
     private $tbinventarioid;
     private $tbtemporadaid;
-    private $tbinventariotemporadaprecioventa;
+    private $tbinventariotemporadapreciopaquete;
 
     public function __construct($datos = [])
     {
-        $this->tbinventariotemporadaid          = $datos['tbinventariotemporadaid'] ?? null;
-        $this->tbinventarioid                   = $datos['tbinventarioid'] ?? 0;
-        $this->tbtemporadaid                    = $datos['tbtemporadaid'] ?? 0;
-        $this->tbinventariotemporadaprecioventa = $datos['tbinventariotemporadaprecioventa'] ?? 0;
+        $this->tbinventariotemporadaid            = $datos['tbinventariotemporadaid'] ?? null;
+        $this->tbinventarioid                     = $datos['tbinventarioid'] ?? 0;
+        $this->tbtemporadaid                      = $datos['tbtemporadaid'] ?? 0;
+        $this->tbinventariotemporadapreciopaquete = $datos['tbinventariotemporadapreciopaquete'] ?? 0;
     }
 
     public function getTbinventariotemporadaid() {
@@ -34,9 +34,9 @@ class Inventariotemporada
     public function setTbtemporadaid($valor) {
         $this->tbtemporadaid = $valor; }
 
-    public function getTbinventariotemporadaprecioventa() {
-        return $this->tbinventariotemporadaprecioventa; }
+    public function getTbinventariotemporadapreciopaquete() {
+        return $this->tbinventariotemporadapreciopaquete; }
 
-    public function setTbinventariotemporadaprecioventa($valor) {
-        $this->tbinventariotemporadaprecioventa = $valor; }
+    public function setTbinventariotemporadapreciopaquete($valor) {
+        $this->tbinventariotemporadapreciopaquete = $valor; }
 }

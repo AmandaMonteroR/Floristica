@@ -20,12 +20,11 @@ class temporadacontrolador
 
     public function listar($texto = '', $estado = null)
     {
-        $arreglos = $this->precios->contarportemporada('arreglofloral');
         $productos = $this->precios->contarportemporada('inventario');
 
         $lista = [];
         foreach ($this->repositorio->listar($texto, $estado) as $temporada) {
-            $lista[] = $this->convertirarreglo($temporada, $arreglos, $productos);
+            $lista[] = $this->convertirarreglo($temporada, $productos);
         }
 
         return $this->respuesta(true, '', $lista);
@@ -39,8 +38,7 @@ class temporadacontrolador
             return $this->respuesta(false, 'La temporada no existe.');
         }
 
-        return $this->respuesta(true, '', $this->convertirarreglo($temporada,
-            $this->precios->contarportemporada('arreglofloral'), $this->precios->contarportemporada('inventario')));
+        return $this->respuesta(true, '', $this->convertirarreglo($temporada, $this->precios->contarportemporada('inventario')));
     }
 
     public function crear($datos, $usuario)
@@ -61,7 +59,7 @@ class temporadacontrolador
             return $id;
         });
 
-        return $this->respuesta(true, 'Temporada registrada. Ahora puede ponerle precios a los arreglos y productos.', ['tbtemporadaid' => $id]);
+        return $this->respuesta(true, 'Temporada registrada. Ahora ponga en el inventario lo que cobra el proveedor por las flores en esta temporada.', ['tbtemporadaid' => $id]);
     }
 
     public function actualizar($datos, $usuario)
@@ -122,7 +120,7 @@ class temporadacontrolador
 
         return $this->respuesta(true, 'Desde ahora se usan los precios de ' . $temporada->getTbtemporadanombre()
             . ($anterior ? ' (se dejaron de usar los de ' . $anterior->getTbtemporadanombre() . ')' : '')
-            . '. Los arreglos y productos sin precio para esta temporada se cobran al precio normal.');
+            . '. Los arreglos suben solos según sus flores; los productos sin precio del proveedor para esta temporada se cobran al precio normal.');
     }
 
     // Vuelve a los precios normales (temporada baja)
@@ -273,7 +271,7 @@ class temporadacontrolador
         return $errores;
     }
 
-    private function convertirarreglo(Temporada $temporada, $arreglos, $productos)
+    private function convertirarreglo(Temporada $temporada, $productos)
     {
         $id = (int) $temporada->getTbtemporadaid();
 
@@ -283,7 +281,6 @@ class temporadacontrolador
             'tbtemporadadescripcion' => (string) $temporada->getTbtemporadadescripcion(),
             'tbtemporadavigente'     => (int) $temporada->getTbtemporadavigente(),
             'tbtemporadaestado'      => (int) $temporada->getTbtemporadaestado(),
-            'arreglosconprecio'      => $arreglos[$id] ?? 0,
             'productosconprecio'     => $productos[$id] ?? 0,
         ];
     }

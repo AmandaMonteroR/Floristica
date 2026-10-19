@@ -15,7 +15,7 @@ class inventariocontrolador
     private $historico;
     private $temporadas;
     private $preciosvigentes = null;
-    private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta'];
+    private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray'];
 
     // Opciones de las listas de cada categoría. La vista las usa para llenar los select
     // y el controlador para validar, así las dos siempre coinciden.
@@ -24,8 +24,11 @@ class inventariocontrolador
         return [
             'tiposflor'               => ['Flor', 'Follaje'],
             'variedades'              => [
-                'Flor'    => ['Rosa', 'Gerbera', 'Girasol', 'Clavel', 'Lirio', 'Lisianthus', 'Dragón', 'Popis', 'Fully', 'Áster', 'Gypson'],
-                'Follaje' => ['Eucalipto', 'Helecho', 'Baby eucalipto'],
+                'Flor'    => ['Alstroemeria', 'Anturio', 'Áster', 'Cala', 'Clavel', 'Clavelina', 'Dalia', 'Dragón', 'Estatiz',
+                    'Estrella', 'Fully', 'Gerbera', 'Girasol', 'Gladiola', 'Gypson', 'Hortensia', 'Lirio', 'Lisianthus',
+                    'Margarita', 'Peonía', 'Pinocho', 'Poma', 'Popis', 'Rosa', 'Tulipán'],
+                'Follaje' => ['Areca', 'Baby eucalipto', 'Cordeline', 'Dusty miller', 'Espárrago', 'Eucalipto', 'Fénix',
+                    'Helecho', 'Hiedra', 'Monstera', 'Ramas', 'Ruscus'],
             ],
             'clasesenvoltura'         => ['Papel', 'Cinta'],
             'tiposenvoltura'          => [
@@ -43,6 +46,8 @@ class inventariocontrolador
             'tematicastarjeta'        => ['Cumpleaños', 'Amor', 'Aniversario', 'Graduación', 'Condolencias', 'Agradecimiento', 'Otra'],
             'materialestarjeta'       => ['Cartulina', 'Papel kraft', 'Papel perlado', 'Opalina'],
             'elaboracionestarjeta'    => ['Hecha en el negocio', 'Comprada'],
+            // Spray: la pintura floral se cobra por cada flor pintada
+            'tiposspray'              => ['Pintura floral', 'Abrillantador de follaje', 'Aromatizante floral'],
             // Personalizable (cinta y tarjeta): 1 = sí, 0 = no
             'personalizable'          => ['1' => 'Sí', '0' => 'No'],
         ];
@@ -229,7 +234,7 @@ class inventariocontrolador
             'proveedor'   => 'Proveedor',
             'precio'      => 'Precio del paquete',
             'precioventa' => 'Precio de venta',
-            'preciotemporada' => 'Precio de temporada',
+            'preciotemporada' => 'Precio del proveedor en temporada',
             'stockminimo' => 'Stock mínimo',
             'estado'      => 'Estado',
         ];
@@ -257,12 +262,10 @@ class inventariocontrolador
         return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear, ['preciotemporada']));
     }
 
-    // Los precios de temporada tampoco pueden quedar por debajo del costo por unidad
+    // Lo que cobra el proveedor por el paquete en cada temporada
     private function validartemporadas($preciostemporada, $datos, $errores)
     {
-        $minimo = isset($errores['tbinventariopreciopaquete']) || isset($errores['tbinventariounidadespaquete'])
-            ? 0 : $this->calcularpreciounidad($datos);
-        $error = $this->temporadas->validar($preciostemporada, $minimo, 'el costo por unidad');
+        $error = $this->temporadas->validar($preciostemporada);
 
         return $error !== '' ? ['temporadas' => $error] : [];
     }
@@ -273,24 +276,24 @@ class inventariocontrolador
         return $this->respuesta(true, '', $this->temporadas->paraformulario('inventario', 0));
     }
 
-    // Productos activos sin precio para la temporada vigente (para el aviso flotante)
+    // Flores y follajes activos sin precio del proveedor para la temporada vigente (para el aviso flotante).
+    // Solo las flores, porque son las que suben de precio en temporada.
     public function pendientestemporada()
     {
         $registros = [];
-        foreach ($this->repositorio->listar('', '', 1) as $inventario) {
+        foreach ($this->repositorio->listar('', 'Flor', 1) as $inventario) {
             $registros[] = [
                 'id'           => (int) $inventario->getTbinventarioid(),
                 'nombre'       => $inventario->getTbinventarionombre(),
-                'categoria'    => $inventario->getTbinventariocategoria(),
-                'precionormal' => (float) $inventario->getTbinventarioprecioventa(),
-                'minimo'       => (float) $inventario->getTbinventariopreciounidad(),
+                'categoria'    => 'Paquete de ' . (int) $inventario->getTbinventariounidadespaquete(),
+                'precionormal' => (float) $inventario->getTbinventariopreciopaquete(),
             ];
         }
 
         return $this->respuesta(true, '', $this->temporadas->pendientes('inventario', $registros));
     }
 
-    // Guarda de una vez los precios de venta de la temporada vigente: precios[idinventario] = monto
+    // Guarda de una vez lo que cobra el proveedor en la temporada vigente: precios[idinventario] = precio del paquete
     public function guardarpreciostemporada($datos, $usuario)
     {
         if (!$this->temporadas->vigente()) {
@@ -299,14 +302,11 @@ class inventariocontrolador
 
         $registros = [];
         foreach ($this->repositorio->listar('', '', 1) as $inventario) {
-            $registros[(int) $inventario->getTbinventarioid()] = [
-                'nombre' => $inventario->getTbinventarionombre(),
-                'minimo' => (float) $inventario->getTbinventariopreciounidad(),
-            ];
+            $registros[(int) $inventario->getTbinventarioid()] = ['nombre' => $inventario->getTbinventarionombre()];
         }
 
         $resultado = $this->entransaccion(function () use ($datos, $registros, $usuario) {
-            return $this->temporadas->guardarvarios('inventario', $datos['precios'] ?? [], $registros, 'el costo por unidad', $usuario['id']);
+            return $this->temporadas->guardarvarios('inventario', $datos['precios'] ?? [], $registros, $usuario['id']);
         });
 
         if ($resultado['errores']) {
@@ -446,6 +446,23 @@ class inventariocontrolador
             $limpios['tbinventariocategoriachocolatefechavencimiento'] = null;
         }
 
+        // Spray: el color es de la pintura, el aroma del aromatizante y el cobro por flor solo de la pintura
+        if (isset($limpios['tbinventariocategoriaspraytipo'])) {
+            $tipo = $limpios['tbinventariocategoriaspraytipo'];
+            $limpios['tbinventariocategoriaspraycobroflor'] = str_replace(',', '.', $limpios['tbinventariocategoriaspraycobroflor']);
+
+            if ($tipo !== 'Pintura floral') {
+                $limpios['tbinventariocategoriaspraycolor'] = null;
+                $limpios['tbinventariocategoriaspraycobroflor'] = null;
+            }
+            if ($tipo !== 'Aromatizante floral') {
+                $limpios['tbinventariocategoriasprayaroma'] = null;
+            }
+            if ($limpios['tbinventariocategoriasprayfechavencimiento'] === '') {
+                $limpios['tbinventariocategoriasprayfechavencimiento'] = null;
+            }
+        }
+
         return $limpios;
     }
 
@@ -537,6 +554,9 @@ class inventariocontrolador
                 break;
             case 'Tarjeta':
                 $errores += $this->validartarjeta($datos);
+                break;
+            case 'Spray':
+                $errores += $this->validarspray($datos);
                 break;
         }
 
@@ -742,6 +762,53 @@ class inventariocontrolador
         return $errores;
     }
 
+    private function validarspray($datos)
+    {
+        $errores = [];
+        $opciones = self::opciones();
+        $tipo = $datos['tbinventariocategoriaspraytipo'];
+
+        $this->validarlista($errores, $datos, 'tbinventariocategoriaspraytipo', 'El tipo de spray', $opciones['tiposspray']);
+
+        if ($datos['tbinventariocategoriaspraymarca'] === '') {
+            $errores['tbinventariocategoriaspraymarca'] = 'La marca es obligatoria.';
+        } else {
+            $this->validartexto($errores, $datos, 'tbinventariocategoriaspraymarca', 'La marca', 50);
+        }
+
+        if ($tipo === 'Pintura floral') {
+            $this->validarletras($errores, $datos, 'tbinventariocategoriaspraycolor', 'El color de la pintura', 30, true);
+
+            $cobro = (string) $datos['tbinventariocategoriaspraycobroflor'];
+            if ($cobro === '') {
+                $errores['tbinventariocategoriaspraycobroflor'] = 'Escriba cuánto se cobra por cada flor pintada.';
+            } elseif (!preg_match('/^\d{1,8}(\.\d{1,2})?$/', $cobro) || (float) $cobro <= 0) {
+                $errores['tbinventariocategoriaspraycobroflor'] = 'El cobro por flor debe ser un monto mayor que 0, con máximo 2 decimales.';
+            }
+        }
+
+        if ($tipo === 'Aromatizante floral') {
+            $this->validarletras($errores, $datos, 'tbinventariocategoriasprayaroma', 'El aroma', 30, true);
+        }
+
+        $this->validarentero($errores, $datos, 'tbinventariocategoriaspraycontenido', 1, 5000,
+            'El contenido es obligatorio.',
+            'El contenido debe ser un número entero entre 1 y 5000 ml.');
+
+        // La fecha de vencimiento es opcional
+        $valor = $datos['tbinventariocategoriasprayfechavencimiento'];
+        if ($valor !== null) {
+            $fecha = DateTime::createFromFormat('Y-m-d', (string) $valor);
+            if (!$fecha || $fecha->format('Y-m-d') !== $valor) {
+                $errores['tbinventariocategoriasprayfechavencimiento'] = 'La fecha de vencimiento no es válida.';
+            } elseif ($valor < date('Y-m-d')) {
+                $errores['tbinventariocategoriasprayfechavencimiento'] = 'La fecha de vencimiento no puede ser anterior a hoy.';
+            }
+        }
+
+        return $errores;
+    }
+
     private function convertircategoria(Inventario $inventario)
     {
         $categoria = $inventario->getTbinventariocategoria();
@@ -763,16 +830,18 @@ class inventariocontrolador
     private function convertirarreglo(Inventario $inventario, $nombres)
     {
         if ($this->preciosvigentes === null) {
-            $this->preciosvigentes = $this->temporadas->preciosvigentes('inventario');
+            $this->preciosvigentes = $this->temporadas->productos();
         }
 
         $id = (int) $inventario->getTbinventarioid();
         $vigente = $this->temporadas->datosvigente();
-        $contemporada = isset($this->preciosvigentes[$id]);
+        $actual = $this->preciosvigentes[$id] ?? null;
+        $contemporada = $actual && $actual['contemporada'];
 
         return [
-            // Precio de venta que se cobra ahora: el de la temporada en uso o el normal
-            'precioventaactual'           => $contemporada ? $this->preciosvigentes[$id] : (float) $inventario->getTbinventarioprecioventa(),
+            // Costo y precio de venta de ahora: los de la temporada en uso (calculados) o los normales
+            'preciounidadactual'          => $contemporada ? $actual['costo'] : (float) $inventario->getTbinventariopreciounidad(),
+            'precioventaactual'           => $contemporada ? $actual['venta'] : (float) $inventario->getTbinventarioprecioventa(),
             'temporadaprecio'             => $contemporada ? $vigente['tbtemporadanombre'] : '',
             'tbinventarioid'              => $inventario->getTbinventarioid(),
             'tbproveedorid'               => (int) $inventario->getTbproveedorid(),

@@ -1,26 +1,19 @@
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
-require_once __DIR__ . '/../Modelo/arreglofloraltemporada.php';
 require_once __DIR__ . '/../Modelo/inventariotemporada.php';
 
-// Precios por temporada de los arreglos (tbarreglofloraltemporada)
-// y de los productos del inventario (tbinventariotemporada). Funcionan igual.
+// Precio del paquete de cada producto del inventario en cada temporada (tbinventariotemporada):
+// lo que cobra el proveedor. El precio de venta y el de los arreglos se calculan a partir de este.
 class preciotemporadarepositorio
 {
     private $conexion;
 
     // Tabla, columna del registro, columna del precio y modelo de cada tipo. Solo se aceptan estos.
     private $tipos = [
-        'arreglofloral' => [
-            'tabla'  => 'tbarreglofloraltemporada',
-            'id'     => 'tbarreglofloralid',
-            'precio' => 'tbarreglofloraltemporadaprecio',
-            'clase'  => 'Arreglofloraltemporada',
-        ],
         'inventario' => [
             'tabla'  => 'tbinventariotemporada',
             'id'     => 'tbinventarioid',
-            'precio' => 'tbinventariotemporadaprecioventa',
+            'precio' => 'tbinventariotemporadapreciopaquete',
             'clase'  => 'Inventariotemporada',
         ],
     ];
@@ -45,7 +38,7 @@ class preciotemporadarepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    // Precios de un arreglo o producto: [idtemporada => precio]
+    // Precios de un producto: [idtemporada => precio del paquete]
     public function listarporregistro($tipo, $idregistro)
     {
         $t = $this->tipo($tipo);
@@ -61,7 +54,7 @@ class preciotemporadarepositorio
         return $precios;
     }
 
-    // Precios de una temporada: [idregistro => precio]
+    // Precios de una temporada: [idproducto => precio del paquete]
     public function listarportemporada($tipo, $idtemporada)
     {
         $t = $this->tipo($tipo);
@@ -77,7 +70,7 @@ class preciotemporadarepositorio
         return $precios;
     }
 
-    // Guarda o cambia el precio de un arreglo o producto en una temporada
+    // Guarda o cambia el precio del paquete de un producto en una temporada
     public function guardar($tipo, $idregistro, $idtemporada, $precio)
     {
         $t = $this->tipo($tipo);
@@ -109,7 +102,7 @@ class preciotemporadarepositorio
         return $sentencia->execute([(int) $idregistro, (int) $idtemporada]);
     }
 
-    // Cuántos arreglos o productos tienen precio en cada temporada: [idtemporada => cantidad]
+    // Cuántos productos tienen precio en cada temporada: [idtemporada => cantidad]
     public function contarportemporada($tipo)
     {
         $t = $this->tipo($tipo);

@@ -10,6 +10,7 @@ require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 require_once __DIR__ . '/preciotemporadacontrolador.php';
 require_once __DIR__ . '/../Repositorio/temporadarepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 
 // Solicitudes de pedido de arreglo:
 // - Predefinida: un arreglo del catálogo (el cliente lo eligió del catálogo de WhatsApp) + adicionales.
@@ -43,22 +44,58 @@ class encargocontrolador
         $this->temporadas = new preciotemporadacontrolador();
     }
 
-    // Precio que se cobra hoy: el de la temporada en uso, si el arreglo o producto tiene uno; si no, el normal
+    // Precio que se cobra hoy. Con una temporada en uso, el de un producto sube con lo que cobra el proveedor
+    // y el de un arreglo con el costo de todo lo que lleva (los dos con el mismo porcentaje de ganancia).
     private function precioactual($tipo, $id, $precionormal)
     {
-        static $precios = [];
-        if (!isset($precios[$tipo])) {
-            $precios[$tipo] = $this->temporadas->preciosvigentes($tipo);
+        if ($tipo === 'arreglofloral') {
+            $arreglo = $this->arreglos->obtenerporid((int) $id);
+            return $arreglo ? $this->temporadas->arreglo($arreglo)['precio'] : (float) $precionormal;
         }
 
-        return $precios[$tipo][(int) $id] ?? (float) $precionormal;
+        $productos = $this->temporadas->productos();
+        return $productos[(int) $id]['venta'] ?? (float) $precionormal;
+    }
+
+    // Cuántas flores y follajes lleva un arreglo del catálogo (las que se pueden pintar)
+    private function floresdearreglo($idarreglo)
+    {
+        $flores = 0;
+        foreach ($this->arreglos->listardetalles($idarreglo) as $detalle) {
+            $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
+            if ($producto && $producto->getTbinventariocategoria() === 'Flor') {
+                $flores += (int) $detalle->getTbarreglofloralinsumocantidad();
+            }
+        }
+
+        return $flores;
+    }
+
+    // Pinturas florales activas, con lo que se cobra por cada flor pintada
+    private function pinturas()
+    {
+        $atributos = new inventariocategoriarepositorio();
+        $lista = [];
+        foreach ($this->inventario->listar('', 'Spray', 1) as $spray) {
+            $datos = $atributos->obtener('Spray', $spray->getTbinventarioid());
+            if ($datos && $datos->getTbinventariocategoriaspraytipo() === 'Pintura floral') {
+                $lista[] = [
+                    'tbinventarioid'     => (int) $spray->getTbinventarioid(),
+                    'tbinventarionombre' => $spray->getTbinventarionombre(),
+                    'color'              => (string) $datos->getTbinventariocategoriaspraycolor(),
+                    'cobroflor'          => (float) $datos->getTbinventariocategoriaspraycobroflor(),
+                ];
+            }
+        }
+
+        return $lista;
     }
 
     // Todo lo que se necesita para llenar el formulario, en una sola consulta
     public function opciones()
     {
         $datos = ['arreglos' => [], 'empleados' => [], 'clientes' => [], 'zonas' => [], 'productos' => [],
-            'temporada' => $this->temporadas->datosvigente()];
+            'temporada' => $this->temporadas->datosvigente(), 'pinturas' => $this->pinturas()];
 
         foreach ($this->arreglos->listar('', 1) as $arreglo) {
             $datos['arreglos'][] = [
@@ -66,6 +103,7 @@ class encargocontrolador
                 'tbarreglofloralnombre' => $arreglo->getTbarreglofloralnombre(),
                 'tbarreglofloralprecio' => $this->precioactual('arreglofloral', $arreglo->getTbarreglofloralid(), $arreglo->getTbarreglofloralprecio()),
                 'tbarreglofloralfoto'   => $arreglo->getTbarreglofloralfoto(),
+                'flores'                => $this->floresdearreglo($arreglo->getTbarreglofloralid()),
             ];
         }
 
@@ -95,6 +133,10 @@ class encargocontrolador
         }
 
         foreach ($this->inventario->listar('', '', 1) as $producto) {
+            // El spray no se vende suelto: la pintura se cobra por flor pintada
+            if ($producto->getTbinventariocategoria() === 'Spray') {
+                continue;
+            }
             $datos['productos'][] = [
                 'tbinventarioid'          => (int) $producto->getTbinventarioid(),
                 'tbinventarionombre'      => $producto->getTbinventarionombre(),
@@ -529,6 +571,8 @@ class encargocontrolador
             'tbsolicitudencargodireccionentrega' => $texto('tbsolicitudencargodireccionentrega'),
             'tbsolicitudencargofechaentrega'     => $texto('tbsolicitudencargofechaentrega'),
             'tbsolicitudencargonota'             => $texto('tbsolicitudencargonota'),
+            'tbsolicitudencargosprayid'          => $texto('tbsolicitudencargosprayid'),
+            'tbsolicitudencargoflorespintadas'   => $texto('tbsolicitudencargoflorespintadas'),
             'insumos'                            => [],
         ];
 
@@ -583,6 +627,7 @@ class encargocontrolador
         $lineas = [];
         $cantidades = [];
         $erroresproductos = [];
+        $flores = 0;
         foreach ($datos['insumos'] as $numero => $fila) {
             $etiqueta = 'Producto ' . ($numero + 1) . ': ';
             $producto = ctype_digit($fila['tbinventarioid']) ? $this->inventario->obtenerporid((int) $fila['tbinventarioid']) : null;
@@ -605,8 +650,16 @@ class encargocontrolador
             }
 
             // Si el mismo producto se eligió dos veces, se suman las cantidades
+            if ($producto->getTbinventariocategoria() === 'Spray') {
+                $erroresproductos[] = $etiqueta . 'el spray no se agrega como producto; use "Flores pintadas".';
+                continue;
+            }
+
             $idproducto = (int) $producto->getTbinventarioid();
             $cantidades[$idproducto] = ($cantidades[$idproducto] ?? 0) + (int) $fila['cantidad'];
+            if ($producto->getTbinventariocategoria() === 'Flor') {
+                $flores += (int) $fila['cantidad'];
+            }
             $lineas[$idproducto] = $preciosanteriores[$idproducto]
                 ?? $this->precioactual('inventario', $idproducto, $producto->getTbinventarioprecioventa());
         }
@@ -645,6 +698,10 @@ class encargocontrolador
             } elseif (!ctype_digit($datos['tbsolicitudencargocantidad']) || (int) $datos['tbsolicitudencargocantidad'] < 1
                 || (int) $datos['tbsolicitudencargocantidad'] > 99) {
                 $errores['tbsolicitudencargocantidad'] = 'La cantidad debe ser un número entero entre 1 y 99.';
+            }
+
+            if ($arreglo) {
+                $flores += $this->floresdearreglo($arreglo->getTbarreglofloralid()) * max(1, (int) $datos['tbsolicitudencargocantidad']);
             }
 
             $precioarreglo = $arreglo ? ($mismoarreglo ? (float) $actual->getTbsolicitudencargoprecioarreglo()
@@ -714,6 +771,46 @@ class encargocontrolador
             $datos['tbsolicitudencargodireccionentrega'] = '';
         }
 
+        // Flores pintadas con spray: se cobra un monto por cada flor pintada
+        $pintadas = $datos['tbsolicitudencargoflorespintadas'];
+        $preciopintura = 0;
+        if ($datos['tbsolicitudencargosprayid'] === '' && in_array($pintadas, ['', '0'], true)) {
+            $datos['tbsolicitudencargosprayid'] = null;
+            $pintadas = 0;
+        } else {
+            $idspray = $datos['tbsolicitudencargosprayid'];
+            $spray = ctype_digit($idspray) ? $this->inventario->obtenerporid((int) $idspray) : null;
+            $pintura = $spray && $spray->getTbinventariocategoria() === 'Spray'
+                ? (new inventariocategoriarepositorio())->obtener('Spray', (int) $idspray) : null;
+            $mismospray = !$esnuevo && (int) $actual->getTbsolicitudencargosprayid() === (int) $idspray;
+
+            if ($idspray === '') {
+                $errores['tbsolicitudencargosprayid'] = 'Elija la pintura con que se pintan las flores.';
+            } elseif (!$pintura || $pintura->getTbinventariocategoriaspraytipo() !== 'Pintura floral') {
+                $errores['tbsolicitudencargosprayid'] = 'Elija una pintura floral.';
+            } elseif (!$spray->estaActivo() && !$mismospray) {
+                $errores['tbsolicitudencargosprayid'] = 'La pintura seleccionada está inactiva.';
+            } else {
+                $preciopintura = $mismospray ? (float) $actual->getTbsolicitudencargopreciopintura()
+                    : (float) $pintura->getTbinventariocategoriaspraycobroflor();
+            }
+
+            if (!ctype_digit((string) $pintadas) || (int) $pintadas < 1 || (int) $pintadas > 999) {
+                $errores['tbsolicitudencargoflorespintadas'] = 'Escriba cuántas flores se pintan (de 1 a 999).';
+            } elseif ($tipo !== '' && !isset($errores['insumos']) && !isset($errores['tbarreglofloralid']) && (int) $pintadas > $flores) {
+                $errores['tbsolicitudencargoflorespintadas'] = $flores === 0
+                    ? 'El arreglo no lleva flores para pintar.'
+                    : 'El arreglo lleva ' . $flores . ($flores === 1 ? ' flor' : ' flores') . '; no se pueden pintar más.';
+            }
+
+            $datos['tbsolicitudencargosprayid'] = ctype_digit($idspray) ? (int) $idspray : null;
+            $pintadas = (int) $pintadas;
+        }
+        $costopintura = round($pintadas * $preciopintura, 2);
+        $datos['tbsolicitudencargoflorespintadas'] = $pintadas;
+        $datos['tbsolicitudencargopreciopintura'] = $preciopintura;
+        $datos['tbsolicitudencargocostopintura'] = $costopintura;
+
         // Fecha de entrega: al editar se acepta la que ya tenía aunque ya haya pasado
         $fecha = DateTime::createFromFormat('Y-m-d', $datos['tbsolicitudencargofechaentrega']);
         $mismafecha = !$esnuevo && $actual->getTbsolicitudencargofechaentrega() === $datos['tbsolicitudencargofechaentrega'];
@@ -740,7 +837,7 @@ class encargocontrolador
         $datos['tbempleadoid'] = $datos['tbempleadoid'] === '' ? null : (int) $datos['tbempleadoid'];
         $datos['tbsolicitudencargocostoexpress'] = $costoexpress;
         $datos['tbsolicitudencargosubtotal'] = round($subtotal, 2);
-        $datos['tbsolicitudencargototal'] = round($subtotal + $costoexpress, 2);
+        $datos['tbsolicitudencargototal'] = round($subtotal + $costopintura + $costoexpress, 2);
         $datos['lineas'] = $insumos;
 
         return $errores;
@@ -827,6 +924,12 @@ class encargocontrolador
             'tbsolicitudencargofecharegistro'    => $encargo->getTbsolicitudencargofecharegistro(),
             'tbtemporadaid'                      => $encargo->getTbtemporadaid() !== null ? (int) $encargo->getTbtemporadaid() : null,
             'tbtemporadanombre'                  => $nombres['temporadas'][$encargo->getTbtemporadaid()] ?? '',
+            'tbsolicitudencargosprayid'          => $encargo->getTbsolicitudencargosprayid() !== null ? (int) $encargo->getTbsolicitudencargosprayid() : null,
+            'tbsolicitudencargospraynombre'      => $encargo->getTbsolicitudencargosprayid() !== null
+                ? (($spray = $this->inventario->obtenerporid($encargo->getTbsolicitudencargosprayid())) ? $spray->getTbinventarionombre() : 'Spray eliminado') : '',
+            'tbsolicitudencargoflorespintadas'   => (int) $encargo->getTbsolicitudencargoflorespintadas(),
+            'tbsolicitudencargopreciopintura'    => (float) $encargo->getTbsolicitudencargopreciopintura(),
+            'tbsolicitudencargocostopintura'     => (float) $encargo->getTbsolicitudencargocostopintura(),
             'descripcion'                        => $descripcion,
             'alcanzastock'                       => $alcanza,
         ];

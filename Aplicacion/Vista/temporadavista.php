@@ -50,7 +50,7 @@
                 <tr>
                     <th>Temporada</th>
                     <th>Descripción</th>
-                    <th>Precios cargados</th>
+                    <th>Con precio del proveedor</th>
                     <th>Estado</th>
                     <th class="columna-acciones">Acciones</th>
                 </tr>
@@ -65,7 +65,7 @@
 <dialog id="dialogoformulario" class="dialogo">
     <form id="formulario" novalidate>
         <h2 id="tituloformulario">Nueva temporada</h2>
-        <p class="nota">Los campos con * son obligatorios. Los precios de cada arreglo y producto se ponen en el Catálogo y en el Inventario.</p>
+        <p class="nota">Los campos con * son obligatorios. Después, en el Inventario, escriba el precio del proveedor de cada flor en esta temporada; los arreglos se calculan solos.</p>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
             <span>Se recuperaron datos que no se habían guardado.</span>

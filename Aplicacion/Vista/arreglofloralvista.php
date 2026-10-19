@@ -115,10 +115,8 @@
             <button type="button" class="boton" id="botonagregarlinea">+ Agregar producto</button>
         </div>
 
-        <h3 class="subtitulo-seccion">Precios por temporada</h3>
-        <p class="nota">Precio del arreglo en cada temporada. Si lo deja vacío, en esa temporada se cobra el precio normal.</p>
-        <div class="rejilla-temporadas" id="preciostemporada"></div>
-        <small class="error" data-error="temporadas"></small>
+        <p class="nota nota-temporada">✿ En temporada (San Valentín, Día de la Madre…) el precio del arreglo se calcula solo:
+            sube igual que el costo de sus flores, con el mismo porcentaje de ganancia. Lo puede ver en "Ver".</p>
 
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>
@@ -192,7 +190,6 @@
 
 <script src="js/menu.js"></script>
 <script src="js/historial.js"></script>
-<script src="js/preciostemporada.js"></script>
 <script src="js/arreglofloral.js"></script>
 </body>
 </html>

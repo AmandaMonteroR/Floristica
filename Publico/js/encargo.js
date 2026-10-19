@@ -2,7 +2,8 @@ const rutabase = 'index.php?modulo=encargo';
 const clavebase = 'floristica.borrador.encargo.';
 const camposformulario = ['tbclienteid', 'tbsolicitudencargotipo', 'tbarreglofloralid', 'tbsolicitudencargocantidad',
     'tbsolicitudencargomodalidad', 'tbsolicitudencargopresupuesto', 'tbzonaentregaid', 'tbsolicitudencargodireccionentrega',
-    'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota'];
+    'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota',
+    'tbsolicitudencargosprayid', 'tbsolicitudencargoflorespintadas'];
 const categoriasproducto = [
     ['Flor', 'Flores y follaje'],
     ['Envoltura', 'Papel y cintas'],
@@ -36,6 +37,8 @@ const campodireccion = document.getElementById('campodireccion');
 const notaexpress = document.getElementById('notaexpress');
 const campoasignar = document.getElementById('campoasignar');
 const resumentotal = document.getElementById('resumentotal');
+const seccionpintura = document.getElementById('seccionpintura');
+const notapintura = document.getElementById('notapintura');
 const dialogoasignar = document.getElementById('dialogoasignar');
 const formularioasignar = document.getElementById('formularioasignar');
 const resumenasignar = document.getElementById('resumenasignar');
@@ -62,7 +65,7 @@ const espropietario = usuarioactual.rol === 'Propietario';
 let temporizadoraviso;
 let datosoriginales = {};
 let datosservidor = {};
-let opciones = { arreglos: [], empleados: [], clientes: [], zonas: [], productos: [] };
+let opciones = { arreglos: [], empleados: [], clientes: [], zonas: [], productos: [], pinturas: [] };
 let encargos = [];
 let lineas = [];
 
@@ -206,6 +209,8 @@ async function cargaropciones() {
         (arreglo) => `${arreglo.tbarreglofloralnombre} · ${montocorto(arreglo.tbarreglofloralprecio)}`);
     llenarselect(formulario.elements.tbzonaentregaid, 'Seleccione…', opciones.zonas, 'tbzonaentregaid',
         (zona) => `${zona.tbzonaentreganombre} · ${montocorto(zona.tbzonaentregaprecio)}`);
+    llenarselect(formulario.elements.tbsolicitudencargosprayid, 'Sin flores pintadas', opciones.pinturas ?? [], 'tbinventarioid',
+        (pintura) => `${pintura.tbinventarionombre} · ${montocorto(pintura.cobroflor)} por flor`);
     llenarselect(formulario.elements.tbempleadoid, 'Sin asignar por ahora', opciones.empleados, 'tbempleadoid', nombreempleado);
     llenarselect(formularioasignar.elements.tbempleadoid, 'Seleccione…', opciones.empleados, 'tbempleadoid', nombreempleado);
 
@@ -353,6 +358,7 @@ function actualizarsecciones() {
     seccionpredefinido.hidden = tipo !== 'Predefinido';
     seccionpersonalizado.hidden = !personalizado;
     seccionlineas.hidden = tipo === '';
+    seccionpintura.hidden = tipo === '' || ((opciones.pinturas ?? []).length === 0 && !formulario.elements.tbsolicitudencargosprayid.value);
     campopresupuesto.hidden = !conpresupuesto;
 
     titulolineas.textContent = personalizado ? 'Productos del arreglo *' : 'Adicionales';
@@ -392,6 +398,32 @@ function costoexpress() {
     return zona ? zona.tbzonaentregaprecio : 0;
 }
 
+// Cobro por flor pintada: el guardado en la solicitud (si es la misma pintura) o el de la pintura elegida
+function preciopintura() {
+    const id = formulario.elements.tbsolicitudencargosprayid.value;
+    if (datosservidor.tbsolicitudencargosprayid && String(datosservidor.tbsolicitudencargosprayid) === id) {
+        return Number(datosservidor.tbsolicitudencargopreciopintura);
+    }
+    const pintura = buscar(opciones.pinturas ?? [], 'tbinventarioid', id);
+    return pintura ? pintura.cobroflor : 0;
+}
+
+// Flores y follajes que lleva lo que se está cotizando (las que se pueden pintar)
+function florescotizadas() {
+    let flores = 0;
+    if (formulario.elements.tbsolicitudencargotipo.value === 'Predefinido') {
+        const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value);
+        flores += arreglo ? (arreglo.flores ?? 0) * (parseInt(formulario.elements.tbsolicitudencargocantidad.value, 10) || 1) : 0;
+    }
+    lineas.forEach((linea) => {
+        const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+        if (producto && producto.tbinventariocategoria === 'Flor') {
+            flores += parseInt(linea.cantidad, 10) || 0;
+        }
+    });
+    return flores;
+}
+
 // Cuentas de la solicitud para el resumen y la cotización
 function calcular() {
     const tipo = formulario.elements.tbsolicitudencargotipo.value;
@@ -399,8 +431,35 @@ function calcular() {
     const arreglo = tipo === 'Predefinido' ? precioarreglo() * cantidad : 0;
     const productos = sumaproductos();
     const express = costoexpress();
+    const pintadas = formulario.elements.tbsolicitudencargosprayid.value
+        ? parseInt(formulario.elements.tbsolicitudencargoflorespintadas.value, 10) || 0 : 0;
+    const pintura = pintadas * preciopintura();
 
-    return { tipo, cantidad, arreglo, productos, express, subtotal: arreglo + productos, total: arreglo + productos + express };
+    return {
+        tipo, cantidad, arreglo, productos, express, pintadas, pintura,
+        subtotal: arreglo + productos, total: arreglo + productos + pintura + express,
+    };
+}
+
+// Debajo de las flores pintadas: cuántas lleva el arreglo, y aviso si se pasa
+function revisarpintura(cuentas) {
+    const flores = florescotizadas();
+    const error = formulario.querySelector('[data-error="tbsolicitudencargoflorespintadas"]');
+    const campo = formulario.elements.tbsolicitudencargoflorespintadas;
+    const pintadas = parseInt(campo.value, 10) || 0;
+
+    notapintura.textContent = formulario.elements.tbsolicitudencargotipo.value === ''
+        ? '' : `Lleva ${flores} ${flores === 1 ? 'flor' : 'flores y follajes'} que se pueden pintar.`;
+
+    if (pintadas > flores && (formulario.elements.tbsolicitudencargotipo.value === 'Personalizado' || formulario.elements.tbarreglofloralid.value)) {
+        error.textContent = flores === 0 ? 'El arreglo no lleva flores para pintar.' : `Lleva ${flores} flores; no se pueden pintar más.`;
+        campo.setAttribute('aria-invalid', 'true');
+    } else if (error.textContent.startsWith('Lleva') || error.textContent.startsWith('El arreglo no lleva')) {
+        error.textContent = '';
+        campo.removeAttribute('aria-invalid');
+    }
+
+    return cuentas;
 }
 
 function actualizarresumen() {
@@ -416,10 +475,15 @@ function actualizarresumen() {
         filas.push(['Productos', formatearmonto(cuentas.productos)]);
     }
 
+    if (cuentas.pintadas > 0) {
+        filas.push([`Flores pintadas (${cuentas.pintadas} × ${montocorto(preciopintura())})`, formatearmonto(cuentas.pintura)]);
+    }
+
     if (casillaexpress.checked) {
         const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
         filas.push([`Express${zona ? ' a ' + zona.tbzonaentreganombre : ''}`, formatearmonto(cuentas.express)]);
     }
+    revisarpintura(cuentas);
 
     // Con una temporada en uso, lo nuevo se cotiza con sus precios
     if (opciones.temporada) {
@@ -460,6 +524,10 @@ function textocotizacion() {
         const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
         lineastexto.push(`- ${linea.cantidad} × ${producto ? producto.tbinventarionombre : linea.nombre}: ${montocorto(subtotallinea(linea))}`);
     });
+
+    if (cuentas.pintadas > 0) {
+        lineastexto.push(`- ${cuentas.pintadas} ${cuentas.pintadas === 1 ? 'flor pintada' : 'flores pintadas'}: ${montocorto(cuentas.pintura)}`);
+    }
 
     if (casillaexpress.checked) {
         const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
@@ -534,6 +602,7 @@ function llenarformulario(datos) {
     agregarinactivo(formulario.elements.tbclienteid, datos.tbclienteid, datos.tbclientenombre);
     agregarinactivo(formulario.elements.tbarreglofloralid, datos.tbarreglofloralid, datos.tbarreglofloralnombre);
     agregarinactivo(formulario.elements.tbzonaentregaid, datos.tbzonaentregaid, datos.tbzonaentreganombre);
+    agregarinactivo(formulario.elements.tbsolicitudencargosprayid, datos.tbsolicitudencargosprayid, datos.tbsolicitudencargospraynombre);
 
     asignarcampos({
         tbclienteid: datos.tbclienteid ? String(datos.tbclienteid) : '',
@@ -548,6 +617,8 @@ function llenarformulario(datos) {
         tbsolicitudencargofechaentrega: datos.tbsolicitudencargofechaentrega ?? '',
         tbempleadoid: datos.tbempleadoid ? String(datos.tbempleadoid) : '',
         tbsolicitudencargonota: datos.tbsolicitudencargonota ?? '',
+        tbsolicitudencargosprayid: datos.tbsolicitudencargosprayid ? String(datos.tbsolicitudencargosprayid) : '',
+        tbsolicitudencargoflorespintadas: datos.tbsolicitudencargoflorespintadas ? String(datos.tbsolicitudencargoflorespintadas) : '',
         lineas: (datos.insumos ?? []).map((insumo) => ({
             tbinventarioid: String(insumo.tbinventarioid),
             cantidad: String(insumo.cantidad),
@@ -820,6 +891,10 @@ async function verdetalle(id) {
         const etiqueta = encargo.tbsolicitudencargotipo === 'Predefinido' ? ' (adicional)' : '';
         cobro.push([insumo.tbinventarionombre + etiqueta, insumo.cantidad, insumo.preciounitario, insumo.subtotal]);
     });
+    if (encargo.tbsolicitudencargoflorespintadas > 0) {
+        cobro.push([`Flores pintadas (${encargo.tbsolicitudencargospraynombre})`, encargo.tbsolicitudencargoflorespintadas,
+            encargo.tbsolicitudencargopreciopintura, encargo.tbsolicitudencargocostopintura]);
+    }
     if (encargo.tbsolicitudencargoexpress === 1) {
         cobro.push([`Servicio express a ${encargo.tbzonaentreganombre}`, 1, encargo.tbsolicitudencargocostoexpress, encargo.tbsolicitudencargocostoexpress]);
     }
@@ -926,6 +1001,9 @@ formulario.addEventListener('input', (evento) => {
     if (campo.name === 'tbsolicitudencargocantidad') {
         campo.value = campo.value.replace(/\D/g, '');
     }
+    if (campo.name === 'tbsolicitudencargoflorespintadas') {
+        campo.value = campo.value.replace(/\D/g, '').slice(0, 3);
+    }
     if (campo.name === 'tbsolicitudencargopresupuesto') {
         campo.value = filtrardecimal(campo.value);
         dibujarlineas();
@@ -974,6 +1052,18 @@ formulario.addEventListener('change', (evento) => {
 });
 
 formulario.addEventListener('click', (evento) => {
+    // + y − de las flores pintadas
+    const pasoflores = evento.target.closest('button[data-pasoflores]');
+    if (pasoflores) {
+        const campo = formulario.elements.tbsolicitudencargoflorespintadas;
+        const actual = parseInt(campo.value, 10) || 0;
+        campo.value = String(Math.min(999, Math.max(0, actual + Number(pasoflores.dataset.pasoflores))));
+        limpiarerrorcampo('tbsolicitudencargoflorespintadas');
+        actualizarresumen();
+        guardarborrador();
+        return;
+    }
+
     // + y − de la cantidad de arreglos
     const paso = evento.target.closest('button[data-paso]');
     if (paso) {

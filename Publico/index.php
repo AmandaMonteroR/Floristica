@@ -252,15 +252,6 @@ try {
                 case 'actualizar':
                     $respuesta = $controlador->actualizar($_POST, $_FILES, $usuarioactual);
                     break;
-                case 'temporadas':
-                    $respuesta = $controlador->temporadas();
-                    break;
-                case 'pendientestemporada':
-                    $respuesta = $controlador->pendientestemporada();
-                    break;
-                case 'guardarpreciostemporada':
-                    $respuesta = $controlador->guardarpreciostemporada($_POST, $usuarioactual);
-                    break;
                 case 'inactivar':
                     $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
                     break;

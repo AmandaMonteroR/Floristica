@@ -177,7 +177,7 @@ function mostrarvigente(temporadas) {
     botondesactivar.hidden = !vigente;
     if (vigente) {
         textovigente.textContent = `Se están usando los precios de ${vigente.tbtemporadanombre}`;
-        notavigente.textContent = 'Los arreglos y productos que no tienen precio para esta temporada se cobran al precio normal.';
+        notavigente.textContent = 'Los arreglos se calculan solos con lo que cuestan sus flores. Las flores sin precio del proveedor para esta temporada se cobran al precio normal.';
     } else {
         textovigente.textContent = 'Se están usando los precios normales (temporada baja)';
         notavigente.textContent = 'Use "Usar sus precios" en una temporada para empezar a cobrar con sus precios.';
@@ -226,7 +226,7 @@ async function cargartemporadas() {
             <tr class="${activa ? '' : 'fila-inactiva'}">
                 <td>${escapar(temporada.tbtemporadanombre)}</td>
                 <td>${temporada.tbtemporadadescripcion ? escapar(temporada.tbtemporadadescripcion) : '<span class="texto-suave">Sin descripción</span>'}</td>
-                <td>${plural(temporada.arreglosconprecio, 'arreglo', 'arreglos')}<br><small class="texto-suave">${plural(temporada.productosconprecio, 'producto', 'productos')}</small></td>
+                <td>${plural(temporada.productosconprecio, 'producto', 'productos')}<br><small class="texto-suave">Los arreglos se calculan solos</small></td>
                 <td>${estado}</td>
                 <td class="columna-acciones">
                     ${botonprecios}

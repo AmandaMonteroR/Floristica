@@ -2261,3 +2261,44 @@ h1 {
 .estado {
     white-space: nowrap;
 }
+
+
+/* ---------- Parte 9: precios calculados en temporada y flores pintadas ---------- */
+
+/* Debajo del precio del proveedor: a cuánto se vende la unidad */
+.venta-temporada {
+    min-height: 1.1em;
+    font-size: 0.8rem;
+    color: #2f6b3a;
+}
+
+/* Catálogo: aviso de que el precio de temporada se calcula solo */
+.nota-temporada {
+    margin-top: 0.75rem;
+    padding: 0.55rem 0.8rem;
+    background: #fff8e1;
+    border-left: 4px solid #f0a500;
+    border-radius: 6px;
+}
+
+/* En pantallas grandes los botones de acciones van en una sola línea: las filas quedan más bajas
+   y caben más registros por página (la tabla de solicitudes tiene su propio ajuste) */
+@media (min-width: 1001px) {
+    .contenedor > .tabla-contenedor .tabla:not(.tabla-encargos) td.columna-acciones {
+        white-space: nowrap;
+    }
+}
+/* Celular angosto con temporada en uso: el aviso de la barra se acorta para que todo quepa */
+@media (max-width: 480px) {
+    .barra-superior {
+        gap: 0.4rem;
+    }
+
+    .chip-temporada {
+        max-width: 8.5rem;
+    }
+
+    .boton-salir {
+        padding: 0.35rem 0.6rem;
+    }
+}

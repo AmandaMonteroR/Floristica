@@ -189,6 +189,22 @@ CREATE TABLE tbinventariocategoriatarjeta (
     PRIMARY KEY (tbinventariocategoriatarjetaid)
 );
 
+-- Tipo: Pintura floral, Abrillantador de follaje o Aromatizante floral.
+-- Color solo en la pintura y aroma solo en el aromatizante (lo demás queda NULL).
+-- Cobro por flor: lo que se le cobra al cliente por cada flor pintada (solo la pintura floral).
+CREATE TABLE tbinventariocategoriaspray (
+    tbinventariocategoriasprayid INT,
+    tbinventarioid INT,
+    tbinventariocategoriaspraytipo VARCHAR(30),
+    tbinventariocategoriaspraymarca VARCHAR(50),
+    tbinventariocategoriaspraycolor VARCHAR(30),
+    tbinventariocategoriasprayaroma VARCHAR(30),
+    tbinventariocategoriaspraycontenido INT,
+    tbinventariocategoriasprayfechavencimiento DATE,
+    tbinventariocategoriaspraycobroflor DECIMAL(10,2),
+    PRIMARY KEY (tbinventariocategoriasprayid)
+);
+
 CREATE TABLE tbpedido (
     tbpedidoid INT,
     tbproveedorid INT,
@@ -299,6 +315,11 @@ CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargoestado VARCHAR(20),
     tbsolicitudencargofecharegistro DATE,
     tbtemporadaid INT,
+    -- Flores pintadas: el spray (producto de inventario), cuántas flores, el cobro por flor y el total
+    tbsolicitudencargosprayid INT,
+    tbsolicitudencargoflorespintadas INT,
+    tbsolicitudencargopreciopintura DECIMAL(10,2),
+    tbsolicitudencargocostopintura DECIMAL(10,2),
     PRIMARY KEY (tbsolicitudencargoid)
 );
 
@@ -605,21 +626,14 @@ CREATE TABLE tbtemporada (
     PRIMARY KEY (tbtemporadaid)
 );
 
--- Precio de un arreglo del catálogo en una temporada
-CREATE TABLE tbarreglofloraltemporada (
-    tbarreglofloraltemporadaid INT,
-    tbarreglofloralid INT,
-    tbtemporadaid INT,
-    tbarreglofloraltemporadaprecio DECIMAL(10,2),
-    PRIMARY KEY (tbarreglofloraltemporadaid)
-);
-
--- Precio de venta por unidad de un producto del inventario en una temporada
+-- Lo que cobra el proveedor por el paquete de un producto en una temporada.
+-- El precio de venta del producto y el de los arreglos que lo llevan se calculan solos,
+-- con el mismo porcentaje de ganancia que tienen en temporada baja.
 CREATE TABLE tbinventariotemporada (
     tbinventariotemporadaid INT,
     tbinventarioid INT,
     tbtemporadaid INT,
-    tbinventariotemporadaprecioventa DECIMAL(10,2),
+    tbinventariotemporadapreciopaquete DECIMAL(10,2),
     PRIMARY KEY (tbinventariotemporadaid)
 );
 
@@ -652,17 +666,8 @@ CREATE TABLE tbtemporadaestadohistorico (
     PRIMARY KEY (tbtemporadaestadohistoricoid)
 );
 
--- Precios de temporada de cada arreglo y de cada producto.
+-- Precio del paquete de cada producto en cada temporada.
 -- El valor es "idtemporada|precio"; si se quitó el precio queda "idtemporada|".
-CREATE TABLE tbarreglofloralpreciotemporadahistorico (
-    tbarreglofloralpreciotemporadahistoricoid INT,
-    tbarreglofloralid INT,
-    tbarreglofloralpreciotemporadahistoricovalor VARCHAR(30),
-    tbempleadoid INT,
-    tbarreglofloralpreciotemporadahistoricofecha DATETIME,
-    PRIMARY KEY (tbarreglofloralpreciotemporadahistoricoid)
-);
-
 CREATE TABLE tbinventariopreciotemporadahistorico (
     tbinventariopreciotemporadahistoricoid INT,
     tbinventarioid INT,

@@ -63,6 +63,15 @@ const etiquetascategoria = {
         tbinventariocategoriatarjetapersonalizable: 'Personalizable',
         tbinventariocategoriatarjetaelaboracion: 'Elaboración',
     },
+    Spray: {
+        tbinventariocategoriaspraytipo: 'Tipo de spray',
+        tbinventariocategoriaspraymarca: 'Marca',
+        tbinventariocategoriaspraycolor: 'Color de la pintura',
+        tbinventariocategoriasprayaroma: 'Aroma',
+        tbinventariocategoriaspraycontenido: 'Contenido (ml)',
+        tbinventariocategoriasprayfechavencimiento: 'Fecha de vencimiento',
+        tbinventariocategoriaspraycobroflor: 'Cobro por flor pintada',
+    },
 };
 
 const cuerpotabla = document.getElementById('cuerpotabla');
@@ -85,6 +94,9 @@ const etiquetatipoenvoltura = document.getElementById('etiquetatipoenvoltura');
 const etiquetamedidaenvoltura = document.getElementById('etiquetamedidaenvoltura');
 const listavariedades = document.getElementById('listavariedades');
 const contenedortemporadas = document.getElementById('preciostemporada');
+const campospraycolor = document.getElementById('campospraycolor');
+const camposprayaroma = document.getElementById('camposprayaroma');
+const campospraycobro = document.getElementById('campospraycobro');
 const dialogodetalle = document.getElementById('dialogodetalle');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
@@ -209,6 +221,15 @@ function mostrarseccioncategoria() {
     });
     actualizarvariedades();
     actualizarenvoltura();
+    actualizarspray();
+}
+
+// Spray: el color y el cobro por flor son de la pintura floral; el aroma, del aromatizante
+function actualizarspray() {
+    const tipo = formulario.elements.tbinventariocategoriaspraytipo.value;
+    campospraycolor.hidden = tipo !== 'Pintura floral';
+    campospraycobro.hidden = tipo !== 'Pintura floral';
+    camposprayaroma.hidden = tipo !== 'Aromatizante floral';
 }
 
 // Sugerencias de variedad según sea flor o follaje
@@ -252,14 +273,11 @@ function calcularpreciounidad() {
     gananciaunidad.classList.toggle('texto-peligro', costo !== null && venta > 0 && venta < costo);
 }
 
-// Precios de temporada: se revisan contra el costo por unidad mientras se escribe
+// Precio del proveedor en temporada: se revisa mientras se escribe y se muestra a cuánto se vendería la unidad
 function revisartemporadas() {
-    const precio = numero(formulario.elements.tbinventariopreciopaquete.value);
-    const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
-    const costo = precio > 0 && unidades > 0 ? precio / unidades : 0;
-
-    preciostemporada.revisar(contenedortemporadas, formulario.querySelector('[data-error="temporadas"]'),
-        costo, 'el costo por unidad');
+    preciostemporada.revisar(contenedortemporadas, formulario.querySelector('[data-error="temporadas"]'));
+    preciostemporada.ventas(contenedortemporadas, numero(formulario.elements.tbinventariopreciopaquete.value),
+        numero(formulario.elements.tbinventarioprecioventa.value));
 }
 
 function claveborrador() {
@@ -336,6 +354,7 @@ function llenarformulario(datos) {
         ...(datos.categoria ?? {}),
     });
 
+    preciostemporada.ventas(contenedortemporadas, Number(datos.tbinventariopreciopaquete), Number(datos.tbinventarioprecioventa));
     datosoriginales = leerformulario();
 }
 
@@ -420,7 +439,7 @@ async function cargarinventario() {
                 <td>${escapar(producto.tbinventarionombre)}</td>
                 <td>${escapar(producto.tbinventariocategoria)}</td>
                 <td>${escapar(producto.tbproveedornombreempresa)}</td>
-                <td>${formatearmonto(producto.tbinventariopreciounidad)}</td>
+                <td>${formatearmonto(producto.preciounidadactual)}</td>
                 <td>${formatearmonto(producto.precioventaactual)}${producto.temporadaprecio
                     ? `<br><span class="estado estado-vigente">${escapar(producto.temporadaprecio)}</span>` : ''}</td>
                 <td><span class="stock ${nivel.clase}" title="${nivel.texto} (mínimo: ${producto.tbinventariostockminimo})">${producto.tbinventariostock}</span></td>
@@ -509,10 +528,15 @@ async function verdetalle(id) {
         ['Costo por unidad', formatearmonto(producto.tbinventariopreciounidad)],
         ['Precio de venta por unidad', formatearmonto(producto.tbinventarioprecioventa)],
         ['Ganancia por unidad', formatearmonto(producto.tbinventarioprecioventa - producto.tbinventariopreciounidad)],
-        ...(producto.preciostemporada ?? []).filter((temporada) => temporada.precio !== null).map((temporada) => [
-            `Precio de ${temporada.tbtemporadanombre}${temporada.vigente ? ' (en uso)' : ''}`,
-            `${formatearmonto(temporada.precio)} (ganancia ${formatearmonto(temporada.precio - producto.tbinventariopreciounidad)})`,
-        ]),
+        ...(producto.preciostemporada ?? []).filter((temporada) => temporada.precio !== null).map((temporada) => {
+            const venta = Math.abs(temporada.precio - producto.tbinventariopreciopaquete) < 0.01
+                ? producto.tbinventarioprecioventa
+                : preciostemporada.redondear(producto.tbinventarioprecioventa * temporada.precio / producto.tbinventariopreciopaquete);
+            return [
+                `En ${temporada.tbtemporadanombre}${temporada.vigente ? ' (en uso)' : ''}`,
+                `Proveedor ${formatearmonto(temporada.precio)} el paquete · se vende a ${formatearmonto(venta)} la unidad`,
+            ];
+        }),
         ['Stock actual', `${producto.tbinventariostock} (${nivelstock(producto).texto.toLowerCase()})`],
         ['Stock mínimo', String(producto.tbinventariostockminimo)],
     ];
@@ -525,8 +549,15 @@ async function verdetalle(id) {
             && (campo.endsWith('acabado') || campo.endsWith('personalizable'))) {
             return;
         }
-        if (campo === 'tbinventariocategoriachocolatefechavencimiento') {
-            valor = formatearfecha(valor);
+        // En el spray: color y cobro solo en la pintura, aroma solo en el aromatizante
+        if (producto.tbinventariocategoria === 'Spray' && valor === null && !campo.endsWith('fechavencimiento')) {
+            return;
+        }
+        if (campo === 'tbinventariocategoriachocolatefechavencimiento' || campo === 'tbinventariocategoriasprayfechavencimiento') {
+            valor = valor ? formatearfecha(valor) : 'No vence';
+        }
+        if (campo === 'tbinventariocategoriaspraycobroflor') {
+            valor = formatearmonto(valor);
         }
         if (campo.endsWith('personalizable') && valor !== null && valor !== undefined) {
             valor = Number(valor) === 1 ? 'Sí' : 'No';
@@ -606,9 +637,9 @@ formulario.addEventListener('input', (evento) => {
     }
     campo.removeAttribute('aria-invalid');
 
-    // Al escribir un precio de temporada o cambiar el paquete, se revisa al momento
+    // Al escribir un precio de temporada o cambiar el paquete o la venta, se revisa al momento
     if (campo.name.startsWith('temporadas[') || campo.name === 'tbinventariopreciopaquete'
-        || campo.name === 'tbinventariounidadespaquete') {
+        || campo.name === 'tbinventarioprecioventa') {
         revisartemporadas();
     }
     guardarborrador();
@@ -641,6 +672,7 @@ formulario.addEventListener('click', (evento) => {
 selectcategoria.addEventListener('change', mostrarseccioncategoria);
 formulario.elements.tbinventariocategoriaflortipo.addEventListener('change', actualizarvariedades);
 formulario.elements.tbinventariocategoriaenvolturaclase.addEventListener('change', () => actualizarenvoltura());
+formulario.elements.tbinventariocategoriaspraytipo.addEventListener('change', actualizarspray);
 formulario.elements.tbinventariopreciopaquete.addEventListener('input', calcularpreciounidad);
 formulario.elements.tbinventariounidadespaquete.addEventListener('input', calcularpreciounidad);
 formulario.elements.tbinventarioprecioventa.addEventListener('input', calcularpreciounidad);
@@ -733,6 +765,7 @@ if (botonverhistorial) {
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 formulario.elements.tbinventariocategoriachocolatefechavencimiento.min = new Date().toLocaleDateString('en-CA');
+formulario.elements.tbinventariocategoriasprayfechavencimiento.min = new Date().toLocaleDateString('en-CA');
 
 const proveedoreslistos = cargarproveedores();
 filtrosdesdeurl({ categoria: filtrocategoria, estado: filtroestado, stock: filtrostock });
@@ -741,12 +774,11 @@ cargarinventario();
 // Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
 abrirformulariosipide(abrirnuevo);
 
-// Si hay una temporada en uso y hay productos sin precio para ella, se avisa
+// Si hay una temporada en uso y hay flores sin precio del proveedor para ella, se avisa
 preciostemporada.aviso({
     modulo: 'inventario',
-    singular: 'producto',
-    plural: 'productos',
-    columnaminimo: 'Costo por unidad',
+    singular: 'flor',
+    plural: 'flores',
     alguardar: (mensaje) => {
         mostraraviso(mensaje, 'exito');
         cargarinventario();
