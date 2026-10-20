@@ -74,12 +74,12 @@ Si la base se crea sin datos de prueba, la primera vez que se abre el sistema ap
 
 Los datos de prueba también traen:
 
-- 8 proveedores y 57 productos de inventario de las 7 categorías. Las flores y follajes tienen los precios reales de un proveedor de la zona (temporada baja), y hay 4 sprays;
-- 7 arreglos con foto (en `Publico/imagenes/muestras/`);
+- 8 proveedores y 65 productos de inventario de las 8 categorías. Las flores y follajes tienen los precios reales de un proveedor de la zona (temporada baja); también hay 4 sprays y 4 accesorios (coronas, perfume y splash);
+- 18 arreglos del catálogo real de una floristería de la zona, con su foto (en `Publico/imagenes/catalogo/`) y sus precios;
 - 4 pedidos y 8 clientes;
 - 6 zonas de entrega, de El Humo de Roxana (₡1 000) a Limón centro (₡6 000);
-- 12 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express;
-- 6 temporadas (Temporada alta, San Valentín, Día de la Madre, Día de la Novia, Día de las Flores Amarillas y Día de los Hot Wheels), ninguna en uso. Temporada alta trae los precios reales del proveedor en temporada alta (por ejemplo, 24 rosas pasan de ₡7 000 a ₡14 000).
+- 22 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express. 11 están terminadas (son las ventas de setiembre y octubre);
+- la temporada alta, apagada, con los precios reales del proveedor en temporada alta (por ejemplo, 24 rosas pasan de ₡7 000 a ₡14 000).
 
 ## Configuración
 
@@ -135,7 +135,8 @@ Floristica/
 | Iniciar y terminar solicitudes | ✓ (todas) | ✓ (solo las suyas) |
 | Cancelar o editar solicitudes | ✓ | |
 | Zonas de entrega y precios del express | ✓ | |
-| Temporadas: crearlas, ponerles precios y activarlas | ✓ | |
+| Temporada alta: precios del proveedor, encenderla y apagarla | ✓ | |
+| Ventas y ganancias | ✓ | |
 | Proveedores, inventario, pedidos y empleados | ✓ | |
 
 ## Módulos
@@ -172,6 +173,7 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 | Peluche | Tipo, tamaño, color, diseño y material |
 | Tarjeta | Tipo, temática, color, material, medidas, si es personalizable y elaboración (hecha en el negocio o comprada) |
 | Spray | Tipo (pintura floral, abrillantador de follaje o aromatizante floral), marca, contenido (ml) y fecha de vencimiento (opcional). La pintura lleva color y **cobro por flor pintada**; el aromatizante, aroma |
+| Accesorio | Tipo (corona, perfume, splash, moño, topper u otro), tamaño y, si se quiere, color y material. Se puede poner en un arreglo o agregar como adicional |
 
 - **Listas:** las opciones de cada lista están en `inventariocontrolador::opciones()`. La pantalla y la validación usan las mismas.
 - **Medidas:** en centímetros, con formato `20` o `20 x 30`.
@@ -201,6 +203,8 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 - **Nombre:** no puede repetirse.
 - **Precio:** mayor que 0.
 - **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades (tabla `tbarreglofloralinsumo`).
+- **Dos precios:** cada tarjeta muestra el precio **normal** y el de **temporada alta**; el que se cobra ahora va resaltado.
+- **Ver:** foto, los dos precios y lo que incluye. El costo y la ganancia (normal y en temporada alta) están en **Costo y ganancia**, que solo ve el propietario y se abre con un clic.
 - **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo el propietario los ve.
 
 ### Clientes
@@ -223,34 +227,37 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 
 - **Datos de toda solicitud:** cliente, tipo, fecha de entrega (no anterior a hoy), nota opcional y, si se quiere, a quién se asigna.
 - **Predefinida:** un arreglo del catálogo (el que el cliente eligió del catálogo de WhatsApp) por la cantidad (1 a 99), más **adicionales** opcionales: chocolates, cintas, peluches, tarjetas u otros productos, cada uno a su precio de venta.
-- **Personalizada:** el cliente elige los productos.
+- **Personalizada:** el cliente elige los productos. Cada producto se cobra a **su costo + el % de ganancia** que se elige (100% por defecto, es decir, el doble del costo), redondeado hacia arriba a ₡10. El % se cambia con − y +, con los botones 50%, 80%, 100% y 150%, o escribiéndolo (de 0 a 500), y se guarda en la solicitud.
   - **Con presupuesto:** los productos no pueden pasarse del monto que dio el cliente. La pantalla muestra cuánto queda y desactiva los productos que ya no alcanzan.
   - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo.
 - **Servicio express:** se elige la zona y se cobra su precio. La dirección de entrega es obligatoria.
-- **Flores pintadas (opcional):** se elige la pintura floral (spray) y cuántas flores se pintan; se cobra el "cobro por flor" de esa pintura por cada una. No se pueden pintar más flores de las que lleva el arreglo. El spray no se agrega como producto ni va dentro de los arreglos del catálogo.
-- **Total:** arreglo × cantidad + productos + flores pintadas + express. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
+- **Flores pintadas (opcional):** se elige la pintura floral (spray) y cuántas flores se pintan; se cobra el "cobro por flor" de esa pintura por cada una. El campo no deja escribir más flores de las que lleva el arreglo y el botón + se apaga al llegar al tope. El spray no se agrega como producto ni va dentro de los arreglos del catálogo.
+- **Total:** arreglo × cantidad + productos + flores pintadas + express. Debajo se ven los dos totales, con precios normales y en temporada alta, y (solo el propietario) el costo y la ganancia del personalizado. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
+- **Costo:** cada solicitud guarda lo que costaron sus flores y productos (`tbsolicitudencargocosto`), para calcular la ganancia en Ventas.
 - **Precios guardados:** se guardan los precios del momento. Si después cambian en el catálogo, el inventario o las zonas, las solicitudes ya registradas no cambian, ni siquiera al editarlas.
 - **Estados:** Pendiente → En proceso → Terminado; también puede pasar a Cancelado.
   - Para iniciarla, debe estar asignada a alguien.
   - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.
 - **Listado:** se filtra por estado, tipo y persona asignada. Las atrasadas se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
 
-### Temporadas y precios por temporada
+### Temporada alta
 
-- **Qué son:** fechas con precios especiales, como San Valentín, Día de la Madre, Día de la Novia o Día de las Flores Amarillas. El propietario puede crear todas las que necesite.
-- **Precios:** lo único que se escribe es **lo que cobra el proveedor por el paquete** en cada temporada (tabla `tbinventariotemporada`), en el formulario del producto, sección "Precio del proveedor en temporada". Lo demás se calcula solo:
-  - **Precio de venta del producto:** sube en la misma proporción que el precio del paquete (mismo porcentaje de ganancia). Por ejemplo, si el paquete de rosas pasa de ₡7 000 a ₡14 000, la rosa pasa de ₡600 a ₡1 200.
-  - **Precio de los arreglos:** sube en la misma proporción que el costo de todo lo que lleva el arreglo. Por ejemplo, el jarrón de rosas rojas cuesta ₡9 400 en temporada baja y ₡16 600 en temporada alta, así que su precio pasa de ₡35 000 a ₡61 900.
+- **Qué es:** las fechas en que suben las flores (San Valentín, Día de la Madre…). Hay una sola, "Temporada alta", y se enciende y se apaga a mano.
+- **Precios:** lo único que se escribe es **lo que cobra el proveedor por el paquete** en temporada alta (tabla `tbinventariotemporada`). Se puede hacer en la pantalla **Temporada alta** (todas las flores en una tabla) o en el formulario del producto. Lo demás se calcula solo, **con la misma ganancia en colones**:
+  - **Precio de venta del producto:** el normal + lo que subió su costo por unidad. Por ejemplo, si el paquete de 24 rosas pasa de ₡7 000 a ₡14 000, la rosa cuesta ₡291,66 más y pasa de ₡600 a ₡900.
+  - **Precio de los arreglos:** el normal + lo que subió el costo de todo lo que lleva. Por ejemplo, el Ramo Delicado cuesta ₡3 550 normal y ₡5 620 en temporada alta, así que pasa de ₡12 000 a ₡14 100.
   - Los precios calculados se redondean hacia arriba a ₡100.
-  - Si un producto no tiene precio del proveedor para la temporada, se usa el normal.
-- **Activar:** se hace a mano, en **Temporadas y precios → Usar sus precios**.
-  - Solo puede haber una temporada en uso. Al activar otra, la anterior se desactiva.
-  - Mientras esté en uso, el catálogo, el inventario y las solicitudes nuevas usan sus precios.
-  - En la barra de arriba aparece "Precios de …" para que todos lo vean.
-  - **Volver a precios normales** regresa a la temporada baja.
-- **Aviso flotante:** si hay una temporada en uso y hay flores o follajes sin el precio del proveedor para ella, el inventario lo avisa. Con **Agregar precios** se ponen todos desde una sola ventana. Los arreglos no necesitan aviso porque se calculan solos.
-- **Solicitudes:** guardan con qué temporada se cotizaron (`tbtemporadaid`) y sus precios no cambian después.
-- **Inactivar:** no se puede inactivar la temporada que está en uso.
+  - Si un producto no tiene precio del proveedor en temporada alta, se usa el normal.
+- **Encender:** en **Temporada alta → Encender temporada alta**. Mientras esté encendida, el catálogo, el inventario y las solicitudes nuevas usan sus precios, y en la barra de arriba aparece "Precios de Temporada alta". **Apagar y volver a precios normales** regresa a la temporada baja.
+- **Aviso flotante:** si está encendida y hay flores o follajes sin el precio del proveedor, el inventario lo avisa. Con **Agregar precios** se ponen todos desde una sola ventana.
+- **Solicitudes:** guardan si se cotizaron en temporada alta (`tbtemporadaid`) y sus precios no cambian después.
+
+### Ventas y ganancias
+
+- **Qué muestra:** las solicitudes **terminadas** de un período (hoy, esta semana, este mes, el mes pasado, todo o las fechas que se elijan). La fecha de la venta es el día en que se marcó como terminada.
+- **Totales:** lo vendido, lo que costaron las flores y productos, y la **ganancia** (vendido − costo), con el % que representa.
+- **Lista:** cada venta con su total, su costo y su ganancia. Las que se cotizaron en temporada alta lo indican.
+- Solo el propietario la ve.
 
 ### Empleados
 
@@ -293,7 +300,7 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 | Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
 | Clientes | Nombre, teléfono, dirección y estado |
 | Zonas de entrega | Nombre, precio y estado |
-| Temporadas | Nombre, cuándo se activaron y desactivaron sus precios, y estado |
+| Temporada alta | Cuándo se encendió y se apagó |
 
 ### Solicitudes de pedido de arreglo
 
@@ -337,4 +344,4 @@ Al final muestra cuántas pruebas pasaron. Las pruebas crean datos, así que des
 - **`Address already in use` al ejecutar `php -S`:** el puerto 8000 está ocupado. Use otro, por ejemplo `php -S localhost:8080`.
 - **"No se pudo completar la operación en la base de datos" o "Table … doesn't exist":** la base se creó con una versión anterior del script. Vuelva a ejecutar el paso 3, que borra la base y la crea de nuevo.
 - **Una página se queda en "Cargando…":** recargue con **Ctrl + Shift + R** para que el navegador no use archivos viejos. Si sigue igual, abra la consola (F12) para ver el error.
-- **Las fotos de los arreglos no aparecen:** revise que existan los archivos en `Publico/imagenes/muestras/`. Las fotos que se suben desde el sistema se guardan en `Publico/imagenes/arreglos/`, carpeta que no se sube a GitHub.
+- **Las fotos de los arreglos no aparecen:** revise que existan los archivos en `Publico/imagenes/catalogo/`. Las fotos que se suben desde el sistema se guardan en `Publico/imagenes/arreglos/`, carpeta que no se sube a GitHub.

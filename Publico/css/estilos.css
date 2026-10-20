@@ -2618,3 +2618,8 @@ h1 {
         margin-left: 0;
     }
 }
+
+/* Detalle sin foto (personalizados): el texto usa todo el ancho */
+.detalle-arreglo:has(> .foto-detalle[hidden]) {
+    grid-template-columns: 1fr;
+}
