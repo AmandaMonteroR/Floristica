@@ -192,6 +192,7 @@
 </dialog>
 
 <script src="js/menu.js"></script>
+<script src="js/historial.js"></script>
 <script src="js/proveedor.js"></script>
 </body>
 </html>

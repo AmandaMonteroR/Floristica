@@ -31,6 +31,9 @@ class encargocontrolador
     private $movimientos;
     private $generales;
     private $temporadas;
+    private $carpetafotos;
+    private $tiposfoto = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+    private $tamanomaximo = 2097152;
 
     public function __construct()
     {
@@ -44,6 +47,7 @@ class encargocontrolador
         $this->movimientos = new inventariomovimientorepositorio();
         $this->generales = new historicocontrolador();
         $this->temporadas = new preciotemporadacontrolador();
+        $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/solicitudes/';
     }
 
     // Precio que se cobra hoy. Con una temporada en uso, el de un producto sube con lo que cobra el proveedor
@@ -417,6 +421,97 @@ class encargocontrolador
         return $this->respuesta(true, 'Solicitud cancelada.');
     }
 
+    // Foto de cómo quedó el arreglo personalizado. Se puede agregar o cambiar en cualquier momento
+    // (menos si se canceló). La sube el propietario o quien tiene asignada la solicitud.
+    public function subirfoto($id, $foto, $usuario)
+    {
+        $id = (int) $id;
+        $encargo = $this->repositorio->obtenerporid($id);
+
+        if (!$encargo) {
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+        }
+
+        if (!$encargo->esPersonalizado()) {
+            return $this->respuesta(false, 'Solo los arreglos personalizados llevan foto; los del catálogo ya tienen la suya.');
+        }
+
+        if ($encargo->getTbsolicitudencargoestado() === 'Cancelado') {
+            return $this->respuesta(false, 'No se le puede agregar foto a una solicitud cancelada.');
+        }
+
+        if ($this->esdeotro($encargo, $usuario)) {
+            return $this->respuesta(false, 'Solo puede agregar la foto de las solicitudes asignadas a usted.');
+        }
+
+        $error = $this->validarfoto($foto);
+        if ($error !== '') {
+            return $this->respuesta(false, $error, ['errores' => ['tbsolicitudencargofoto' => $error]]);
+        }
+
+        $anterior = (string) $encargo->getTbsolicitudencargofoto();
+        $nueva = $this->guardarfoto($foto, $id);
+
+        try {
+            $this->entransaccion(function () use ($id, $nueva, $usuario) {
+                $this->repositorio->guardarfoto($id, $nueva);
+                $this->generales->registrar('solicitudencargo', $id, [], ['foto' => $nueva], $usuario['id']);
+            });
+        } catch (Throwable $excepcion) {
+            $this->eliminarfoto($nueva);
+            throw $excepcion;
+        }
+
+        $this->eliminarfoto($anterior);
+
+        return $this->respuesta(true, $anterior === '' ? 'Se agregó la foto del arreglo.' : 'Se cambió la foto del arreglo.',
+            ['tbsolicitudencargofoto' => $nueva]);
+    }
+
+    private function validarfoto($foto)
+    {
+        if (!is_array($foto) || ($foto['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return 'Elija la foto del arreglo.';
+        }
+        if ($foto['error'] !== UPLOAD_ERR_OK) {
+            return 'No se pudo subir la foto. Verifique que pese menos de 2 MB.';
+        }
+        if ($foto['size'] > $this->tamanomaximo) {
+            return 'La foto no puede pesar más de 2 MB.';
+        }
+        $imagen = @getimagesize($foto['tmp_name']);
+        if (!$imagen || !isset($this->tiposfoto[$imagen['mime']])) {
+            return 'La foto debe ser una imagen JPG, PNG o WEBP.';
+        }
+
+        return '';
+    }
+
+    private function guardarfoto($foto, $id)
+    {
+        if (!is_dir($this->carpetafotos)) {
+            mkdir($this->carpetafotos, 0775, true);
+        }
+
+        $tipo = getimagesize($foto['tmp_name'])['mime'];
+        $nombre = 'solicitud_' . $id . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $this->tiposfoto[$tipo];
+
+        if (!move_uploaded_file($foto['tmp_name'], $this->carpetafotos . $nombre)) {
+            throw new RuntimeException('No se pudo guardar la foto del arreglo.');
+        }
+
+        return 'imagenes/solicitudes/' . $nombre;
+    }
+
+    // Solo borra fotos de la carpeta de solicitudes
+    private function eliminarfoto($ruta)
+    {
+        $archivo = __DIR__ . '/../../Publico/' . $ruta;
+        if ($ruta !== '' && strpos($ruta, 'imagenes/solicitudes/') === 0 && is_file($archivo)) {
+            unlink($archivo);
+        }
+    }
+
     // Cambia el estado y lo deja en el historial con quién lo hizo
     private function cambiarestado($id, $estado, $usuario)
     {
@@ -469,6 +564,18 @@ class encargocontrolador
             $lista[] = [
                 'fecha'    => $cambio['fecha'],
                 'texto'    => $cambio['etiqueta'] . ' cambió de ' . $cambio['anterior'] . ' a ' . $cambio['nuevo'],
+                'hechopor' => $cambio['hechopor'],
+            ];
+        }
+
+        // Foto del arreglo personalizado
+        $sinformato = function ($campo, $valor) {
+            return $valor;
+        };
+        foreach ($this->generales->listar('solicitudencargo', $idencargo, ['foto' => 'La foto'], $sinformato) as $cambio) {
+            $lista[] = [
+                'fecha'    => $cambio['fecha'],
+                'texto'    => $cambio['anterior'] === null ? 'Se agregó la foto del arreglo' : 'Se cambió la foto del arreglo',
                 'hechopor' => $cambio['hechopor'],
             ];
         }
@@ -861,6 +968,18 @@ class encargocontrolador
         $datos['tbsolicitudencargopreciopintura'] = $preciopintura;
         $datos['tbsolicitudencargocostopintura'] = $costopintura;
 
+        // Con presupuesto, las flores pintadas también entran en el monto que dio el cliente
+        if ($tipo === 'Personalizado' && $datos['tbsolicitudencargomodalidad'] === 'Presupuesto' && $costopintura > 0
+            && !isset($errores['tbsolicitudencargopresupuesto']) && !isset($errores['insumos'])
+            && !isset($errores['tbsolicitudencargoflorespintadas'])
+            && $subtotalproductos + $costopintura > (float) $datos['tbsolicitudencargopresupuesto']) {
+            $errores['tbsolicitudencargoflorespintadas'] = 'Los productos (' . historicocontrolador::monto($subtotalproductos)
+                . ') y las flores pintadas (' . historicocontrolador::monto($costopintura) . ') se pasan del presupuesto ('
+                . historicocontrolador::monto($datos['tbsolicitudencargopresupuesto']) . ') por '
+                . historicocontrolador::monto($subtotalproductos + $costopintura - (float) $datos['tbsolicitudencargopresupuesto'])
+                . '. Pinte menos flores o quite algún producto.';
+        }
+
         // Fecha de entrega: al editar se acepta la que ya tenía aunque ya haya pasado
         $fecha = DateTime::createFromFormat('Y-m-d', $datos['tbsolicitudencargofechaentrega']);
         $mismafecha = !$esnuevo && $actual->getTbsolicitudencargofechaentrega() === $datos['tbsolicitudencargofechaentrega'];
@@ -983,6 +1102,7 @@ class encargocontrolador
             'tbsolicitudencargocostopintura'     => (float) $encargo->getTbsolicitudencargocostopintura(),
             'tbsolicitudencargoporcentaje'       => $encargo->getTbsolicitudencargoporcentaje() !== null ? (float) $encargo->getTbsolicitudencargoporcentaje() : null,
             'tbsolicitudencargocosto'            => (float) $encargo->getTbsolicitudencargocosto(),
+            'tbsolicitudencargofoto'             => (string) $encargo->getTbsolicitudencargofoto(),
             'descripcion'                        => $descripcion,
             'alcanzastock'                       => $alcanza,
         ];

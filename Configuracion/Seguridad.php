@@ -12,7 +12,7 @@ class Seguridad
         'cliente'    => '*',
         'cotizacion' => '*',
         'catalogo'   => ['', 'listar', 'obtener'],
-        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignarme', 'iniciar', 'terminar'],
+        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignarme', 'iniciar', 'terminar', 'subirfoto'],
     ];
 
     private static $usuario = false;

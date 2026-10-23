@@ -228,7 +228,7 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 - **Datos de toda solicitud:** cliente, tipo, fecha de entrega (no anterior a hoy), nota opcional y, si se quiere, a quién se asigna.
 - **Predefinida:** un arreglo del catálogo (el que el cliente eligió del catálogo de WhatsApp) por la cantidad (1 a 99), más **adicionales** opcionales: chocolates, cintas, peluches, tarjetas u otros productos, cada uno a su precio de venta.
 - **Personalizada:** el cliente elige los productos. Cada producto se cobra a **su costo + el % de ganancia** que se elige (100% por defecto, es decir, el doble del costo), redondeado hacia arriba a ₡10. El % se cambia con − y +, con los botones 50%, 80%, 100% y 150%, o escribiéndolo (de 0 a 500), y se guarda en la solicitud.
-  - **Con presupuesto:** los productos no pueden pasarse del monto que dio el cliente. La pantalla muestra cuánto queda y desactiva los productos que ya no alcanzan.
+  - **Con presupuesto:** los productos y las flores pintadas no pueden pasarse del monto que dio el cliente. Los precios ya llevan el % de ganancia: debajo de cada uno se ve "costo ₡294 + 80%" (el costo solo lo ve el propietario). La pantalla muestra cuánto queda, desactiva los productos que ya no alcanzan y no deja pintar más flores de las que alcanzan.
   - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo.
 - **Servicio express:** se elige la zona y se cobra su precio. La dirección de entrega es obligatoria.
 - **Flores pintadas (opcional):** se elige la pintura floral (spray) y cuántas flores se pintan; se cobra el "cobro por flor" de esa pintura por cada una. El campo no deja escribir más flores de las que lleva el arreglo y el botón + se apaga al llegar al tope. El spray no se agrega como producto ni va dentro de los arreglos del catálogo.
@@ -239,6 +239,7 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
   - Para iniciarla, debe estar asignada a alguien.
   - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.
 - **Listado:** se filtra por estado, tipo y persona asignada. Las atrasadas se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
+- **Foto del personalizado:** en **Ver** está el botón **Agregar foto** (o **Cambiar foto**) para guardar cómo quedó el arreglo. Se puede en cualquier estado menos Cancelado, la sube el propietario o quien tiene asignada la solicitud, y se ve en la lista y en Ver. JPG, PNG o WEBP de hasta 2 MB, en `Publico/imagenes/solicitudes/`.
 
 ### Temporada alta
 
@@ -271,10 +272,14 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 
 - Si se cierra un formulario sin guardar, los datos quedan en el navegador. Al abrirlo de nuevo aparece "Se recuperaron datos que no se habían guardado", con la opción **Descartar**.
 - Editar, inactivar, cancelar o terminar algo siempre pide confirmación.
+- **Botones de las tablas:** Ver, Historial y Asignar en gris; Editar, Iniciar y Terminar con el color de la floristería; Inactivar y Cancelar en rojo; Reactivar en verde.
+- El botón principal de cada pantalla (Nuevo producto, Nueva solicitud…) va siempre a la derecha del encabezado.
 
 ## Históricos
 
 Todo se registra en PHP. La base de datos solo guarda la información.
+
+La ventana **Historial** muestra en una sola fila los datos con que se registró, y después cada cambio como "antes → ahora", con la fecha y quién lo hizo. Arriba hay un filtro para ver solo los cambios de un dato (por ejemplo, Teléfono o Estado). En el celular, cada cambio se ve como una tarjeta.
 
 ### Proveedores
 
@@ -312,6 +317,7 @@ Se ven en **Ver** de cada solicitud, con fecha, hora y quién hizo el cambio:
 | Empleado asignado | `tbsolicitudencargoempleadohistorico` |
 | Fecha de entrega | `tbsolicitudencargofechaentregahistorico` |
 | Total | `tbsolicitudencargototalhistorico` |
+| Foto del arreglo personalizado | `tbsolicitudencargofotohistorico` |
 
 ### Movimientos de inventario
 

@@ -179,7 +179,7 @@
                         <tr>
                             <th>Producto</th>
                             <th>Cantidad</th>
-                            <th>Precio</th>
+                            <th id="columnaprecio">Precio</th>
                             <th>Subtotal</th>
                             <th><span class="solo-lector">Quitar</span></th>
                         </tr>
@@ -303,7 +303,14 @@
 
 <dialog id="dialogodetalle" class="dialogo dialogo-ancho">
     <div class="detalle-arreglo">
-        <img id="fotodetalle" class="foto-detalle" alt="">
+        <div class="columna-foto" id="columnafoto">
+            <img id="fotodetalle" class="foto-detalle" alt="">
+            <div class="foto-vacia" id="fotovacia" hidden><span aria-hidden="true">&#10047;</span>Todavía no tiene foto</div>
+            <input type="file" id="campofoto" accept="image/jpeg,image/png,image/webp" hidden>
+            <button type="button" class="boton boton-foto" id="botonfoto" hidden>Agregar foto</button>
+            <small class="nota-foto texto-suave" id="notafoto" hidden>JPG, PNG o WEBP de hasta 2 MB.</small>
+            <small class="error" id="errorfoto" role="alert"></small>
+        </div>
         <div>
             <h2 id="titulodetalle"></h2>
             <dl id="listadetalle" class="detalle"></dl>

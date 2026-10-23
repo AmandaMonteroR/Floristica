@@ -336,6 +336,8 @@ CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargoporcentaje DECIMAL(6,2),
     -- Lo que costaron las flores y productos (para calcular la ganancia en Ventas)
     tbsolicitudencargocosto DECIMAL(10,2),
+    -- Foto de cómo quedó el arreglo (personalizados); se puede agregar después de registrarla
+    tbsolicitudencargofoto VARCHAR(255),
     PRIMARY KEY (tbsolicitudencargoid)
 );
 
@@ -562,6 +564,14 @@ CREATE TABLE tbsolicitudencargototalhistorico (
     tbempleadoid INT,
     tbsolicitudencargototalhistoricofecha DATETIME,
     PRIMARY KEY (tbsolicitudencargototalhistoricoid)
+);
+CREATE TABLE tbsolicitudencargofotohistorico (
+    tbsolicitudencargofotohistoricoid INT,
+    tbsolicitudencargoid INT,
+    tbsolicitudencargofotohistoricovalor VARCHAR(255),
+    tbempleadoid INT,
+    tbsolicitudencargofotohistoricofecha DATETIME,
+    PRIMARY KEY (tbsolicitudencargofotohistoricoid)
 );
 
 -- ---------- Históricos de clientes ----------

@@ -1119,6 +1119,60 @@ $r = $propietario->get('venta', 'resumen', ['desde' => 'todo']);
 prueba('"Todo" empieza en la primera venta (20/09/2026)', (datos($r)['desde'] ?? '') === '2026-09-20', datos($r)['desde'] ?? '');
 
 /* =====================================================================
+ * 14. Presupuesto y foto de los personalizados (Parte 11)
+ * =================================================================== */
+seccion('14. Presupuesto y foto de los personalizados');
+
+// 4 rosas rojas al 100% = 4 × 590 = 2 360; la pintura azul cobra 300 por flor
+$conpresupuesto = [
+    'tbclienteid' => 6, 'tbempleadoid' => '2', 'tbsolicitudencargofechaentrega' => $manana, 'tbsolicitudencargonota' => '',
+    'tbsolicitudencargotipo' => 'Personalizado', 'tbsolicitudencargomodalidad' => 'Presupuesto', 'tbsolicitudencargopresupuesto' => '3000',
+    'tbsolicitudencargoporcentaje' => '100', 'tbsolicitudencargosprayid' => 54,
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 4]],
+];
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargoflorespintadas' => '3'] + $conpresupuesto);
+prueba('Las flores pintadas también entran en el presupuesto (2 360 + 3 × 300 = 3 260 > 3 000)',
+    tieneerror($r, 'tbsolicitudencargoflorespintadas') && strpos(errores($r)['tbsolicitudencargoflorespintadas'] ?? '', 'presupuesto') !== false, mensaje($r));
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargoflorespintadas' => '2'] + $conpresupuesto);
+$idfoto = datos($r)['tbsolicitudencargoid'] ?? 0;
+prueba('Con 2 flores pintadas sí alcanza: 2 360 + 600 = 2 960', exito($r) && (float) (datos($r)['total'] ?? 0) === 2960.0, mensaje($r));
+
+$r = $propietario->get('encargo', 'subirfoto', ['id' => $idfoto]);
+prueba('Subir la foto solo acepta POST (405)', $r['codigo'] === 405, 'HTTP ' . $r['codigo']);
+$r = $propietario->post('encargo', 'subirfoto', ['id' => $idfoto]);
+prueba('Pide la foto si no se eligió', !exito($r) && tieneerror($r, 'tbsolicitudencargofoto'), mensaje($r));
+$r = $propietario->post('encargo', 'subirfoto', ['id' => $idfoto], ['tbsolicitudencargofoto' => __FILE__]);
+prueba('Rechaza archivos que no son imágenes', !exito($r) && tieneerror($r, 'tbsolicitudencargofoto'), mensaje($r));
+$r = $propietario->post('encargo', 'subirfoto', ['id' => 1], ['tbsolicitudencargofoto' => $fotoprueba]);
+prueba('Los predefinidos no llevan foto propia (ya tienen la del catálogo)', !exito($r), mensaje($r));
+$r = $carlos->post('encargo', 'subirfoto', ['id' => $idfoto], ['tbsolicitudencargofoto' => $fotoprueba]);
+prueba('Un empleado no puede subir la foto de una solicitud de otra persona', !exito($r), mensaje($r));
+
+$r = $lorena->post('encargo', 'subirfoto', ['id' => $idfoto], ['tbsolicitudencargofoto' => $fotoprueba]);
+$conf = datos($propietario->get('encargo', 'obtener', ['id' => $idfoto]));
+$primerafoto = $conf['tbsolicitudencargofoto'] ?? '';
+prueba('La empleada asignada sube la foto del arreglo', exito($r) && strpos($primerafoto, 'imagenes/solicitudes/') === 0
+    && is_file(__DIR__ . '/../Publico/' . $primerafoto), mensaje($r));
+prueba('Queda en el historial de la solicitud', in_array('Se agregó la foto del arreglo', array_column($conf['historial'] ?? [], 'texto'), true));
+$lista = array_column(datos($propietario->get('encargo', 'listar')), null, 'tbsolicitudencargoid');
+prueba('La lista de solicitudes trae la foto', ($lista[$idfoto]['tbsolicitudencargofoto'] ?? '') === $primerafoto);
+
+$r = $propietario->post('encargo', 'subirfoto', ['id' => $idfoto], ['tbsolicitudencargofoto' => $fotoprueba]);
+$conf = datos($propietario->get('encargo', 'obtener', ['id' => $idfoto]));
+clearstatcache();
+prueba('El propietario la cambia y se borra la foto anterior', exito($r) && ($conf['tbsolicitudencargofoto'] ?? '') !== $primerafoto
+    && !is_file(__DIR__ . '/../Publico/' . $primerafoto), mensaje($r));
+prueba('…y el historial dice que se cambió', in_array('Se cambió la foto del arreglo', array_column($conf['historial'] ?? [], 'texto'), true));
+
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idfoto, 'tbsolicitudencargoflorespintadas' => '1'] + $conpresupuesto);
+$conf2 = datos($propietario->get('encargo', 'obtener', ['id' => $idfoto]));
+prueba('Editar la solicitud no le quita la foto', exito($r) && ($conf2['tbsolicitudencargofoto'] ?? '') === ($conf['tbsolicitudencargofoto'] ?? 'x'), mensaje($r));
+
+$propietario->post('encargo', 'cancelar', ['id' => $idfoto]);
+$r = $propietario->post('encargo', 'subirfoto', ['id' => $idfoto], ['tbsolicitudencargofoto' => $fotoprueba]);
+prueba('A una solicitud cancelada no se le agrega foto', !exito($r), mensaje($r));
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

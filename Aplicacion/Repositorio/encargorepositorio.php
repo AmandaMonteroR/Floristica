@@ -116,6 +116,13 @@ class encargorepositorio
         return $sentencia->execute([$idempleado, $id]);
     }
 
+    // La foto se guarda aparte: editar la solicitud no la cambia
+    public function guardarfoto($id, $ruta)
+    {
+        $sentencia = $this->conexion->prepare('UPDATE tbsolicitudencargo SET tbsolicitudencargofoto = ? WHERE tbsolicitudencargoid = ?');
+        return $sentencia->execute([$ruta, (int) $id]);
+    }
+
     public function cambiarestado($id, $estado)
     {
         $sentencia = $this->conexion->prepare('UPDATE tbsolicitudencargo SET tbsolicitudencargoestado = ? WHERE tbsolicitudencargoid = ?');

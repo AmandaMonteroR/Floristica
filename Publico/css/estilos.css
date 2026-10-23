@@ -2620,6 +2620,296 @@ h1 {
 }
 
 /* Detalle sin foto (personalizados): el texto usa todo el ancho */
-.detalle-arreglo:has(> .foto-detalle[hidden]) {
+.detalle-arreglo:has(> .foto-detalle[hidden]),
+.detalle-arreglo:has(> .columna-foto[hidden]) {
     grid-template-columns: 1fr;
+}
+
+/* ---------- Parte 11: acciones como botones ---------- */
+
+/* Ver, Historial, Asignar…: gris. Editar, Iniciar, Terminar…: color de la floristería.
+   Inactivar y Cancelar: rojo. Reactivar: verde. */
+.columna-acciones .enlace,
+.tarjeta-acciones .enlace {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.7rem;
+    margin: 0.12rem 0 0.12rem 0.25rem;
+    padding: 0.12rem 0.7rem;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #4a2a3a;
+    background: #f6f0f3;
+    border: 1px solid #e6d6de;
+    border-radius: 999px;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.columna-acciones .enlace:hover,
+.tarjeta-acciones .enlace:hover {
+    text-decoration: none;
+    background: #efe4ea;
+    border-color: #d9c3ce;
+}
+
+.columna-acciones .enlace:focus-visible,
+.tarjeta-acciones .enlace:focus-visible {
+    outline: 2px solid var(--principal);
+    outline-offset: 2px;
+}
+
+.columna-acciones .enlace[data-accion="editar"],
+.columna-acciones .enlace[data-accion="iniciar"],
+.columna-acciones .enlace[data-accion="terminar"],
+.columna-acciones .enlace[data-accion="recibir"],
+.columna-acciones .enlace[data-accion="confirmar"],
+.tarjeta-acciones .enlace[data-accion="editar"] {
+    color: var(--principal-oscuro);
+    background: #ffffff;
+    border-color: var(--principal);
+}
+
+.columna-acciones .enlace[data-accion="editar"]:hover,
+.columna-acciones .enlace[data-accion="iniciar"]:hover,
+.columna-acciones .enlace[data-accion="terminar"]:hover,
+.columna-acciones .enlace[data-accion="recibir"]:hover,
+.columna-acciones .enlace[data-accion="confirmar"]:hover,
+.tarjeta-acciones .enlace[data-accion="editar"]:hover {
+    background: var(--rosa-claro);
+    border-color: var(--principal-oscuro);
+}
+
+.columna-acciones .enlace-peligro,
+.tarjeta-acciones .enlace-peligro {
+    color: var(--peligro);
+    background: var(--peligro-fondo);
+    border-color: #f0c4be;
+}
+
+.columna-acciones .enlace-peligro:hover,
+.tarjeta-acciones .enlace-peligro:hover {
+    background: #f7d8d3;
+    border-color: #e3a49b;
+}
+
+.columna-acciones .enlace[data-accion="reactivar"],
+.tarjeta-acciones .enlace[data-accion="reactivar"] {
+    color: var(--verde);
+    background: var(--verde-fondo);
+    border-color: #b9d6c4;
+}
+
+.columna-acciones .enlace[data-accion="reactivar"]:hover,
+.tarjeta-acciones .enlace[data-accion="reactivar"]:hover {
+    background: #d2e6d9;
+    border-color: #8fbd9f;
+}
+
+/* En el celular, los botones van a la derecha debajo de los datos */
+@media (max-width: 760px) {
+    .contenedor > .tabla-contenedor .tabla td.columna-acciones {
+        text-align: right;
+    }
+}
+
+/* ---------- Parte 11: el botón del encabezado siempre a la derecha ---------- */
+
+.encabezado > div:first-child {
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.encabezado > .boton {
+    flex: none;
+    margin-left: auto;
+}
+
+/* ---------- Parte 11: historial con filtro ---------- */
+
+.filtro-historial {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin: 0 0 0.75rem;
+}
+
+.campo-filtro-historial {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.campo-filtro-historial select {
+    min-width: 12rem;
+    padding: 0.4rem 0.6rem;
+    font: inherit;
+    font-weight: 400;
+    color: var(--texto);
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.tabla-historial td {
+    white-space: normal;
+    vertical-align: top;
+}
+
+.tabla-historial td:first-child {
+    white-space: nowrap;
+}
+
+/* Solo en la ventana de historial: la columna del cambio es la más ancha */
+#dialogohistorial .tabla-historial th:nth-child(3) {
+    width: 50%;
+}
+
+#dialogohistorial .tabla-historial td:last-child {
+    min-width: 8.5rem;
+}
+
+#dialogohistorial .tabla-historial td:nth-child(2):not([colspan]) {
+    min-width: 7.5rem;
+}
+
+.etiqueta-registro {
+    display: inline-block;
+    padding: 0.1rem 0.55rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--principal-oscuro);
+    background: var(--rosa-claro);
+    border-radius: 999px;
+}
+
+.datos-iniciales {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    gap: 0.35rem 1rem;
+    margin: 0.45rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.dato-inicial {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+}
+
+.celda-cambio {
+    min-width: 12rem;
+}
+
+.valor-anterior {
+    color: var(--texto-suave);
+}
+
+.flecha-cambio {
+    margin: 0 0.35rem;
+    font-weight: 700;
+    color: var(--principal);
+}
+
+.valor-nuevo {
+    font-weight: 600;
+}
+
+/* En el celular, cada cambio del historial es una tarjeta (sin moverse de lado) */
+@media (max-width: 600px) {
+    #dialogohistorial .tabla-historial thead {
+        display: none;
+    }
+
+    #dialogohistorial .tabla-historial,
+    #dialogohistorial .tabla-historial tbody,
+    #dialogohistorial .tabla-historial tr,
+    #dialogohistorial .tabla-historial td {
+        display: block;
+        width: auto;
+    }
+
+    #dialogohistorial .tabla-historial tr {
+        padding: 0.6rem 0.75rem;
+        border-bottom: 1px solid var(--borde);
+    }
+
+    #dialogohistorial .tabla-historial tr:last-child {
+        border-bottom: none;
+    }
+
+    #dialogohistorial .tabla-historial td {
+        min-width: 0 !important;
+        padding: 0.1rem 0;
+        border: none;
+    }
+
+    #dialogohistorial .tabla-historial td:first-child,
+    #dialogohistorial .tabla-historial td:last-child {
+        font-size: 0.8rem;
+        color: var(--texto-suave);
+    }
+
+    #dialogohistorial .tabla-historial td:nth-child(2):not([colspan]) {
+        font-weight: 600;
+    }
+
+    #dialogohistorial .tabla-historial td:last-child:not(.vacio)::before {
+        content: "Hecho por ";
+    }
+
+    .campo-filtro-historial select {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
+
+/* ---------- Parte 11: foto del arreglo personalizado ---------- */
+
+.columna-foto {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.foto-vacia {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    aspect-ratio: 4 / 3;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+    background: var(--rosa-claro);
+    border: 1px dashed #e7b6c8;
+    border-radius: var(--radio);
+}
+
+.foto-vacia span {
+    font-size: 1.8rem;
+    color: var(--principal);
+}
+
+.boton-foto {
+    width: 100%;
+}
+
+.texto-exito {
+    font-size: 0.85rem;
+    color: var(--verde);
+}
+
+/* Debajo del precio de un producto del personalizado: costo + % */
+.detalle-precio {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+    white-space: nowrap;
 }

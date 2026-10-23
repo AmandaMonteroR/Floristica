@@ -47,6 +47,13 @@ const avisoasignar = document.getElementById('avisoasignar');
 const botonguardarasignar = document.getElementById('botonguardarasignar');
 const dialogodetalle = document.getElementById('dialogodetalle');
 const fotodetalle = document.getElementById('fotodetalle');
+const columnafoto = document.getElementById('columnafoto');
+const fotovacia = document.getElementById('fotovacia');
+const campofoto = document.getElementById('campofoto');
+const botonfoto = document.getElementById('botonfoto');
+const notafoto = document.getElementById('notafoto');
+const errorfoto = document.getElementById('errorfoto');
+const columnaprecio = document.getElementById('columnaprecio');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
 const cuerpocobro = document.getElementById('cuerpocobro');
@@ -68,6 +75,7 @@ let datosoriginales = {};
 let datosservidor = {};
 let opciones = { arreglos: [], empleados: [], clientes: [], zonas: [], productos: [], pinturas: [] };
 let encargos = [];
+let idfoto = null;
 let lineas = [];
 
 /* ---------- Ayudas ---------- */
@@ -289,6 +297,11 @@ function sumaproductos() {
     return lineas.reduce((suma, linea) => suma + (linea.tbinventarioid ? subtotallinea(linea) : 0), 0);
 }
 
+// Lo que entra en el presupuesto del cliente: los productos y las flores pintadas
+function gastopresupuesto() {
+    return sumaproductos() + calcular().pintura;
+}
+
 function presupuesto() {
     return formulario.elements.tbsolicitudencargomodalidad.value === 'Presupuesto' && esPersonalizado()
         ? parseFloat(formulario.elements.tbsolicitudencargopresupuesto.value) || 0
@@ -305,7 +318,7 @@ function opcionesproducto(linea) {
         .map((otra) => String(otra.tbinventarioid));
     // Con presupuesto: lo que queda sin contar esta línea
     const tope = presupuesto();
-    const disponible = tope !== null ? tope - (sumaproductos() - (linea.tbinventarioid ? subtotallinea(linea) : 0)) : null;
+    const disponible = tope !== null ? tope - (gastopresupuesto() - (linea.tbinventarioid ? subtotallinea(linea) : 0)) : null;
 
     let html = '<option value="">Seleccione…</option>';
 
@@ -336,7 +349,18 @@ function opcionesproducto(linea) {
     return html;
 }
 
+// Debajo del precio de un producto del personalizado: su costo + el % (solo el propietario ve el costo)
+function detalleprecio(linea) {
+    const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+    if (!esPersonalizado() || !espropietario || !producto || usaprecioguardado(linea)) {
+        return '';
+    }
+    const costo = opciones.temporada ? producto.costoalto : producto.costonormal;
+    return `<small class="detalle-precio">costo ${montocorto(costo)} + ${porcentaje()}%</small>`;
+}
+
 function dibujarlineas() {
+    columnaprecio.textContent = esPersonalizado() ? `Precio (costo + ${porcentaje()}%)` : 'Precio';
     if (lineas.length === 0) {
         const texto = esPersonalizado()
             ? 'Use "Agregar producto" para elegir las flores, el papel, la base y lo demás que quiere el cliente.'
@@ -353,7 +377,7 @@ function dibujarlineas() {
                         <button type="button" class="boton-contador" data-pasolinea="1" aria-label="Agregar una unidad del producto ${indice + 1}">+</button>
                     </div>
                 </td>
-                <td class="precio-linea">${linea.tbinventarioid ? formatearmonto(preciolinea(linea)) : '—'}</td>
+                <td class="precio-linea">${linea.tbinventarioid ? formatearmonto(preciolinea(linea)) + detalleprecio(linea) : '—'}</td>
                 <td class="subtotal-linea">${linea.tbinventarioid ? formatearmonto(subtotallinea(linea)) : '—'}</td>
                 <td><button type="button" class="enlace enlace-peligro" data-quitar="${indice}" aria-label="Quitar producto ${indice + 1}">Quitar</button></td>
             </tr>`).join('');
@@ -506,10 +530,16 @@ function costocotizado() {
 // Cuántas flores se pueden pintar como máximo (null si todavía no se sabe)
 function topeflores() {
     const tipo = formulario.elements.tbsolicitudencargotipo.value;
-    if (tipo === 'Personalizado' || (tipo === 'Predefinido' && formulario.elements.tbarreglofloralid.value)) {
-        return florescotizadas();
+    if (!(tipo === 'Personalizado' || (tipo === 'Predefinido' && formulario.elements.tbarreglofloralid.value))) {
+        return null;
     }
-    return null;
+    // Con presupuesto, también hasta donde alcance después de los productos
+    const tope = presupuesto();
+    const cobro = preciopintura();
+    if (tope !== null && tope > 0 && cobro > 0) {
+        return Math.min(florescotizadas(), Math.max(0, Math.floor((tope - sumaproductos()) / cobro)));
+    }
+    return florescotizadas();
 }
 
 // Debajo de las flores pintadas: cuántas lleva el arreglo. No deja pintar más de las que hay.
@@ -526,7 +556,9 @@ function revisarpintura(cuentas) {
     notapintura.textContent = formulario.elements.tbsolicitudencargotipo.value === ''
         ? '' : flores === 0
             ? 'No lleva flores para pintar.'
-            : `Se pueden pintar hasta ${flores} ${flores === 1 ? 'flor' : 'flores y follajes'}.`;
+            : tope !== null && tope < flores
+                ? `Lleva ${flores} ${flores === 1 ? 'flor' : 'flores y follajes'}; con el presupuesto alcanza para pintar ${tope}.`
+                : `Se pueden pintar hasta ${flores} ${flores === 1 ? 'flor' : 'flores y follajes'}.`;
 
     const mas = formulario.querySelector('[data-pasoflores="1"]');
     mas.disabled = tope !== null && (parseInt(campo.value, 10) || 0) >= tope;
@@ -535,6 +567,13 @@ function revisarpintura(cuentas) {
 }
 
 function actualizarresumen() {
+    // Primero las flores pintadas se ajustan al tope, para que las cuentas salgan bien
+    const topepintura = topeflores();
+    const campopintadas = formulario.elements.tbsolicitudencargoflorespintadas;
+    if (topepintura !== null && (parseInt(campopintadas.value, 10) || 0) > topepintura) {
+        campopintadas.value = topepintura > 0 ? String(topepintura) : '';
+    }
+
     const cuentas = calcular();
     const filas = [];
 
@@ -585,10 +624,12 @@ function actualizarresumen() {
     const tope = presupuesto();
     restopresupuesto.hidden = tope === null || tope <= 0;
     if (tope !== null && tope > 0) {
-        const resto = tope - cuentas.productos;
+        const resto = tope - cuentas.productos - cuentas.pintura;
+        const gasto = cuentas.pintura > 0
+            ? `Productos ${montocorto(cuentas.productos)} + flores pintadas ${montocorto(cuentas.pintura)}. ` : '';
         restopresupuesto.textContent = resto >= 0
-            ? `Quedan ${formatearmonto(resto)} del presupuesto de ${formatearmonto(tope)}`
-            : `Se pasa del presupuesto por ${formatearmonto(-resto)}`;
+            ? `${gasto}Quedan ${formatearmonto(resto)} del presupuesto de ${formatearmonto(tope)}`
+            : `${gasto}Se pasa del presupuesto por ${formatearmonto(-resto)}`;
         restopresupuesto.classList.toggle('texto-peligro', resto < 0);
     }
 }
@@ -835,8 +876,9 @@ async function cargarencargos() {
         const sinstock = abierto && !encargo.alcanzastock
             ? '<span class="aviso-stock" title="No alcanza el inventario para prepararla">Falta stock</span>'
             : '';
-        const imagen = encargo.tbarreglofloralfoto
-            ? `<img src="${escapar(encargo.tbarreglofloralfoto)}" alt="">`
+        const foto = encargo.tbsolicitudencargotipo === 'Personalizado' ? encargo.tbsolicitudencargofoto : encargo.tbarreglofloralfoto;
+        const imagen = foto
+            ? `<img src="${escapar(foto)}" alt="">`
             : '<span class="icono-personalizado" aria-hidden="true">✿</span>';
         const asignado = encargo.tbempleadoid ? escapar(encargo.tbempleadonombre) : 'Sin asignar';
 
@@ -980,9 +1022,22 @@ async function verdetalle(id) {
         ['Nota', encargo.tbsolicitudencargonota],
     ];
 
-    fotodetalle.hidden = !encargo.tbarreglofloralfoto;
-    fotodetalle.src = encargo.tbarreglofloralfoto || '';
-    fotodetalle.alt = encargo.tbarreglofloralnombre;
+    // Foto: la del arreglo del catálogo, o la que se le agregó al personalizado
+    const personalizado = encargo.tbsolicitudencargotipo === 'Personalizado';
+    const foto = personalizado ? encargo.tbsolicitudencargofoto : encargo.tbarreglofloralfoto;
+    const puedefoto = personalizado && encargo.tbsolicitudencargoestado !== 'Cancelado'
+        && (espropietario || encargo.tbempleadoid === usuarioactual.id);
+    idfoto = encargo.tbsolicitudencargoid;
+    fotodetalle.hidden = !foto;
+    fotodetalle.src = foto || '';
+    fotodetalle.alt = personalizado ? 'Foto del arreglo personalizado' : encargo.tbarreglofloralnombre;
+    fotovacia.hidden = Boolean(foto) || !puedefoto;
+    botonfoto.hidden = !puedefoto;
+    notafoto.hidden = !puedefoto;
+    botonfoto.textContent = foto ? 'Cambiar foto' : 'Agregar foto';
+    errorfoto.textContent = '';
+    errorfoto.className = 'error';
+    columnafoto.hidden = !foto && !puedefoto;
     titulodetalle.textContent = `Solicitud N.º ${encargo.tbsolicitudencargoid}: ${encargo.descripcion}`;
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
@@ -1034,7 +1089,44 @@ async function verdetalle(id) {
                 <td>${cambio.hechopor ? escapar(cambio.hechopor) : '<span class="texto-suave">No registrado</span>'}</td>
             </tr>`).join('');
 
-    dialogodetalle.showModal();
+    if (!dialogodetalle.open) {
+        dialogodetalle.showModal();
+    }
+}
+
+// Sube la foto del personalizado y vuelve a mostrar el detalle con la foto nueva
+async function subirfoto() {
+    const archivo = campofoto.files[0];
+    if (!archivo) {
+        return;
+    }
+
+    if (archivo.size > 2 * 1024 * 1024) {
+        errorfoto.textContent = 'La foto no puede pesar más de 2 MB.';
+        campofoto.value = '';
+        return;
+    }
+
+    const datos = new FormData();
+    datos.append('id', idfoto);
+    datos.append('tbsolicitudencargofoto', archivo);
+    botonfoto.disabled = true;
+    botonfoto.textContent = 'Subiendo…';
+
+    const respuesta = await enviar('subirfoto', datos);
+    botonfoto.disabled = false;
+    campofoto.value = '';
+
+    if (!respuesta.exito) {
+        errorfoto.textContent = respuesta.mensaje;
+        botonfoto.textContent = fotodetalle.hidden ? 'Agregar foto' : 'Cambiar foto';
+        return;
+    }
+
+    await verdetalle(idfoto);
+    errorfoto.textContent = respuesta.mensaje;
+    errorfoto.className = 'texto-exito';
+    cargarencargos();
 }
 
 /* ---------- Acciones de estado ---------- */
@@ -1226,7 +1318,7 @@ formulario.addEventListener('click', (evento) => {
         // Con presupuesto, no deja subir si ya no alcanza
         const tope = presupuesto();
         if (tope !== null && nueva > actual && linea.tbinventarioid
-            && sumaproductos() + preciolinea(linea) > tope) {
+            && gastopresupuesto() + preciolinea(linea) > tope) {
             nueva = actual;
             restopresupuesto.textContent = 'No alcanza el presupuesto para agregar otra unidad.';
             restopresupuesto.classList.add('texto-peligro');
@@ -1394,6 +1486,8 @@ document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncancelarasignar').addEventListener('click', () => dialogoasignar.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
+botonfoto.addEventListener('click', () => campofoto.click());
+campofoto.addEventListener('change', subirfoto);
 document.getElementById('botondescartarborrador').addEventListener('click', () => {
     borrarborrador();
     llenarformulario(datosservidor);

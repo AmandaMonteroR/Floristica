@@ -114,7 +114,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
-    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios'];
+    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -331,6 +331,9 @@ try {
                     break;
                 case 'cancelar':
                     $respuesta = $controlador->cancelar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'subirfoto':
+                    $respuesta = $controlador->subirfoto($_POST['id'] ?? 0, $_FILES['tbsolicitudencargofoto'] ?? null, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

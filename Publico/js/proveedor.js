@@ -34,9 +34,6 @@ const tituloconfirmacion = document.getElementById('tituloconfirmacion');
 const mensajeconfirmacion = document.getElementById('mensajeconfirmacion');
 const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmacion');
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
-const dialogohistorial = document.getElementById('dialogohistorial');
-const titulohistorial = document.getElementById('titulohistorial');
-const cuerpohistorial = document.getElementById('cuerpohistorial');
 const selectprovincia = formulario.elements.tbproveedorprovincia;
 const selectcanton = formulario.elements.tbproveedorcanton;
 const selectdistrito = formulario.elements.tbproveedordistrito;
@@ -722,56 +719,14 @@ document.getElementById('botoncancelar').addEventListener('click', () => dialogo
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
-// "2026-10-11 15:25:00" -> "11/10/2026 3:25 p. m."
-function formatearfechahora(fechahora) {
-    if (!fechahora) {
-        return '';
-    }
-    const [fecha, hora = '00:00'] = fechahora.split(' ');
-    let [horas, minutos] = hora.split(':').map(Number);
-    const sufijo = horas < 12 ? 'a. m.' : 'p. m.';
-    horas = horas % 12 || 12;
-    return `${formatearfecha(fecha)} ${horas}:${String(minutos).padStart(2, '0')} ${sufijo}`;
-}
-
-function mostrarvalorhistorial(campo, valor) {
-    if (valor === null) {
-        return '<span class="texto-suave">Registro inicial</span>';
-    }
-    if (valor === '') {
-        return '<span class="texto-suave">Sin registrar</span>';
-    }
-    return escapar(campo === 'telefono' ? mostrartelefono(valor) : valor);
-}
-
-async function verhistorial() {
-    const respuesta = await consultar('historial', { id: iddetalle });
-
-    if (!respuesta.exito) {
-        mostraraviso(respuesta.mensaje, 'error');
-        return;
-    }
-
-    titulohistorial.textContent = `Historial de ${titulodetalle.textContent}`;
-
-    if (respuesta.datos.length === 0) {
-        cuerpohistorial.innerHTML = '<tr><td colspan="5" class="vacio">Este proveedor todavía no tiene cambios registrados.</td></tr>';
-    } else {
-        cuerpohistorial.innerHTML = respuesta.datos.map((movimiento) => `
-            <tr>
-                <td>${formatearfechahora(movimiento.fecha)}</td>
-                <td>${escapar(movimiento.etiqueta)}</td>
-                <td>${mostrarvalorhistorial(movimiento.campo, movimiento.anterior)}</td>
-                <td>${mostrarvalorhistorial(movimiento.campo, movimiento.nuevo)}</td>
-                <td>${movimiento.hechopor ? escapar(movimiento.hechopor) : '<span class="texto-suave">No registrado</span>'}</td>
-            </tr>`).join('');
-    }
-
-    dialogohistorial.showModal();
+// Historial: la misma ventana que los demás módulos (historial.js); el teléfono se muestra con guion
+function verhistorial() {
+    ventanahistorial.mostrar('proveedor', iddetalle, titulodetalle.textContent, {
+        formatear: (campo, valor) => (campo === 'telefono' ? mostrartelefono(valor) : valor),
+    });
 }
 
 document.getElementById('botonverhistorial').addEventListener('click', verhistorial);
-document.getElementById('botoncerrarhistorial').addEventListener('click', () => dialogohistorial.close());
 
 const ubicacioneslistas = cargarubicaciones();
 cargarproveedores();
