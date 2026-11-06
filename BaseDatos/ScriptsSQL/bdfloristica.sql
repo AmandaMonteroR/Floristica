@@ -338,6 +338,9 @@ CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargocosto DECIMAL(10,2),
     -- Foto de cómo quedó el arreglo (personalizados); se puede agregar después de registrarla
     tbsolicitudencargofoto VARCHAR(255),
+    -- Foto de referencia de lo que quiere la clienta (personalizados): la del arreglo del catálogo
+    -- de la propuesta que se usó, o la foto que mandó la clienta cuando se valoró el ramo
+    tbsolicitudencargoreferencia VARCHAR(255),
     PRIMARY KEY (tbsolicitudencargoid)
 );
 
@@ -580,6 +583,14 @@ CREATE TABLE tbsolicitudencargofotohistorico (
     tbempleadoid INT,
     tbsolicitudencargofotohistoricofecha DATETIME,
     PRIMARY KEY (tbsolicitudencargofotohistoricoid)
+);
+CREATE TABLE tbsolicitudencargoreferenciahistorico (
+    tbsolicitudencargoreferenciahistoricoid INT,
+    tbsolicitudencargoid INT,
+    tbsolicitudencargoreferenciahistoricovalor VARCHAR(255),
+    tbempleadoid INT,
+    tbsolicitudencargoreferenciahistoricofecha DATETIME,
+    PRIMARY KEY (tbsolicitudencargoreferenciahistoricoid)
 );
 
 -- ---------- Históricos de clientes ----------

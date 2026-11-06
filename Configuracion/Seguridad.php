@@ -11,7 +11,7 @@ class Seguridad
         'cuenta'     => ['cambiarclave'],
         'cliente'    => '*',
         'cotizacion' => '*',
-        'catalogo'   => ['', 'listar', 'obtener', 'buscarporfoto'],
+        'catalogo'   => ['', 'listar', 'obtener', 'buscarporfoto', 'valorar'],
         'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignarme', 'iniciar', 'terminar', 'subirfoto', 'sugerir'],
     ];
 

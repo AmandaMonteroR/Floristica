@@ -16,7 +16,7 @@ class historicorepositorio
         'temporada'     => ['nombre', 'vigente', 'estado'],
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
         'pedido'        => ['estado'],
-        'solicitudencargo' => ['fechaentrega', 'total', 'foto'],
+        'solicitudencargo' => ['fechaentrega', 'total', 'foto', 'referencia'],
         'cliente'       => ['nombre', 'telefono', 'direccion', 'estado'],
         'zonaentrega'   => ['nombre', 'precio', 'estado'],
     ];

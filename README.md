@@ -224,6 +224,23 @@ Las huellas del catálogo se guardan en `tbarreglofloralhuella`. Se calculan sol
 
 **Limitación:** compara colores y forma, no "entiende" qué flores son: un ramo de rosas rojas se parece a otro ramo rojo, aunque sea de otras flores.
 
+**Lupa:** en los resultados, en las propuestas del asistente y en las fotos de las solicitudes, al pasar el mouse por una foto se ve más grande junto al puntero, y con un clic (o tocándola en el celular) se abre en toda la pantalla (`Publico/js/lupa.js`; sirve para cualquier `<img data-lupa>`).
+
+### Valorar un ramo por foto (algoritmo)
+
+Si ningún arreglo del catálogo se parece a la foto de la clienta, en el mismo **Buscar por foto** aparece **Valorar este ramo** (arriba y resaltado si el más parecido tiene menos de 75%; si no, al final). Calcula cuánto costaría hacer ese ramo con lo que hay en el inventario, con el % de ganancia, y **Crear solicitud con esta valoración** abre una solicitud personalizada (libre) con esos productos y la foto de la clienta como foto de referencia. Lo pueden usar el propietario y las empleadas; el costo y la ganancia solo los ve el propietario.
+
+El sistema **no reconoce ni cuenta las flores**: la empleada elige el tamaño (**Pequeño** 6 flores, **Mediano** 12, **Grande** 24) o escribe cuántas ve (1 a 100), y el algoritmo (`Aplicacion/Controlador/valoracioncontrolador.php`) hace lo demás con la misma huella de colores de la búsqueda:
+
+1. **Colores de flores:** se toman los grupos de color de flores (rojo, naranja, amarillo, celeste, azul, morado, fucsia, rosado y blanco) que ocupan al menos 6% de la foto (el blanco 12%, porque también puede ser fondo o papel), máximo 4. Un color pegado a otro más fuerte (naranja junto a rojo) necesita 15%, porque suele ser la sombra o el borde de las mismas flores.
+2. **Flor de cada color:** la flor activa de ese color (`tbinventariocategoriaflor`) que más se usa en las recetas del catálogo y que tiene stock. Si dos colores dan la misma flor, se suman.
+3. **Cantidades:** las flores se reparten según cuánto ocupa cada color en la foto (cada color lleva al menos 1). Si una flor no tiene suficiente stock, se completa con otra del mismo color; si aun así no alcanza, se avisa cuántas faltan.
+4. **Follaje:** 1 por cada 3 flores si la foto tiene verde (5% o más); si no, 1 por cada 6.
+5. **Papel:** 1 pliego por cada 8 flores (de 1 a 4); negro si la foto tiene 10% de negro o más; si no, el que más se usa en el catálogo junto con la flor principal. **Cinta:** 1, la que más se usa con la flor principal.
+6. **Precio:** cada producto a costo × (1 + % / 100), hacia arriba a ₡10, igual que en un personalizado.
+
+La foto de la clienta se guarda en `Publico/imagenes/solicitudes/referencia_…` para usarla como foto de referencia y para volver a calcular sin subirla otra vez al cambiar el tamaño o el %. Todo se puede corregir después en la solicitud.
+
 ### Clientes
 
 - **Nombre:** obligatorio, solo letras.
@@ -256,6 +273,7 @@ Las huellas del catálogo se guardan en `tbarreglofloralhuella`. Se calculan sol
   - Para iniciarla, debe estar asignada a alguien.
   - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.
 - **Listado:** se filtra por estado, tipo y persona asignada. Las atrasadas se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
+- **Foto de referencia (personalizados):** lo que quiere la clienta. Al **Usar esta propuesta** del asistente queda la foto del arreglo del catálogo; al crear la solicitud desde **Valorar este ramo**, la foto que mandó la clienta. Se ve en el formulario (con **Quitar foto de referencia**), en Ver y en la lista (si todavía no hay foto de cómo quedó), y se agranda con la lupa. Es aparte de la foto de cómo quedó el arreglo (`tbsolicitudencargoreferencia`).
 - **Foto del personalizado:** en **Ver** está el botón **Agregar foto** (o **Cambiar foto**) para guardar cómo quedó el arreglo. Se puede en cualquier estado menos Cancelado, la sube el propietario o quien tiene asignada la solicitud, y se ve en la lista y en Ver. JPG, PNG o WEBP de hasta 2 MB, en `Publico/imagenes/solicitudes/`.
 
 ### Asistente de presupuesto (algoritmo)
@@ -350,6 +368,7 @@ Se ven en **Ver** de cada solicitud, con fecha, hora y quién hizo el cambio:
 | Fecha de entrega | `tbsolicitudencargofechaentregahistorico` |
 | Total | `tbsolicitudencargototalhistorico` |
 | Foto del arreglo personalizado | `tbsolicitudencargofotohistorico` |
+| Foto de referencia (se puso, se cambió o se quitó) | `tbsolicitudencargoreferenciahistorico` |
 
 La tabla `tbarreglofloralhuella` no tiene histórico: es una copia calculada de cada foto del catálogo para buscar más rápido.
 

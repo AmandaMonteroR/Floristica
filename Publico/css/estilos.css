@@ -3215,3 +3215,254 @@ h1 {
 .propuesta .boton {
     margin-top: auto;
 }
+
+/* ---------- Parte 13: lupa, foto de referencia y valorar ramo ---------- */
+
+/* Las fotos con lupa: con el mouse se ven más grandes; con un clic, en toda la pantalla */
+img[data-lupa] {
+    cursor: zoom-in;
+}
+
+.lupa-lente {
+    position: fixed;
+    z-index: 1000;
+    overflow: hidden;
+    pointer-events: none;
+    background: var(--superficie);
+    border: 3px solid var(--superficie);
+    border-radius: var(--radio);
+    box-shadow: 0 12px 32px rgba(59, 15, 36, 0.28);
+}
+
+.lupa-lente[hidden] {
+    display: none;
+}
+
+.lupa-lente img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.lupa-visor {
+    max-width: none;
+    max-height: none;
+    width: 100%;
+    height: 100%;
+    padding: 1rem;
+    margin: 0;
+    border: none;
+    background: transparent;
+    cursor: zoom-out;
+}
+
+.lupa-visor[open] {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.lupa-visor::backdrop {
+    background: rgba(20, 6, 13, 0.85);
+}
+
+.lupa-visor img {
+    max-width: min(100%, 1100px);
+    max-height: calc(100% - 3rem);
+    object-fit: contain;
+    border-radius: var(--radio);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.lupa-pie {
+    margin: 0;
+    color: #ffffff;
+    font-size: 0.95rem;
+    text-align: center;
+}
+
+.lupa-cerrar {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+/* Propuestas del asistente: la foto arriba y grande */
+.foto-propuesta {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: calc(var(--radio) - 2px);
+}
+
+.propuesta-encabezado {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+}
+
+/* Foto de referencia en el formulario y en "Ver" */
+.caja-referencia {
+    display: flex;
+    gap: 0.9rem;
+    align-items: flex-start;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.caja-referencia[hidden] {
+    display: none;
+}
+
+.caja-referencia img {
+    flex: 0 0 auto;
+    width: 9rem;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: calc(var(--radio) - 2px);
+}
+
+.caja-referencia .nota {
+    margin: 0.2rem 0 0.4rem;
+}
+
+.figura-referencia {
+    margin: 0.25rem 0 0;
+}
+
+.figura-referencia img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: var(--radio);
+}
+
+.figura-referencia figcaption {
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+    text-align: center;
+}
+
+/* Valorar el ramo de la foto */
+.valorar-ramo {
+    margin: 0 0 1rem;
+    padding: 0.9rem 1rem;
+    background: #fdf6f9;
+    border: 1px solid #f0cfdc;
+    border-radius: var(--radio);
+}
+
+.lista-resultados + .valorar-ramo {
+    margin: 1rem 0 0;
+}
+
+.valorar-destacado {
+    border: 2px solid var(--principal);
+}
+
+.valorar-encabezado .nota {
+    margin: 0.2rem 0 0.6rem;
+}
+
+.valorar-campos {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.chips-valorar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.chips-valorar .campo-otro {
+    width: 5.5rem;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.85rem;
+    border-radius: 999px;
+}
+
+.valoracion {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.total-valoracion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+}
+
+.total-valoracion strong {
+    font-size: 1.35rem;
+    color: var(--principal-oscuro);
+}
+
+.total-valoracion small {
+    flex-basis: 100%;
+}
+
+.tabla-valoracion td,
+.tabla-valoracion th {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+}
+
+.tabla-valoracion .numero {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.notas-valoracion {
+    margin: 0;
+    padding: 0.45rem 0.6rem 0.45rem 1.6rem;
+    font-size: 0.82rem;
+    background: #fff8e6;
+    border-radius: calc(var(--radio) - 2px);
+}
+
+.valoracion .boton {
+    justify-self: start;
+}
+
+@media (max-width: 640px) {
+    .caja-referencia {
+        flex-direction: column;
+    }
+
+    .caja-referencia img {
+        width: 100%;
+    }
+
+    /* En el celular no cabe la columna del precio: queda la cantidad y el subtotal */
+    .tabla-valoracion th:nth-child(3),
+    .tabla-valoracion td:nth-child(3) {
+        display: none;
+    }
+
+    .tabla-valoracion td,
+    .tabla-valoracion th {
+        white-space: normal;
+    }
+}

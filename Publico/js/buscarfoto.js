@@ -1,6 +1,7 @@
 // Catálogo → "Buscar por foto": se sube la foto que mandó la clienta y el sistema muestra
 // los arreglos del catálogo más parecidos (por colores y forma), con su precio.
 // Usa verdetalle(), escapar() y formatearmonto() de arreglofloral.js.
+// Cuando termina, avisa con el evento "fotobuscada" para que valorarramo.js ofrezca valorar el ramo.
 (() => {
     const dialogo = document.getElementById('dialogobuscarfoto');
     const campo = document.getElementById('campobuscarfoto');
@@ -52,7 +53,7 @@
 
         return `
             <article class="resultado-foto">
-                <img src="${escapar(arreglo.tbarreglofloralfoto)}" alt="${escapar(arreglo.tbarreglofloralnombre)}" loading="lazy">
+                <img src="${escapar(arreglo.tbarreglofloralfoto)}" alt="${escapar(arreglo.tbarreglofloralnombre)}" loading="lazy" data-lupa>
                 <div class="resultado-cuerpo">
                     <h3>${escapar(arreglo.tbarreglofloralnombre)}</h3>
                     <div class="barra-parecido ${clase}" role="meter" aria-valuemin="0" aria-valuemax="100"
@@ -109,6 +110,10 @@
             ? `<p class="texto-suave resumen-foto">Se compararon ${respuesta.datos.revisados} arreglos. Los más parecidos:</p>
                <div class="lista-resultados">${encontrados.map(tarjeta).join('')}</div>`
             : '<p class="vacio-galeria">No hay arreglos activos con foto para comparar.</p>';
+
+        document.dispatchEvent(new CustomEvent('fotobuscada', {
+            detail: { foto, mejor: encontrados.length ? encontrados[0].parecido : 0 },
+        }));
     }
 
     function abrir() {
@@ -119,6 +124,7 @@
         colores.innerHTML = '';
         error.textContent = '';
         resultados.innerHTML = '';
+        document.dispatchEvent(new CustomEvent('fotobuscada', { detail: null }));
         dialogo.showModal();
     }
 

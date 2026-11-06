@@ -190,7 +190,7 @@
 
 <dialog id="dialogobuscarfoto" class="dialogo dialogo-ancho" aria-labelledby="titulobuscarfoto">
     <h2 id="titulobuscarfoto">Buscar arreglos por foto</h2>
-    <p class="nota">Suba la foto que mandó la clienta. El sistema la compara con las fotos del catálogo por sus colores y su forma, y muestra los arreglos más parecidos.</p>
+    <p class="nota">Suba la foto que mandó la clienta. El sistema la compara con las fotos del catálogo por sus colores y su forma, y muestra los arreglos más parecidos. Si ninguno se parece, puede valorar el ramo de la foto.</p>
     <div class="busqueda-foto">
         <div class="columna-buscada">
             <label class="zona-foto" id="zonabuscarfoto">
@@ -199,7 +199,7 @@
                 <strong>Elegir foto</strong>
                 <small class="texto-suave">o arrástrela aquí · JPG, PNG o WEBP</small>
             </label>
-            <img id="fotobuscada" class="foto-buscada" alt="Foto que mandó la clienta" hidden>
+            <img id="fotobuscada" class="foto-buscada" alt="Foto que mandó la clienta" hidden data-lupa>
             <button type="button" class="boton" id="botonotrafoto" hidden>Elegir otra foto</button>
             <div id="coloresbuscada" class="colores-foto"></div>
             <small class="error" id="errorbuscarfoto" role="alert"></small>
@@ -225,5 +225,7 @@
 <script src="js/historial.js"></script>
 <script src="js/arreglofloral.js"></script>
 <script src="js/buscarfoto.js"></script>
+<script src="js/valorarramo.js"></script>
+<script src="js/lupa.js"></script>
 </body>
 </html>

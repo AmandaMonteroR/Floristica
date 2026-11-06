@@ -31,6 +31,7 @@ class Encargo
     private $tbsolicitudencargoporcentaje;
     private $tbsolicitudencargocosto;
     private $tbsolicitudencargofoto;
+    private $tbsolicitudencargoreferencia;
 
     public function __construct($datos = [])
     {
@@ -61,6 +62,7 @@ class Encargo
         $this->tbsolicitudencargoporcentaje       = $datos['tbsolicitudencargoporcentaje'] ?? null;
         $this->tbsolicitudencargocosto            = $datos['tbsolicitudencargocosto'] ?? 0;
         $this->tbsolicitudencargofoto             = $datos['tbsolicitudencargofoto'] ?? null;
+        $this->tbsolicitudencargoreferencia       = $datos['tbsolicitudencargoreferencia'] ?? null;
     }
 
     public function getTbsolicitudencargoid() {
@@ -224,6 +226,12 @@ class Encargo
 
     public function setTbsolicitudencargofoto($valor) {
         $this->tbsolicitudencargofoto = $valor; }
+
+    public function getTbsolicitudencargoreferencia() {
+        return $this->tbsolicitudencargoreferencia; }
+
+    public function setTbsolicitudencargoreferencia($valor) {
+        $this->tbsolicitudencargoreferencia = $valor; }
 
     public function estaAbierto()
     {

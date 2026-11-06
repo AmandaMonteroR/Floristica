@@ -11,6 +11,7 @@ require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/temporadacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/ventacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/busquedafotocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/valoracioncontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/asistentecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/sesioncontrolador.php';
 require_once __DIR__ . '/../Configuracion/Seguridad.php';
@@ -116,7 +117,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
-    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir'];
+    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -267,6 +268,9 @@ try {
                     break;
                 case 'buscarporfoto':
                     $respuesta = (new busquedafotocontrolador())->buscar($_FILES['foto'] ?? null);
+                    break;
+                case 'valorar':
+                    $respuesta = (new valoracioncontrolador())->valorar($_POST, $_FILES['foto'] ?? null, Seguridad::espropietario());
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -442,7 +446,7 @@ try {
 
 // Las empleadas no reciben los costos ni las ganancias de los arreglos
 // (la búsqueda por foto no trae costos y tiene otra forma, así que no se toca)
-if ($modulo === 'catalogo' && $accion !== 'buscarporfoto' && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
+if ($modulo === 'catalogo' && !in_array($accion, ['buscarporfoto', 'valorar'], true) && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
     $quitarcostos = function ($arreglo) {
         unset($arreglo['costo']);
         unset($arreglo['costoactual'], $arreglo['costoalto']);

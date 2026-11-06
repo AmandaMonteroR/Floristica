@@ -1251,6 +1251,98 @@ $maximo = max(array_column(datos($r)['propuestas'] ?? [['total' => 99999]], 'tot
 prueba('Lo que ya se gastó en flores pintadas se descuenta del presupuesto (12 000 − 2 000)', exito($r) && $maximo <= 10000, mensaje($r) . ' ' . $maximo);
 
 /* =====================================================================
+ * 16. Valorar un ramo por foto y foto de referencia (Parte 13)
+ * =================================================================== */
+seccion('16. Valorar un ramo por foto y foto de referencia');
+
+$r = $propietario->get('catalogo', 'valorar');
+prueba('Valorar solo acepta POST (405)', $r['codigo'] === 405, 'HTTP ' . $r['codigo']);
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '12', 'porcentaje' => '100']);
+prueba('Pide la foto', tieneerror($r, 'foto'), mensaje($r));
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '12', 'porcentaje' => '100'], ['foto' => __FILE__]);
+prueba('Rechaza archivos que no son imágenes', tieneerror($r, 'foto'), mensaje($r));
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '0', 'porcentaje' => '600'], ['foto' => $fotoprueba]);
+prueba('Las flores van de 1 a 100 y el % de 0 a 500', tieneerror($r, 'flores') && tieneerror($r, 'porcentaje'), mensaje($r));
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '12', 'porcentaje' => '100', 'referencia' => 'imagenes/solicitudes/../../index.php']);
+prueba('No acepta una foto guardada que no sea de una valoración', tieneerror($r, 'foto'), mensaje($r));
+
+// Foto de un ramo de rosas rojas, 12 flores al 100%: la flor principal debe ser la rosa roja (590 al 100%)
+$r = $lorena->post('catalogo', 'valorar', ['flores' => '12', 'porcentaje' => '100'], ['foto' => $fotoprueba]);
+$valoracion = datos($r);
+$lineasvaloracion = $valoracion['lineas'] ?? [];
+$tipos = array_count_values(array_column($lineasvaloracion, 'tipo'));
+$floresvaloradas = array_sum(array_map(function ($linea) { return $linea['tipo'] === 'Flor' ? $linea['cantidad'] : 0; }, $lineasvaloracion));
+prueba('Una empleada puede valorar un ramo', exito($r), mensaje($r));
+prueba('Reparte exactamente las 12 flores y la principal es la rosa roja (590 al 100%)', $floresvaloradas === 12
+    && ($lineasvaloracion[0]['tbinventarioid'] ?? 0) === 1 && (float) ($lineasvaloracion[0]['precio'] ?? 0) === 590.0,
+    json_encode(array_map(function ($l) { return $l['cantidad'] . ' ' . $l['nombre']; }, $lineasvaloracion), JSON_UNESCAPED_UNICODE));
+prueba('Agrega follaje, papel y cinta', isset($tipos['Follaje'], $tipos['Papel'], $tipos['Cinta']), json_encode($tipos));
+prueba('El total es la suma de los productos', abs(array_sum(array_column($lineasvaloracion, 'subtotal')) - ($valoracion['total'] ?? -1)) < 0.01);
+prueba('A una empleada no le muestra el costo ni la ganancia', !isset($valoracion['costo']) && !isset($valoracion['ganancia'])
+    && !isset($lineasvaloracion[0]['costo']));
+$referenciavalorada = $valoracion['referencia'] ?? '';
+prueba('Guarda la foto de la clienta para usarla de foto de referencia',
+    preg_match('#^imagenes/solicitudes/referencia_#', $referenciavalorada) === 1 && is_file(__DIR__ . '/../Publico/' . $referenciavalorada), $referenciavalorada);
+
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '24', 'porcentaje' => '50', 'referencia' => $referenciavalorada]);
+$otra = datos($r);
+$rosa = array_values(array_filter($otra['lineas'] ?? [], function ($linea) { return $linea['tbinventarioid'] === 1; }));
+prueba('Se vuelve a calcular con la foto guardada (24 flores al 50%: rosa a 291,67 + 50% = 440)', exito($r)
+    && ($otra['referencia'] ?? '') === $referenciavalorada && (float) ($rosa[0]['precio'] ?? 0) === 440.0
+    && array_sum(array_map(function ($l) { return $l['tipo'] === 'Flor' ? $l['cantidad'] : 0; }, $otra['lineas'] ?? [])) === 24, mensaje($r));
+prueba('Al propietario sí le muestra el costo y la ganancia', isset($otra['costo'])
+    && abs(($otra['total'] ?? 0) - ($otra['costo'] ?? 0) - ($otra['ganancia'] ?? -1)) < 0.01);
+
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '100', 'porcentaje' => '100', 'referencia' => $referenciavalorada]);
+$stock = array_column(datos($propietario->get('inventario', 'listar')), 'tbinventariostock', 'tbinventarioid');
+$sinpasarse = true;
+foreach (datos($r)['lineas'] ?? [] as $linea) {
+    $sinpasarse = $sinpasarse && $linea['cantidad'] <= ($stock[$linea['tbinventarioid']] ?? 0);
+}
+$puestas = array_sum(array_map(function ($l) { return $l['tipo'] === 'Flor' ? $l['cantidad'] : 0; }, datos($r)['lineas'] ?? []));
+prueba('Con 100 flores no pasa del stock y, si no alcanzan, avisa cuántas faltan', exito($r) && $sinpasarse && $puestas <= 100
+    && ($puestas === 100 || !empty(datos($r)['notas'])), $puestas . ' flores; ' . json_encode(datos($r)['notas'] ?? [], JSON_UNESCAPED_UNICODE));
+
+// La valoración pasa a una solicitud personalizada con la foto de referencia
+$convaloracion = [
+    'tbclienteid' => 3, 'tbempleadoid' => '2', 'tbsolicitudencargofechaentrega' => $manana, 'tbsolicitudencargonota' => '',
+    'tbsolicitudencargotipo' => 'Personalizado', 'tbsolicitudencargomodalidad' => 'Libre', 'tbsolicitudencargoporcentaje' => '100',
+    'tbsolicitudencargoreferencia' => $referenciavalorada,
+    'insumos' => array_map(function ($linea) { return ['tbinventarioid' => $linea['tbinventarioid'], 'cantidad' => $linea['cantidad']]; }, $lineasvaloracion),
+];
+$r = $lorena->post('encargo', 'crear', $convaloracion);
+$idreferencia = datos($r)['tbsolicitudencargoid'] ?? 0;
+$conf = datos($propietario->get('encargo', 'obtener', ['id' => $idreferencia]));
+prueba('Crea la solicitud con los productos de la valoración y el mismo total', exito($r)
+    && (float) ($conf['tbsolicitudencargototal'] ?? 0) === (float) ($valoracion['total'] ?? -1), mensaje($r));
+prueba('Guarda la foto de referencia, aparte de la foto de cómo quedó', ($conf['tbsolicitudencargoreferencia'] ?? '') === $referenciavalorada
+    && ($conf['tbsolicitudencargofoto'] ?? 'x') === '');
+prueba('El historial dice que se puso la foto de referencia', in_array('Se puso la foto de referencia', array_column($conf['historial'] ?? [], 'texto'), true));
+$lista = array_column(datos($propietario->get('encargo', 'listar')), null, 'tbsolicitudencargoid');
+prueba('La lista de solicitudes trae la foto de referencia', ($lista[$idreferencia]['tbsolicitudencargoreferencia'] ?? '') === $referenciavalorada);
+
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargoreferencia' => 'imagenes/catalogo/../../index.php'] + $convaloracion);
+prueba('Rechaza una foto de referencia que no es una imagen del sistema', tieneerror($r, 'tbsolicitudencargoreferencia'), mensaje($r));
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargoreferencia' => 'imagenes/catalogo/noexiste.jpg'] + $convaloracion);
+prueba('Rechaza una foto de referencia que ya no existe', tieneerror($r, 'tbsolicitudencargoreferencia'), mensaje($r));
+$r = $propietario->post('encargo', 'crear', ['tbsolicitudencargotipo' => 'Predefinido', 'tbarreglofloralid' => 1,
+    'tbsolicitudencargocantidad' => '1', 'insumos' => []] + $convaloracion);
+$predefinido = datos($propietario->get('encargo', 'obtener', ['id' => datos($r)['tbsolicitudencargoid'] ?? 0]));
+prueba('Los predefinidos no guardan foto de referencia (ya tienen la del catálogo)', exito($r)
+    && ($predefinido['tbsolicitudencargoreferencia'] ?? 'x') === '', mensaje($r));
+
+$fotocatalogo = datos($propietario->get('catalogo', 'obtener', ['id' => 13]))['tbarreglofloralfoto'] ?? '';
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idreferencia, 'tbsolicitudencargoreferencia' => $fotocatalogo] + $convaloracion);
+$conf = datos($propietario->get('encargo', 'obtener', ['id' => $idreferencia]));
+prueba('Al usar una propuesta, la foto del catálogo queda de referencia y el historial dice que se cambió', exito($r)
+    && ($conf['tbsolicitudencargoreferencia'] ?? '') === $fotocatalogo
+    && in_array('Se cambió la foto de referencia', array_column($conf['historial'] ?? [], 'texto'), true), mensaje($r));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idreferencia, 'tbsolicitudencargoreferencia' => ''] + $convaloracion);
+$conf = datos($propietario->get('encargo', 'obtener', ['id' => $idreferencia]));
+prueba('Se puede quitar la foto de referencia y queda en el historial', exito($r) && ($conf['tbsolicitudencargoreferencia'] ?? 'x') === ''
+    && in_array('Se quitó la foto de referencia', array_column($conf['historial'] ?? [], 'texto'), true), mensaje($r));
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

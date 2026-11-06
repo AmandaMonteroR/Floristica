@@ -179,6 +179,16 @@
                 <p class="texto-suave" id="notaasistente" aria-live="polite"></p>
                 <div class="propuestas" id="propuestas"></div>
             </div>
+            <div class="caja-referencia" id="cajareferencia" hidden>
+                <input type="hidden" name="tbsolicitudencargoreferencia">
+                <img id="fotoreferencia" alt="Foto de referencia" data-lupa>
+                <div>
+                    <strong>Foto de referencia</strong>
+                    <p class="nota">Así lo quiere la clienta; sirve de guía para armarlo. La foto de cómo quedó se agrega después, en "Ver".</p>
+                    <button type="button" class="enlace enlace-peligro" id="botonquitarreferencia">Quitar foto de referencia</button>
+                    <small class="error" data-error="tbsolicitudencargoreferencia"></small>
+                </div>
+            </div>
         </fieldset>
 
         <section id="seccionlineas" hidden>
@@ -315,12 +325,16 @@
 <dialog id="dialogodetalle" class="dialogo dialogo-ancho">
     <div class="detalle-arreglo">
         <div class="columna-foto" id="columnafoto">
-            <img id="fotodetalle" class="foto-detalle" alt="">
+            <img id="fotodetalle" class="foto-detalle" alt="" data-lupa>
             <div class="foto-vacia" id="fotovacia" hidden><span aria-hidden="true">&#10047;</span>Todavía no tiene foto</div>
             <input type="file" id="campofoto" accept="image/jpeg,image/png,image/webp" hidden>
             <button type="button" class="boton boton-foto" id="botonfoto" hidden>Agregar foto</button>
             <small class="nota-foto texto-suave" id="notafoto" hidden>JPG, PNG o WEBP de hasta 2 MB.</small>
             <small class="error" id="errorfoto" role="alert"></small>
+            <figure class="figura-referencia" id="figurareferencia" hidden>
+                <img id="fotoreferenciadetalle" alt="Foto de referencia" data-lupa>
+                <figcaption>Foto de referencia</figcaption>
+            </figure>
         </div>
         <div>
             <h2 id="titulodetalle"></h2>
@@ -386,5 +400,6 @@
 <script src="js/menu.js"></script>
 <script src="js/encargo.js"></script>
 <script src="js/asistente.js"></script>
+<script src="js/lupa.js"></script>
 </body>
 </html>

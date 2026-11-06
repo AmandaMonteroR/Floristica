@@ -1,8 +1,9 @@
 // Asistente de presupuesto (solicitud personalizada con presupuesto).
 // Pide al servidor hasta 3 propuestas que caben en el presupuesto con el % de ganancia,
 // a partir de las recetas del catálogo. Los productos que ya se eligieron se mantienen.
-// Usa formulario, lineas, dibujarlineas(), calcular(), presupuesto(), porcentaje(), espropietario,
-// escapar(), formatearmonto(), montocorto(), guardarborrador() y enviar() de encargo.js.
+// Usa formulario, lineas, dibujarlineas(), actualizarsecciones(), calcular(), presupuesto(), porcentaje(),
+// espropietario, escapar(), formatearmonto(), montocorto(), guardarborrador() y enviar() de encargo.js.
+// La foto de cada propuesta se agranda con la lupa (lupa.js) y queda como foto de referencia al usarla.
 (() => {
     const caja = document.getElementById('asistente');
     const boton = document.getElementById('botonsugerir');
@@ -45,13 +46,12 @@
 
         return `
             <article class="propuesta">
+                <img class="foto-propuesta" src="${escapar(propuesta.tbarreglofloralfoto)}" alt="${escapar(propuesta.nombre)}"
+                     loading="lazy" data-lupa title="Pase el mouse para ver más grande; clic para ampliar">
                 <header class="propuesta-encabezado">
-                    <img src="${escapar(propuesta.tbarreglofloralfoto)}" alt="" loading="lazy">
-                    <div>
-                        <h4>${escapar(propuesta.nombre)}</h4>
-                        <p class="total-propuesta">${formatearmonto(propuesta.total)}</p>
-                        ${espropietario ? `<p class="texto-suave">Ganancia ${formatearmonto(propuesta.ganancia)}</p>` : ''}
-                    </div>
+                    <h4>${escapar(propuesta.nombre)}</h4>
+                    <p class="total-propuesta">${formatearmonto(propuesta.total)}</p>
+                    ${espropietario ? `<p class="texto-suave">Ganancia ${formatearmonto(propuesta.ganancia)}</p>` : ''}
                 </header>
                 <p class="subtitulo-propuesta">Flores y follajes (${propuesta.flores})</p>
                 <ul class="lineas-propuesta">${flores.map(textolinea).join('')}</ul>
@@ -109,10 +109,12 @@
             nombre: linea.nombre,
             precioguardado: null,
         }));
-        dibujarlineas();
+        // La foto del arreglo del catálogo queda como foto de referencia de la solicitud
+        formulario.elements.tbsolicitudencargoreferencia.value = propuesta.tbarreglofloralfoto || '';
+        actualizarsecciones();
         guardarborrador();
         limpiar();
-        nota.textContent = `Se usó la propuesta "${propuesta.nombre}". Puede ajustar las cantidades en la tabla.`;
+        nota.textContent = `Se usó la propuesta "${propuesta.nombre}" y su foto quedó como foto de referencia. Puede ajustar las cantidades en la tabla.`;
         document.getElementById('seccionlineas').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -128,8 +130,44 @@
     document.getElementById('dialogoformulario').addEventListener('close', limpiar);
     revisarvisible();
 
+    // Desde "Valorar este ramo" del catálogo: abre una solicitud personalizada (libre) con los
+    // productos de la valoración, su % de ganancia y la foto de la clienta como referencia
+    const parametros = new URLSearchParams(window.location.search);
+    let valoracion = null;
+    try {
+        valoracion = parametros.get('valoracion') ? JSON.parse(sessionStorage.getItem('floristica.valoracion')) : null;
+        sessionStorage.removeItem('floristica.valoracion');
+    } catch (error) {
+        valoracion = null;
+    }
+    if (parametros.get('valoracion')) {
+        history.replaceState(null, '', 'index.php?modulo=encargo');
+    }
+    if (valoracion && Array.isArray(valoracion.lineas)) {
+        borrarborrador();
+        abrirnuevo().then(() => {
+            const tipo = formulario.elements.tbsolicitudencargotipo;
+            tipo.value = 'Personalizado';
+            tipo.dispatchEvent(new Event('change', { bubbles: true }));
+            const modalidad = formulario.elements.tbsolicitudencargomodalidad;
+            modalidad.value = 'Libre';
+            modalidad.dispatchEvent(new Event('change', { bubbles: true }));
+            formulario.elements.tbsolicitudencargoporcentaje.value = String(valoracion.porcentaje ?? 100);
+            formulario.elements.tbsolicitudencargoreferencia.value = valoracion.referencia || '';
+            lineas = valoracion.lineas.map((linea) => ({
+                tbinventarioid: String(linea.tbinventarioid),
+                cantidad: String(linea.cantidad),
+                nombre: linea.nombre,
+                precioguardado: null,
+            }));
+            marcarporcentaje();
+            actualizarsecciones();
+            guardarborrador();
+        });
+    }
+
     // Desde "Buscar por foto" del catálogo: abre una solicitud nueva con ese arreglo ya elegido
-    const arreglopedido = new URLSearchParams(window.location.search).get('arreglo');
+    const arreglopedido = parametros.get('arreglo');
     if (arreglopedido) {
         history.replaceState(null, '', 'index.php?modulo=encargo');
         // Una solicitud nueva y limpia: no se recupera un borrador viejo

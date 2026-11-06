@@ -96,7 +96,8 @@ class busquedafotocontrolador
         return $huella;
     }
 
-    private function validarfoto($foto)
+    // También la usa la valoración de ramos
+    public function validarfoto($foto)
     {
         if (!is_array($foto) || ($foto['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return 'Elija la foto del arreglo que quiere la clienta.';

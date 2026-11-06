@@ -224,7 +224,11 @@ class encargocontrolador
             $id = $this->repositorio->insertar($encargo);
             $this->repositorio->guardarinsumos($id, $datos['lineas']);
             $this->historico->registrar('estado', $id, 'Pendiente', $usuario['id']);
-            $this->generales->registrar('solicitudencargo', $id, [], $this->datoshistorico($encargo), $usuario['id']);
+            // La foto de referencia solo queda en el historial si se puso
+            $iniciales = array_filter($this->datoshistorico($encargo), function ($valor, $campo) {
+                return $campo !== 'referencia' || $valor !== '';
+            }, ARRAY_FILTER_USE_BOTH);
+            $this->generales->registrar('solicitudencargo', $id, [], $iniciales, $usuario['id']);
 
             if ($encargo->getTbempleadoid() !== null) {
                 $this->historico->registrar('empleado', $id, (int) $encargo->getTbempleadoid(), $usuario['id']);
@@ -527,7 +531,26 @@ class encargocontrolador
         return [
             'fechaentrega' => $encargo->getTbsolicitudencargofechaentrega(),
             'total'        => number_format((float) $encargo->getTbsolicitudencargototal(), 2, '.', ''),
+            'referencia'   => (string) $encargo->getTbsolicitudencargoreferencia(),
         ];
+    }
+
+    // Foto de referencia: una imagen que ya está en el servidor (la del arreglo del catálogo
+    // o la que mandó la clienta y se guardó al valorar el ramo). No se sube aquí.
+    private function validarreferencia($ruta, $actual)
+    {
+        if ($ruta === '' || ($actual !== null && $ruta === (string) $actual->getTbsolicitudencargoreferencia())) {
+            return '';
+        }
+        if (mb_strlen($ruta) > 255 || !preg_match('#^imagenes/(catalogo|arreglos|solicitudes|muestras)/[A-Za-z0-9_.-]+$#', $ruta)
+            || strpos($ruta, '..') !== false) {
+            return 'La foto de referencia no es válida.';
+        }
+        if (!is_file(__DIR__ . '/../../Publico/' . $ruta)) {
+            return 'La foto de referencia ya no está en el sistema. Quítela o elija otra.';
+        }
+
+        return '';
     }
 
     // Historial de la solicitud en palabras, para mostrarlo en "Ver"
@@ -576,6 +599,21 @@ class encargocontrolador
             $lista[] = [
                 'fecha'    => $cambio['fecha'],
                 'texto'    => $cambio['anterior'] === null ? 'Se agregó la foto del arreglo' : 'Se cambió la foto del arreglo',
+                'hechopor' => $cambio['hechopor'],
+            ];
+        }
+
+        foreach ($this->generales->listar('solicitudencargo', $idencargo, ['referencia' => 'La foto de referencia'], $sinformato) as $cambio) {
+            if ($cambio['nuevo'] === '' || $cambio['nuevo'] === null) {
+                $texto = 'Se quitó la foto de referencia';
+            } elseif ($cambio['anterior'] === null || $cambio['anterior'] === '') {
+                $texto = 'Se puso la foto de referencia';
+            } else {
+                $texto = 'Se cambió la foto de referencia';
+            }
+            $lista[] = [
+                'fecha'    => $cambio['fecha'],
+                'texto'    => $texto,
                 'hechopor' => $cambio['hechopor'],
             ];
         }
@@ -700,6 +738,7 @@ class encargocontrolador
             'tbsolicitudencargosprayid'          => $texto('tbsolicitudencargosprayid'),
             'tbsolicitudencargoflorespintadas'   => $texto('tbsolicitudencargoflorespintadas'),
             'tbsolicitudencargoporcentaje'       => $texto('tbsolicitudencargoporcentaje'),
+            'tbsolicitudencargoreferencia'       => $texto('tbsolicitudencargoreferencia'),
             'insumos'                            => [],
         ];
 
@@ -867,6 +906,7 @@ class encargocontrolador
             $datos['tbsolicitudencargomodalidad'] = null;
             $datos['tbsolicitudencargopresupuesto'] = null;
             $datos['tbsolicitudencargoporcentaje'] = null;
+            $datos['tbsolicitudencargoreferencia'] = null;
         } elseif ($tipo === 'Personalizado') {
             $modalidad = $datos['tbsolicitudencargomodalidad'];
 
@@ -900,6 +940,16 @@ class encargocontrolador
             $datos['tbsolicitudencargocantidad'] = 1;
             $datos['tbsolicitudencargoprecioarreglo'] = null;
             $datos['tbsolicitudencargoporcentaje'] = $porcentaje;
+
+            $error = $this->validarreferencia($datos['tbsolicitudencargoreferencia'], $actual);
+            if ($error !== '') {
+                $errores['tbsolicitudencargoreferencia'] = $error;
+            }
+            if ($datos['tbsolicitudencargoreferencia'] === '') {
+                $datos['tbsolicitudencargoreferencia'] = null;
+            }
+        } else {
+            $datos['tbsolicitudencargoreferencia'] = null;
         }
 
         // Servicio express
@@ -1103,6 +1153,7 @@ class encargocontrolador
             'tbsolicitudencargoporcentaje'       => $encargo->getTbsolicitudencargoporcentaje() !== null ? (float) $encargo->getTbsolicitudencargoporcentaje() : null,
             'tbsolicitudencargocosto'            => (float) $encargo->getTbsolicitudencargocosto(),
             'tbsolicitudencargofoto'             => (string) $encargo->getTbsolicitudencargofoto(),
+            'tbsolicitudencargoreferencia'       => (string) $encargo->getTbsolicitudencargoreferencia(),
             'descripcion'                        => $descripcion,
             'alcanzastock'                       => $alcanza,
         ];

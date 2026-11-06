@@ -3,7 +3,8 @@ const clavebase = 'floristica.borrador.encargo.';
 const camposformulario = ['tbclienteid', 'tbsolicitudencargotipo', 'tbarreglofloralid', 'tbsolicitudencargocantidad',
     'tbsolicitudencargomodalidad', 'tbsolicitudencargopresupuesto', 'tbzonaentregaid', 'tbsolicitudencargodireccionentrega',
     'tbsolicitudencargofechaentrega', 'tbempleadoid', 'tbsolicitudencargonota',
-    'tbsolicitudencargosprayid', 'tbsolicitudencargoflorespintadas', 'tbsolicitudencargoporcentaje'];
+    'tbsolicitudencargosprayid', 'tbsolicitudencargoflorespintadas', 'tbsolicitudencargoporcentaje',
+    'tbsolicitudencargoreferencia'];
 const categoriasproducto = [
     ['Flor', 'Flores y follaje'],
     ['Envoltura', 'Papel y cintas'],
@@ -33,6 +34,8 @@ const notalineas = document.getElementById('notalineas');
 const cuerpolineas = document.getElementById('cuerpolineas');
 const restopresupuesto = document.getElementById('restopresupuesto');
 const campopresupuesto = document.getElementById('campopresupuesto');
+const cajareferencia = document.getElementById('cajareferencia');
+const fotoreferencia = document.getElementById('fotoreferencia');
 const campozona = document.getElementById('campozona');
 const campodireccion = document.getElementById('campodireccion');
 const notaexpress = document.getElementById('notaexpress');
@@ -53,6 +56,8 @@ const campofoto = document.getElementById('campofoto');
 const botonfoto = document.getElementById('botonfoto');
 const notafoto = document.getElementById('notafoto');
 const errorfoto = document.getElementById('errorfoto');
+const figurareferencia = document.getElementById('figurareferencia');
+const fotoreferenciadetalle = document.getElementById('fotoreferenciadetalle');
 const columnaprecio = document.getElementById('columnaprecio');
 const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
@@ -415,6 +420,13 @@ function actualizarsecciones() {
     seccionpintura.hidden = tipo === '' || ((opciones.pinturas ?? []).length === 0 && !formulario.elements.tbsolicitudencargosprayid.value);
     campopresupuesto.hidden = !conpresupuesto;
 
+    // Foto de referencia (la del catálogo de la propuesta que se usó o la que mandó la clienta)
+    const referencia = formulario.elements.tbsolicitudencargoreferencia.value;
+    cajareferencia.hidden = !personalizado || referencia === '';
+    if (referencia !== '' && fotoreferencia.getAttribute('src') !== referencia) {
+        fotoreferencia.src = referencia;
+    }
+
     titulolineas.textContent = personalizado ? 'Productos del arreglo *' : 'Adicionales';
     notalineas.textContent = personalizado
         ? (conpresupuesto
@@ -762,6 +774,7 @@ function llenarformulario(datos) {
         tbsolicitudencargoflorespintadas: datos.tbsolicitudencargoflorespintadas ? String(datos.tbsolicitudencargoflorespintadas) : '',
         tbsolicitudencargoporcentaje: datos.tbsolicitudencargoporcentaje !== null && datos.tbsolicitudencargoporcentaje !== undefined
             ? String(Math.round(datos.tbsolicitudencargoporcentaje)) : String(opciones.porcentaje ?? 100),
+        tbsolicitudencargoreferencia: datos.tbsolicitudencargoreferencia ?? '',
         lineas: (datos.insumos ?? []).map((insumo) => ({
             tbinventarioid: String(insumo.tbinventarioid),
             cantidad: String(insumo.cantidad),
@@ -876,7 +889,9 @@ async function cargarencargos() {
         const sinstock = abierto && !encargo.alcanzastock
             ? '<span class="aviso-stock" title="No alcanza el inventario para prepararla">Falta stock</span>'
             : '';
-        const foto = encargo.tbsolicitudencargotipo === 'Personalizado' ? encargo.tbsolicitudencargofoto : encargo.tbarreglofloralfoto;
+        // Personalizado: la foto de cómo quedó o, si todavía no tiene, la foto de referencia
+        const foto = encargo.tbsolicitudencargotipo === 'Personalizado'
+            ? encargo.tbsolicitudencargofoto || encargo.tbsolicitudencargoreferencia : encargo.tbarreglofloralfoto;
         const imagen = foto
             ? `<img src="${escapar(foto)}" alt="">`
             : '<span class="icono-personalizado" aria-hidden="true">✿</span>';
@@ -1037,7 +1052,11 @@ async function verdetalle(id) {
     botonfoto.textContent = foto ? 'Cambiar foto' : 'Agregar foto';
     errorfoto.textContent = '';
     errorfoto.className = 'error';
-    columnafoto.hidden = !foto && !puedefoto;
+    // La foto de referencia (lo que pidió la clienta) va aparte de la foto de cómo quedó
+    const referencia = personalizado ? encargo.tbsolicitudencargoreferencia : '';
+    figurareferencia.hidden = !referencia;
+    fotoreferenciadetalle.src = referencia || '';
+    columnafoto.hidden = !foto && !puedefoto && !referencia;
     titulodetalle.textContent = `Solicitud N.º ${encargo.tbsolicitudencargoid}: ${encargo.descripcion}`;
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
@@ -1488,6 +1507,12 @@ document.getElementById('botoncancelarasignar').addEventListener('click', () => 
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 botonfoto.addEventListener('click', () => campofoto.click());
 campofoto.addEventListener('change', subirfoto);
+document.getElementById('botonquitarreferencia').addEventListener('click', () => {
+    formulario.elements.tbsolicitudencargoreferencia.value = '';
+    limpiarerrorcampo('tbsolicitudencargoreferencia');
+    actualizarsecciones();
+    guardarborrador();
+});
 document.getElementById('botondescartarborrador').addEventListener('click', () => {
     borrarborrador();
     llenarformulario(datosservidor);
