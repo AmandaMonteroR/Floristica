@@ -168,6 +168,17 @@
                     <small class="error" data-error="tbsolicitudencargoporcentaje"></small>
                 </div>
             </div>
+            <div class="asistente" id="asistente" hidden>
+                <div class="asistente-encabezado">
+                    <div>
+                        <strong><span aria-hidden="true">&#10047;</span> Asistente de presupuesto</strong>
+                        <p class="nota">Propone arreglos que caben en el presupuesto con este % de ganancia, a partir de las recetas del catálogo y del stock. Si ya eligió productos (por ejemplo 5 rosas), se mantienen.</p>
+                    </div>
+                    <button type="button" class="boton" id="botonsugerir">Sugerir arreglos</button>
+                </div>
+                <p class="texto-suave" id="notaasistente" aria-live="polite"></p>
+                <div class="propuestas" id="propuestas"></div>
+            </div>
         </fieldset>
 
         <section id="seccionlineas" hidden>
@@ -374,5 +385,6 @@
 
 <script src="js/menu.js"></script>
 <script src="js/encargo.js"></script>
+<script src="js/asistente.js"></script>
 </body>
 </html>

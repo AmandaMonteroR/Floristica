@@ -565,6 +565,14 @@ CREATE TABLE tbsolicitudencargototalhistorico (
     tbsolicitudencargototalhistoricofecha DATETIME,
     PRIMARY KEY (tbsolicitudencargototalhistoricoid)
 );
+-- Huella de la foto de cada arreglo del catálogo, para la búsqueda por foto.
+-- Se calcula sola la primera vez que se busca y otra vez si cambia la foto.
+CREATE TABLE tbarreglofloralhuella (
+    tbarreglofloralid INT,
+    tbarreglofloralhuellafoto VARCHAR(255),
+    tbarreglofloralhuellavalor TEXT,
+    PRIMARY KEY (tbarreglofloralid)
+);
 CREATE TABLE tbsolicitudencargofotohistorico (
     tbsolicitudencargofotohistoricoid INT,
     tbsolicitudencargoid INT,

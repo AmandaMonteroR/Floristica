@@ -1173,6 +1173,84 @@ $r = $propietario->post('encargo', 'subirfoto', ['id' => $idfoto], ['tbsolicitud
 prueba('A una solicitud cancelada no se le agrega foto', !exito($r), mensaje($r));
 
 /* =====================================================================
+ * 15. Búsqueda por foto y asistente de presupuesto (Parte 12)
+ * =================================================================== */
+seccion('15. Búsqueda por foto y asistente de presupuesto');
+
+$r = $propietario->get('catalogo', 'buscarporfoto');
+prueba('Buscar por foto solo acepta POST (405)', $r['codigo'] === 405, 'HTTP ' . $r['codigo']);
+$r = $propietario->post('catalogo', 'buscarporfoto', []);
+prueba('Pide la foto', !exito($r) && tieneerror($r, 'foto'), mensaje($r));
+$r = $propietario->post('catalogo', 'buscarporfoto', [], ['foto' => __FILE__]);
+prueba('Rechaza archivos que no son imágenes', !exito($r) && tieneerror($r, 'foto'), mensaje($r));
+
+// Se busca con la foto de un arreglo del catálogo: ese arreglo debe salir primero, 100% parecido
+$buscado = datos($propietario->get('catalogo', 'obtener', ['id' => 13]));
+$fotobuscada = __DIR__ . '/../Publico/' . ($buscado['tbarreglofloralfoto'] ?? '');
+$r = $lorena->post('catalogo', 'buscarporfoto', [], ['foto' => $fotobuscada]);
+$encontrados = datos($r)['resultados'] ?? [];
+prueba('Una empleada puede buscar por foto', exito($r), mensaje($r));
+prueba('Con la foto de un arreglo, ese arreglo sale primero y 100% parecido',
+    ($encontrados[0]['tbarreglofloralid'] ?? 0) === 13 && (float) ($encontrados[0]['parecido'] ?? 0) === 100.0,
+    json_encode(array_slice(array_map(function ($a) { return [$a['tbarreglofloralnombre'], $a['parecido']]; }, $encontrados), 0, 3), JSON_UNESCAPED_UNICODE));
+$ordenados = array_column($encontrados, 'parecido');
+$copia = $ordenados;
+rsort($copia);
+prueba('Devuelve hasta 6, del más parecido al menos parecido', count($encontrados) <= 6 && count($encontrados) > 1 && $ordenados === $copia);
+prueba('Trae el precio y los colores de la foto, pero no los costos', isset($encontrados[0]['precioactual'])
+    && !empty(datos($r)['colores']) && !isset($encontrados[0]['costoactual']) && !isset($encontrados[0]['costo']));
+
+// Asistente de presupuesto
+$r = $propietario->get('encargo', 'sugerir');
+prueba('El asistente solo acepta POST (405)', $r['codigo'] === 405, 'HTTP ' . $r['codigo']);
+$r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '', 'porcentaje' => '600']);
+prueba('El asistente pide el presupuesto y un % de 0 a 500', tieneerror($r, 'presupuesto') && tieneerror($r, 'porcentaje'));
+$r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '50', 'porcentaje' => '100']);
+prueba('Si el presupuesto no alcanza para ninguna receta (₡50), lo dice', !exito($r) && strpos(mensaje($r), 'no alcanza') !== false, mensaje($r));
+$r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '3000', 'porcentaje' => '100',
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 10]]]);
+prueba('Avisa si lo que ya eligió se pasa del presupuesto (10 rosas a 590 = 5 900 > 3 000)',
+    !exito($r) && strpos(mensaje($r), 'se pasan del presupuesto') !== false, mensaje($r));
+
+$r = $lorena->post('encargo', 'sugerir', ['presupuesto' => '50000', 'porcentaje' => '150',
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 5]]]);
+$propuestas = datos($r)['propuestas'] ?? [];
+prueba('Con ₡50 000, 150% y 5 rosas rojas propone de 1 a 3 arreglos', exito($r) && count($propuestas) >= 1 && count($propuestas) <= 3, mensaje($r));
+$stock = array_column(datos($propietario->get('inventario', 'listar')), 'tbinventariostock', 'tbinventarioid');
+$bien = true;
+$detalle = '';
+foreach ($propuestas as $propuesta) {
+    $rosas = array_values(array_filter($propuesta['lineas'], function ($linea) { return $linea['tbinventarioid'] === 1; }));
+    $suma = array_sum(array_column($propuesta['lineas'], 'subtotal'));
+    foreach ($propuesta['lineas'] as $linea) {
+        if ($linea['cantidad'] > ($stock[$linea['tbinventarioid']] ?? 0)) {
+            $bien = false;
+            $detalle = 'Sin stock: ' . $linea['nombre'];
+        }
+    }
+    if ($propuesta['total'] > 50000 || abs($suma - $propuesta['total']) > 0.01 || !$rosas
+        || $rosas[0]['cantidad'] < 5 || $rosas[0]['pedidas'] !== 5 || (float) $rosas[0]['precio'] !== 730.0) {
+        $bien = false;
+        $detalle = $propuesta['nombre'] . ': ' . $propuesta['total'];
+    }
+}
+prueba('Cada propuesta cabe en el presupuesto, mantiene las 5 rosas (a 291,67 + 150% = 730) y no pasa del stock', $bien, $detalle);
+prueba('Las propuestas no repiten las mismas flores', count(array_unique(array_map(function ($propuesta) {
+    $flores = [];
+    foreach ($propuesta['lineas'] as $linea) {
+        if ($linea['categoria'] === 'Flor') {
+            $flores[] = $linea['tbinventarioid'];
+        }
+    }
+    sort($flores);
+    return implode(',', $flores);
+}, $propuestas))) === count($propuestas));
+
+$r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '12000', 'porcentaje' => '100', 'reservado' => '2000']);
+$maximo = max(array_column(datos($r)['propuestas'] ?? [['total' => 99999]], 'total'));
+prueba('Lo que ya se gastó en flores pintadas se descuenta del presupuesto (12 000 − 2 000)', exito($r) && $maximo <= 10000, mensaje($r) . ' ' . $maximo);
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

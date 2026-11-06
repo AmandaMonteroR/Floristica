@@ -10,6 +10,8 @@ require_once __DIR__ . '/../Aplicacion/Controlador/clientecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/temporadacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/ventacontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/busquedafotocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/asistentecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/sesioncontrolador.php';
 require_once __DIR__ . '/../Configuracion/Seguridad.php';
 
@@ -114,7 +116,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
-    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto'];
+    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -263,6 +265,9 @@ try {
                 case 'historial':
                     $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;
+                case 'buscarporfoto':
+                    $respuesta = (new busquedafotocontrolador())->buscar($_FILES['foto'] ?? null);
+                    break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
             }
@@ -334,6 +339,9 @@ try {
                     break;
                 case 'subirfoto':
                     $respuesta = $controlador->subirfoto($_POST['id'] ?? 0, $_FILES['tbsolicitudencargofoto'] ?? null, $usuarioactual);
+                    break;
+                case 'sugerir':
+                    $respuesta = (new asistentecontrolador())->sugerir($_POST);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
@@ -433,7 +441,8 @@ try {
 }
 
 // Las empleadas no reciben los costos ni las ganancias de los arreglos
-if ($modulo === 'catalogo' && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
+// (la búsqueda por foto no trae costos y tiene otra forma, así que no se toca)
+if ($modulo === 'catalogo' && $accion !== 'buscarporfoto' && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
     $quitarcostos = function ($arreglo) {
         unset($arreglo['costo']);
         unset($arreglo['costoactual'], $arreglo['costoalto']);

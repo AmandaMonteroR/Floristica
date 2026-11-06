@@ -5,7 +5,7 @@ Sistema web para la gestión de una floristería ubicada en El Humo de Roxana, C
 ## Requisitos
 
 - Linux basado en Debian (probado en Ubuntu y Kali Linux)
-- PHP 8 o superior, con las extensiones `pdo_mysql` y `mbstring`
+- PHP 8 o superior, con las extensiones `pdo_mysql`, `mbstring` y `gd` (la búsqueda por foto usa `gd`; en Ubuntu: `sudo apt install php-gd`)
 - MySQL o MariaDB (sirve el que trae XAMPP)
 
 ## Instalación
@@ -207,6 +207,23 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 - **Ver:** foto, los dos precios y lo que incluye. El costo y la ganancia (normal y en temporada alta) están en **Costo y ganancia**, que solo ve el propietario y se abre con un clic.
 - **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo el propietario los ve.
 
+### Búsqueda por foto (algoritmo)
+
+Cuando la clienta manda por WhatsApp la foto de un arreglo que le gustó, en **Catálogo → Buscar por foto** se sube esa foto y el sistema muestra los 6 arreglos del catálogo más parecidos, con su % de parecido, su precio y el botón **Crear solicitud** (abre una solicitud nueva con ese arreglo ya elegido). Lo pueden usar el propietario y las empleadas.
+
+El algoritmo está en `Aplicacion/Controlador/huellafoto.php` y usa la extensión GD de PHP (en Ubuntu se instala con `sudo apt install php-gd`). No usa servicios externos ni se paga nada.
+
+1. **Huella de la foto.** La foto se achica a 48 × 48 píxeles y se le saca:
+   - **Colores de toda la foto:** cada píxel se pasa a tono, saturación y brillo, y se cuenta en uno de 15 grupos (rojo, naranja, amarillo, verde lima, verde, verde agua, celeste, azul, azul oscuro, morado, fucsia, rosado, blanco, gris y negro). Los píxeles del centro cuentan más (campana de Gauss), porque ahí suele estar el arreglo, y el blanco, gris y negro cuentan menos, porque casi siempre son el fondo.
+   - **Colores por zonas:** lo mismo en cada cuarto de la foto, para que importe dónde está cada color.
+   - **Forma:** la foto en blanco y negro de 9 × 8 píxeles; cada uno de los 64 bits dice si un píxel es más claro que el de su derecha.
+2. **Parecido** (0 a 100%) = 50% colores en común + 30% colores en común por zonas + 20% bits iguales de la forma. "Colores en común" es la suma, grupo por grupo, del menor de los dos valores.
+3. **Resultado:** se compara con la huella de cada arreglo activo y se ordenan del más parecido al menos parecido. 75% o más es "Muy parecido"; 65% o más, "Parecido".
+
+Las huellas del catálogo se guardan en `tbarreglofloralhuella`. Se calculan solas la primera vez que se busca (tarda unos segundos) y otra vez solo si cambia la foto del arreglo. La foto de la clienta se achica en el navegador a 800 píxeles antes de subirla y no se guarda.
+
+**Limitación:** compara colores y forma, no "entiende" qué flores son: un ramo de rosas rojas se parece a otro ramo rojo, aunque sea de otras flores.
+
 ### Clientes
 
 - **Nombre:** obligatorio, solo letras.
@@ -240,6 +257,21 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
   - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.
 - **Listado:** se filtra por estado, tipo y persona asignada. Las atrasadas se marcan en rojo, y "Falta stock" avisa cuando el inventario no alcanza.
 - **Foto del personalizado:** en **Ver** está el botón **Agregar foto** (o **Cambiar foto**) para guardar cómo quedó el arreglo. Se puede en cualquier estado menos Cancelado, la sube el propietario o quien tiene asignada la solicitud, y se ve en la lista y en Ver. JPG, PNG o WEBP de hasta 2 MB, en `Publico/imagenes/solicitudes/`.
+
+### Asistente de presupuesto (algoritmo)
+
+En una solicitud **personalizada con presupuesto**, el botón **Sugerir arreglos** propone hasta 3 arreglos que caben en el presupuesto con el % de ganancia elegido. Si ya se eligieron productos (por ejemplo 5 rosas rojas), se mantienen. Cada propuesta muestra sus productos, el total, la ganancia (solo el propietario) y lo que sobra; con **Usar esta propuesta** se llena la tabla de productos y se puede ajustar antes de guardar.
+
+El algoritmo está en `Aplicacion/Controlador/asistentecontrolador.php`. Cada arreglo del catálogo es una **receta**: qué flores, papel y demás lleva y en qué proporción.
+
+1. Del presupuesto se apartan los productos que ya eligió la clienta y lo que cuestan las flores pintadas.
+2. Para cada receta se ponen el papel, la base y la cinta (lo que no depende del tamaño) y los adicionales de la receta (tarjeta, chocolate…); si no alcanza, se quitan los adicionales.
+3. Las flores y follajes de la receta se agrandan o se achican en la misma proporción, de 5% en 5% y hasta 3 veces la receta, hasta llenar lo que queda sin pasar del stock. Si la clienta pidió una flor que está en la receta, esas cuentan dentro de la proporción y nunca se ponen menos de las que pidió.
+4. Lo que sobra se completa de a una flor, la que más le falte para mantener la proporción.
+5. Cada producto se cobra igual que en el personalizado: costo × (1 + % / 100), hacia arriba a ₡10. Si la temporada alta está encendida, con sus costos.
+6. **Orden:** 60% qué tanto aprovecha el presupuesto + 25% si la receta lleva las flores que pidió la clienta + 15% qué tan cerca queda del tamaño original. No se repiten dos propuestas con las mismas flores.
+
+Si sobra dinero, la propuesta lo dice, avisa si fue porque no hay más de alguna flor en inventario y sugiere adicionales que caben (peluche, chocolates, corona…).
 
 ### Temporada alta
 
@@ -318,6 +350,8 @@ Se ven en **Ver** de cada solicitud, con fecha, hora y quién hizo el cambio:
 | Fecha de entrega | `tbsolicitudencargofechaentregahistorico` |
 | Total | `tbsolicitudencargototalhistorico` |
 | Foto del arreglo personalizado | `tbsolicitudencargofotohistorico` |
+
+La tabla `tbarreglofloralhuella` no tiene histórico: es una copia calculada de cada foto del catálogo para buscar más rápido.
 
 ### Movimientos de inventario
 

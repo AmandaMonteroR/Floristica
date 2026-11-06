@@ -11,8 +11,8 @@ class Seguridad
         'cuenta'     => ['cambiarclave'],
         'cliente'    => '*',
         'cotizacion' => '*',
-        'catalogo'   => ['', 'listar', 'obtener'],
-        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignarme', 'iniciar', 'terminar', 'subirfoto'],
+        'catalogo'   => ['', 'listar', 'obtener', 'buscarporfoto'],
+        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignarme', 'iniciar', 'terminar', 'subirfoto', 'sugerir'],
     ];
 
     private static $usuario = false;

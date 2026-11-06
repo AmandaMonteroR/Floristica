@@ -2913,3 +2913,305 @@ h1 {
     color: var(--texto-suave);
     white-space: nowrap;
 }
+
+/* ---------- Parte 12: los botones de las tarjetas del catálogo bajan de línea si no caben ---------- */
+
+.tarjeta-acciones {
+    flex-wrap: wrap;
+}
+
+.columna-acciones .enlace,
+.tarjeta-acciones .enlace {
+    text-decoration: none;
+}
+
+/* ---------- Parte 12: botones del encabezado del catálogo ---------- */
+
+.botones-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.boton-borde-claro {
+    color: #ffffff;
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.75);
+}
+
+.boton-borde-claro:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.visualmente-oculto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------- Parte 12: búsqueda por foto ---------- */
+
+.busqueda-foto {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.columna-buscada {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.zona-foto {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.3rem;
+    aspect-ratio: 3 / 4;
+    padding: 1rem;
+    text-align: center;
+    color: var(--principal-oscuro);
+    background: var(--rosa-claro);
+    border: 2px dashed #e7b6c8;
+    border-radius: var(--radio);
+    cursor: pointer;
+}
+
+.zona-foto:hover,
+.zona-foto.zona-activa,
+.zona-foto:focus-within {
+    border-color: var(--principal);
+    background: #fbd9e6;
+}
+
+.icono-zona {
+    font-size: 2.2rem;
+    color: var(--principal);
+}
+
+.foto-buscada {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+    border-radius: var(--radio);
+}
+
+.colores-foto {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+}
+
+.chip-color {
+    padding: 0.1rem 0.5rem;
+    background: #f6f0f3;
+    border: 1px solid #e6d6de;
+    border-radius: 999px;
+}
+
+.resumen-foto {
+    margin: 0 0 0.6rem;
+}
+
+.lista-resultados {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr));
+    gap: 0.75rem;
+}
+
+.resultado-foto {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.resultado-foto img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.resultado-cuerpo {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.6rem 0.7rem 0.7rem;
+}
+
+.resultado-cuerpo h3 {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.barra-parecido {
+    height: 0.45rem;
+    overflow: hidden;
+    background: #efe4ea;
+    border-radius: 999px;
+}
+
+.barra-parecido span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+}
+
+.nivel-alto span {
+    background: var(--verde);
+}
+
+.nivel-medio span {
+    background: #d99a00;
+}
+
+.nivel-bajo span {
+    background: #b9a6b0;
+}
+
+.texto-parecido,
+.precio-resultado {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+.precio-resultado {
+    font-weight: 600;
+}
+
+.resultado-cuerpo .tarjeta-acciones {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+    .busqueda-foto {
+        grid-template-columns: 1fr;
+    }
+
+    .zona-foto,
+    .foto-buscada {
+        aspect-ratio: 16 / 9;
+    }
+}
+
+/* ---------- Parte 12: asistente de presupuesto ---------- */
+
+.asistente {
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    background: #fdf6f9;
+    border: 1px solid #f0cfdc;
+    border-radius: var(--radio);
+}
+
+.asistente-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.asistente-encabezado > div {
+    flex: 1 1 18rem;
+}
+
+.asistente-encabezado .nota {
+    margin: 0.2rem 0 0;
+}
+
+#notaasistente:empty {
+    display: none;
+}
+
+.propuestas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    gap: 0.75rem;
+}
+
+.propuestas:empty {
+    display: none;
+}
+
+.propuesta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.75rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.propuesta-encabezado {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.propuesta-encabezado img {
+    width: 3.5rem;
+    height: 3.5rem;
+    object-fit: cover;
+    border-radius: calc(var(--radio) - 2px);
+}
+
+.propuesta-encabezado h4 {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.propuesta-encabezado p {
+    margin: 0;
+    font-size: 0.8rem;
+}
+
+.total-propuesta {
+    font-size: 1rem !important;
+    font-weight: 700;
+    color: var(--principal-oscuro);
+}
+
+.subtitulo-propuesta {
+    margin: 0.3rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--texto-suave);
+}
+
+.lineas-propuesta {
+    margin: 0;
+    padding-left: 1.1rem;
+    font-size: 0.85rem;
+}
+
+.sobra-propuesta {
+    margin: 0.2rem 0 0;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.8rem;
+    background: #fff8e6;
+    border-radius: calc(var(--radio) - 2px);
+}
+
+.propuesta .boton {
+    margin-top: auto;
+}

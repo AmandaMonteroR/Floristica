@@ -16,9 +16,12 @@
             <h1>Catálogo</h1>
             <p class="subtitulo">Arreglos florales que ofrece la floristería, armados con productos del inventario.</p>
         </div>
-        <?php if (Seguridad::espropietario()): ?>
-            <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
-        <?php endif; ?>    </header>
+        <div class="botones-encabezado">
+            <button type="button" class="boton boton-borde-claro" id="botonbuscarfoto">Buscar por foto</button>
+            <?php if (Seguridad::espropietario()): ?>
+                <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
+            <?php endif; ?>    </header>
+        </div>
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
         <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Arreglos</a>
@@ -185,6 +188,29 @@
     </div>
 </dialog>
 
+<dialog id="dialogobuscarfoto" class="dialogo dialogo-ancho" aria-labelledby="titulobuscarfoto">
+    <h2 id="titulobuscarfoto">Buscar arreglos por foto</h2>
+    <p class="nota">Suba la foto que mandó la clienta. El sistema la compara con las fotos del catálogo por sus colores y su forma, y muestra los arreglos más parecidos.</p>
+    <div class="busqueda-foto">
+        <div class="columna-buscada">
+            <label class="zona-foto" id="zonabuscarfoto">
+                <input type="file" id="campobuscarfoto" accept="image/jpeg,image/png,image/webp" class="visualmente-oculto">
+                <span class="icono-zona" aria-hidden="true">&#10047;</span>
+                <strong>Elegir foto</strong>
+                <small class="texto-suave">o arrástrela aquí · JPG, PNG o WEBP</small>
+            </label>
+            <img id="fotobuscada" class="foto-buscada" alt="Foto que mandó la clienta" hidden>
+            <button type="button" class="boton" id="botonotrafoto" hidden>Elegir otra foto</button>
+            <div id="coloresbuscada" class="colores-foto"></div>
+            <small class="error" id="errorbuscarfoto" role="alert"></small>
+        </div>
+        <div id="resultadosfoto" class="resultados-foto" aria-live="polite"></div>
+    </div>
+    <div class="acciones-dialogo">
+        <button type="button" class="boton boton-principal" id="botoncerrarbuscarfoto">Cerrar</button>
+    </div>
+</dialog>
+
 <dialog id="dialogoconfirmacion" class="dialogo dialogo-confirmacion">
     <div class="icono-confirmacion" id="iconoconfirmacion" aria-hidden="true"></div>
     <h2 id="tituloconfirmacion"></h2>
@@ -198,5 +224,6 @@
 <script src="js/menu.js"></script>
 <script src="js/historial.js"></script>
 <script src="js/arreglofloral.js"></script>
+<script src="js/buscarfoto.js"></script>
 </body>
 </html>
