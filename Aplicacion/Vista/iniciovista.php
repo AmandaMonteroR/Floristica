@@ -168,9 +168,13 @@ $accesos = [
                             <li>
                                 <span>
                                     <strong><?= e($producto['nombre']) ?></strong>
-                                    <small class="texto-suave">Mínimo <?= $producto['minimo'] ?></small>
+                                    <small class="texto-suave">Mínimo <?= $producto['minimo'] ?><?php if ($producto['reservado'] > 0): ?>
+                                        · hay <?= $producto['stock'] ?>, <?= $producto['reservado'] ?> apartadas para solicitudes<?php endif; ?></small>
+                                    <?php if ($producto['faltante'] > 0): ?>
+                                        <small class="aviso-stock">Faltan <?= $producto['faltante'] ?> para las solicitudes abiertas</small>
+                                    <?php endif; ?>
                                 </span>
-                                <span class="stock stock-bajo"><?= $producto['stock'] ?></span>
+                                <span class="stock stock-bajo" title="Disponible"><?= $producto['disponible'] ?></span>
                             </li>
                         <?php endforeach; ?>
                     </ul>

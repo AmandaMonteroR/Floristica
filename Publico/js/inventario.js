@@ -423,8 +423,9 @@ function descartarborrador() {
 }
 
 // Rojo: en el mínimo o por debajo. Amarillo: hasta 50 % por encima del mínimo. Verde: suficiente.
+// Se mide con lo disponible (el stock menos lo apartado para solicitudes abiertas).
 function nivelstock(producto) {
-    const stock = producto.tbinventariostock;
+    const stock = producto.tbinventariodisponible;
     const minimo = producto.tbinventariostockminimo;
 
     if (stock <= minimo) {
@@ -434,6 +435,17 @@ function nivelstock(producto) {
         return { clase: 'stock-medio', texto: 'Cerca del mínimo' };
     }
     return { clase: 'stock-bien', texto: 'Suficiente' };
+}
+
+// Debajo del stock: cuánto está apartado para solicitudes abiertas y cuánto queda libre
+function textoapartado(producto) {
+    if (producto.tbinventariostockreservado <= 0) {
+        return '';
+    }
+    const texto = producto.tbinventariofaltante > 0
+        ? `<span class="aviso-stock">Faltan ${producto.tbinventariofaltante}</span>`
+        : `${producto.tbinventariodisponible} libres`;
+    return `<small class="texto-suave nota-apartado" title="Apartado para solicitudes abiertas">${producto.tbinventariostockreservado} ${producto.tbinventariostockreservado === 1 ? 'apartada' : 'apartadas'} · ${texto}</small>`;
 }
 
 async function cargarinventario() {
@@ -478,7 +490,7 @@ async function cargarinventario() {
                 <td>${formatearmonto(producto.preciounidadactual)}</td>
                 <td>${formatearmonto(producto.precioventaactual)}${producto.temporadaprecio
                     ? `<br><span class="estado estado-vigente">${escapar(producto.temporadaprecio)}</span>` : ''}</td>
-                <td><span class="stock ${nivel.clase}" title="${nivel.texto} (mínimo: ${producto.tbinventariostockminimo})">${producto.tbinventariostock}</span></td>
+                <td><span class="stock ${nivel.clase}" title="${nivel.texto} (mínimo: ${producto.tbinventariostockminimo})">${producto.tbinventariostock}</span>${textoapartado(producto)}</td>
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
                     <button type="button" class="enlace" data-accion="ver" data-id="${producto.tbinventarioid}">Ver</button>
@@ -575,7 +587,10 @@ async function verdetalle(id) {
                 `Proveedor ${formatearmonto(temporada.precio)} el paquete · se vende a ${formatearmonto(venta)} la unidad`,
             ];
         }),
-        ['Stock actual', `${producto.tbinventariostock} (${nivelstock(producto).texto.toLowerCase()})`],
+        ['Stock actual', String(producto.tbinventariostock)],
+        ['Apartado para solicitudes', `${producto.tbinventariostockreservado}${producto.tbinventariofaltante > 0
+            ? ` (faltan ${producto.tbinventariofaltante} para prepararlas todas)` : ''}`],
+        ['Disponible', `${producto.tbinventariodisponible} (${nivelstock(producto).texto.toLowerCase()})`],
         ['Stock mínimo', String(producto.tbinventariostockminimo)],
     ];
 

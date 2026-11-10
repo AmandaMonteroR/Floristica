@@ -175,6 +175,8 @@ class encargocontrolador
                 'tbinventariocategoria'   => $producto->getTbinventariocategoria(),
                 'tbinventarioprecioventa' => $this->precioactual('inventario', $producto->getTbinventarioid(), $producto->getTbinventarioprecioventa()),
                 'tbinventariostock'       => (int) $producto->getTbinventariostock(),
+                // Lo que se puede pedir: el stock menos lo apartado para otras solicitudes
+                'tbinventariodisponible'  => $producto->getDisponible(),
                 // Costo por unidad y venta, normal y en temporada alta
                 'costonormal'             => $normales[(int) $producto->getTbinventarioid()]['costo'] ?? 0,
                 'costoalto'               => $altos[(int) $producto->getTbinventarioid()]['costo'] ?? 0,
@@ -237,6 +239,8 @@ class encargocontrolador
         $id = $this->entransaccion(function () use ($encargo, $datos, $usuario) {
             $id = $this->repositorio->insertar($encargo);
             $this->repositorio->guardarinsumos($id, $datos['lineas']);
+            // Lo que pide queda apartado en el inventario (stock reservado)
+            $this->inventario->recalcularreservado();
             $this->historico->registrar('estado', $id, 'Pendiente', $usuario['id']);
             // La foto de referencia solo queda en el historial si se puso
             $iniciales = array_filter($this->datoshistorico($encargo), function ($valor, $campo) {
@@ -289,6 +293,7 @@ class encargocontrolador
         $this->entransaccion(function () use ($nuevo, $datos, $id, $anteriores, $usuario) {
             $this->repositorio->actualizar($nuevo);
             $this->repositorio->guardarinsumos($id, $datos['lineas']);
+            $this->inventario->recalcularreservado();
             $this->generales->registrar('solicitudencargo', $id, $anteriores, $this->datoshistorico($nuevo), $usuario['id']);
         });
 
@@ -422,6 +427,8 @@ class encargocontrolador
 
             $this->repositorio->cambiarestado($id, 'Terminado');
             $this->historico->registrar('estado', $id, 'Terminado', $usuario['id']);
+            // Ya salió del inventario: deja de estar apartado
+            $this->inventario->recalcularreservado();
         });
 
         return $this->respuesta(true, 'Solicitud terminada. Se descontaron los productos del inventario.');
@@ -542,6 +549,8 @@ class encargocontrolador
         $this->entransaccion(function () use ($id, $estado, $usuario) {
             $this->repositorio->cambiarestado($id, $estado);
             $this->historico->registrar('estado', $id, $estado, $usuario['id']);
+            // Si se cancela, lo que tenía apartado vuelve a estar disponible
+            $this->inventario->recalcularreservado();
         });
     }
 
@@ -649,20 +658,11 @@ class encargocontrolador
     // Predefinida: los del arreglo × cantidad, más los adicionales. Personalizada: los que eligió el cliente.
     private function materiales(Encargo $encargo)
     {
-        $necesarias = [];
-
-        if (!$encargo->esPersonalizado() && $encargo->getTbarreglofloralid()) {
-            foreach ($this->arreglos->listardetalles($encargo->getTbarreglofloralid()) as $detalle) {
-                $idproducto = (int) $detalle->getTbinventarioid();
-                $necesarias[$idproducto] = ($necesarias[$idproducto] ?? 0)
-                    + (int) $detalle->getTbarreglofloralinsumocantidad() * (int) $encargo->getTbsolicitudencargocantidad();
-            }
-        }
-
-        foreach ($this->repositorio->listarinsumos($encargo->getTbsolicitudencargoid()) as $insumo) {
-            $idproducto = (int) $insumo->getTbinventarioid();
-            $necesarias[$idproducto] = ($necesarias[$idproducto] ?? 0) + (int) $insumo->getTbsolicitudencargoinsumocantidad();
-        }
+        $necesarias = $this->necesarias(
+            $encargo->esPersonalizado() ? null : $encargo->getTbarreglofloralid(),
+            (int) $encargo->getTbsolicitudencargocantidad(),
+            $this->repositorio->listarinsumos($encargo->getTbsolicitudencargoid())
+        );
 
         $materiales = [];
         foreach ($necesarias as $idproducto => $cantidad) {
@@ -679,6 +679,59 @@ class encargocontrolador
         }
 
         return $materiales;
+    }
+
+    // [idproducto => unidades] que necesita una solicitud: la receta del arreglo × cantidad (si es
+    // predefinida) más sus productos (adicionales o los del personalizado)
+    private function necesarias($idarreglo, $cantidad, $insumos)
+    {
+        $necesarias = [];
+
+        if ($idarreglo) {
+            foreach ($this->arreglos->listardetalles($idarreglo) as $detalle) {
+                $idproducto = (int) $detalle->getTbinventarioid();
+                $necesarias[$idproducto] = ($necesarias[$idproducto] ?? 0)
+                    + (int) $detalle->getTbarreglofloralinsumocantidad() * max(1, (int) $cantidad);
+            }
+        }
+
+        foreach ($insumos as $insumo) {
+            $idproducto = (int) $insumo->getTbinventarioid();
+            $necesarias[$idproducto] = ($necesarias[$idproducto] ?? 0) + (int) $insumo->getTbsolicitudencargoinsumocantidad();
+        }
+
+        return $necesarias;
+    }
+
+    // Stock reservado ("previsibilidad"): lo que piden las solicitudes abiertas está apartado, así que
+    // solo se puede pedir lo disponible (stock − reservado). Al editar, lo que esta misma solicitud ya
+    // tenía apartado cuenta como suyo, y si no se aumenta, no se vuelve a revisar.
+    private function revisarstock($datos, $insumos, $actual)
+    {
+        $pedidas = $this->necesarias($datos['tbsolicitudencargotipo'] === 'Predefinido' ? $datos['tbarreglofloralid'] : null,
+            (int) $datos['tbsolicitudencargocantidad'], $insumos);
+        $propias = $actual !== null && $actual->estaAbierto()
+            ? $this->necesarias($actual->esPersonalizado() ? null : $actual->getTbarreglofloralid(),
+                (int) $actual->getTbsolicitudencargocantidad(), $this->repositorio->listarinsumos($actual->getTbsolicitudencargoid()))
+            : [];
+
+        $faltan = [];
+        foreach ($pedidas as $idproducto => $cantidad) {
+            $producto = $this->inventario->obtenerporid($idproducto);
+            if (!$producto) {
+                continue;
+            }
+            $suyas = $propias[$idproducto] ?? 0;
+            $disponible = (int) $producto->getTbinventariostock() - (int) $producto->getTbinventariostockreservado() + $suyas;
+            if ($cantidad > $disponible && $cantidad > $suyas) {
+                $apartadas = (int) $producto->getTbinventariostockreservado() - $suyas;
+                $faltan[] = $producto->getTbinventarionombre() . ': se necesitan ' . $cantidad . ' y hay ' . max(0, $disponible)
+                    . ' disponibles (' . (int) $producto->getTbinventariostock() . ' en inventario'
+                    . ($apartadas > 0 ? ', ' . $apartadas . ' apartadas para otras solicitudes' : '') . ')';
+            }
+        }
+
+        return $faltan ? 'No hay suficiente inventario. ' . implode('; ', $faltan) . '.' : '';
     }
 
     private function convertirinsumos(Encargo $encargo)
@@ -1083,6 +1136,14 @@ class encargocontrolador
         $datos['tbsolicitudencargototal'] = round($subtotal + $costopintura + $costoexpress, 2);
         $datos['tbsolicitudencargocosto'] = round($costo, 2);
         $datos['lineas'] = $insumos;
+
+        // No se deja crear (ni aumentar) una solicitud si no hay inventario disponible para prepararla
+        if (!$errores) {
+            $error = $this->revisarstock($datos, $insumos, $actual);
+            if ($error !== '') {
+                $errores[$tipo === 'Predefinido' ? 'tbarreglofloralid' : 'insumos'] = $error;
+            }
+        }
 
         return $errores;
     }

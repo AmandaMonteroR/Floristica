@@ -1446,6 +1446,77 @@ prueba('Quien la tiene se la puede pasar a otra persona, y queda en el historial
     && count(array_filter($asignada['historial'] ?? [], function ($h) { return stripos($h['texto'], 'asign') !== false; })) >= 2, mensaje($r));
 
 /* =====================================================================
+ * 18. Stock reservado: no se piden más flores de las que hay (Parte 15)
+ * =================================================================== */
+seccion('18. Stock reservado: no se piden más flores de las que hay');
+
+// Girasol (id 5). Lo disponible es el stock menos lo apartado para solicitudes abiertas.
+$girasol = function () use ($propietario) {
+    return datos($propietario->get('inventario', 'obtener', ['id' => 5]));
+};
+$antes = $girasol();
+$libres = (int) ($antes['tbinventariodisponible'] ?? -1);
+prueba('El inventario dice cuánto está apartado y cuánto queda disponible',
+    isset($antes['tbinventariostockreservado']) && $libres === max(0, (int) $antes['tbinventariostock'] - (int) $antes['tbinventariostockreservado']),
+    json_encode($antes, JSON_UNESCAPED_UNICODE));
+
+$girasoles = function ($cantidad) use ($manana) {
+    return [
+        'tbclienteid' => 5, 'tbempleadoid' => '', 'tbsolicitudencargofechaentrega' => $manana, 'tbsolicitudencargonota' => '',
+        'tbsolicitudencargotipo' => 'Personalizado', 'tbarreglofloralid' => '', 'tbsolicitudencargocantidad' => 1,
+        'tbsolicitudencargomodalidad' => 'Libre', 'tbsolicitudencargoporcentaje' => '100',
+        'insumos' => [['tbinventarioid' => 5, 'cantidad' => $cantidad]],
+    ];
+};
+$r = $lorena->post('encargo', 'crear', $girasoles($libres + 10));
+prueba("Si hay {$libres} girasoles disponibles, no deja crear una solicitud de " . ($libres + 10),
+    tieneerror($r, 'insumos') && strpos(mensaje($r) . json_encode($r['json'] ?? [], JSON_UNESCAPED_UNICODE), 'Girasol') !== false, json_encode($r['json'] ?? [], JSON_UNESCAPED_UNICODE));
+prueba('…y el mensaje dice cuántos se necesitan y cuántos hay',
+    strpos(json_encode($r['json'] ?? [], JSON_UNESCAPED_UNICODE), 'se necesitan ' . ($libres + 10) . ' y hay ' . $libres . ' disponibles') !== false,
+    json_encode($r['json'] ?? [], JSON_UNESCAPED_UNICODE));
+
+$r = $lorena->post('encargo', 'crear', $girasoles($libres));
+$idtodos = datos($r)['tbsolicitudencargoid'] ?? 0;
+prueba('Sí deja pedir exactamente lo disponible', exito($r) && $idtodos > 0, mensaje($r));
+$despues = $girasol();
+prueba('…y esos girasoles quedan apartados (el stock no cambia todavía)',
+    (int) $despues['tbinventariostockreservado'] === (int) $antes['tbinventariostockreservado'] + $libres
+    && (int) $despues['tbinventariostock'] === (int) $antes['tbinventariostock'] && (int) $despues['tbinventariodisponible'] === 0,
+    json_encode($despues, JSON_UNESCAPED_UNICODE));
+$opcionesencargo = datos($lorena->get('encargo', 'opciones'));
+$enopciones = array_values(array_filter($opcionesencargo['productos'] ?? [], function ($p) { return (int) $p['tbinventarioid'] === 5; }));
+prueba('El formulario de solicitudes sabe que ya no hay girasoles disponibles', isset($enopciones[0]) && (int) $enopciones[0]['tbinventariodisponible'] === 0);
+
+$r = $carlos->post('encargo', 'crear', $girasoles(1));
+prueba('Otra solicitud ya no puede pedir ni un girasol', tieneerror($r, 'insumos'), mensaje($r));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idtodos, 'tbsolicitudencargonota' => 'Sin cambiar las flores'] + $girasoles($libres));
+prueba('La solicitud que los tiene apartados se puede editar sin aumentar las flores', exito($r), mensaje($r));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idtodos] + $girasoles($libres + 1));
+prueba('…pero no se le puede subir la cantidad si no hay más', tieneerror($r, 'insumos'), mensaje($r));
+
+prueba('Al cancelarla…', exito($propietario->post('encargo', 'cancelar', ['id' => $idtodos])));
+prueba('…los girasoles vuelven a estar disponibles', (int) $girasol()['tbinventariodisponible'] === $libres);
+
+// Al terminarla, sale del inventario y deja de estar apartada
+$r = $carlos->post('encargo', 'crear', $girasoles(1));
+$iduno = datos($r)['tbsolicitudencargoid'] ?? 0;
+$carlos->post('encargo', 'asignarme', ['id' => $iduno]);
+$carlos->post('encargo', 'iniciar', ['id' => $iduno]);
+$r = $carlos->post('encargo', 'terminar', ['id' => $iduno]);
+$final = $girasol();
+prueba('Al terminar una solicitud se descuenta del stock y ya no queda apartada',
+    exito($r) && (int) $final['tbinventariostock'] === (int) $antes['tbinventariostock'] - 1
+    && (int) $final['tbinventariostockreservado'] === (int) $antes['tbinventariostockreservado'],
+    mensaje($r) . ' ' . json_encode($final, JSON_UNESCAPED_UNICODE));
+
+// Solicitudes viejas que piden más de lo que hay (Lirio rosado: 15 en inventario y 24 apartados)
+$lirio = datos($propietario->get('inventario', 'obtener', ['id' => 10]));
+prueba('Si lo apartado pasa del stock, el inventario dice cuántos faltan', (int) ($lirio['tbinventariofaltante'] ?? 0) > 0
+    && (int) $lirio['tbinventariodisponible'] === 0, json_encode($lirio, JSON_UNESCAPED_UNICODE));
+$inicio = $propietario->get('inicio', '');
+prueba('…y el inicio lo avisa entre los productos con stock bajo', strpos($inicio['texto'] ?? '', 'para las solicitudes abiertas') !== false);
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

@@ -1039,6 +1039,9 @@ class inventariocontrolador
             'tbinventarioprecioventa'     => (float) $inventario->getTbinventarioprecioventa(),
             'tbinventariostock'           => (int) $inventario->getTbinventariostock(),
             'tbinventariostockminimo'     => (int) $inventario->getTbinventariostockminimo(),
+            'tbinventariostockreservado'  => (int) $inventario->getTbinventariostockreservado(),
+            'tbinventariodisponible'      => $inventario->getDisponible(),
+            'tbinventariofaltante'        => $inventario->getFaltante(),
             'tbinventarioestado'          => (int) $inventario->getTbinventarioestado(),
             'stockbajo'                   => $inventario->tieneStockBajo(),
         ];

@@ -185,7 +185,8 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
   - El precio del paquete debe ser mayor que 0, con máximo 2 decimales.
   - El costo por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
   - El **precio de venta** por unidad es el que se le cobra al cliente en un arreglo personalizado o como adicional. No puede ser menor que el costo, y la pantalla muestra la ganancia.
-- **Nivel de stock**, con un círculo de color:
+- **Stock apartado (previsibilidad):** cada insumo guarda cuánto está apartado para las solicitudes abiertas (`tbinventariostockreservado`). Lo **disponible** es el stock menos lo apartado. En la lista, debajo del stock dice "8 apartadas · 32 libres", o "Faltan 9" si las solicitudes abiertas piden más de lo que hay; en **Ver** salen Stock actual, Apartado para solicitudes y Disponible.
+- **Nivel de stock**, con un círculo de color (según lo disponible):
   - Rojo: igual o por debajo del mínimo.
   - Amarillo: hasta 1,5 veces el mínimo.
   - Verde: suficiente.
@@ -275,6 +276,7 @@ La foto de la clienta se guarda en `Publico/imagenes/solicitudes/referencia_…`
 - **Total:** arreglo × cantidad + productos + flores pintadas + express. Debajo se ven los dos totales, con precios normales y en temporada alta, y (solo el propietario) el costo y la ganancia del personalizado. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
 - **Costo:** cada solicitud guarda lo que costaron sus flores y productos (`tbsolicitudencargocosto`), para calcular la ganancia en Ventas.
 - **Precios guardados:** se guardan los precios del momento. Si después cambian en el catálogo, el inventario o las zonas, las solicitudes ya registradas no cambian, ni siquiera al editarlas.
+- **Stock reservado (previsibilidad):** al guardar, el sistema revisa que haya inventario **disponible** (stock − lo apartado para otras solicitudes abiertas) para todo lo que lleva: la receta del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza, no deja guardarla y dice, por ejemplo, "Girasol: se necesitan 15 y hay 5 disponibles (12 en inventario, 7 apartadas para otras solicitudes)". Al guardarla, eso queda apartado; al cancelarla vuelve a estar disponible, y al terminarla sale del stock. Al editar, lo que la misma solicitud ya tenía apartado cuenta como suyo, y si no se aumenta no se vuelve a revisar. En el formulario, los productos sin disponible dicen "(no hay disponible)". El inicio del propietario avisa los productos con poco disponible y cuántos faltan para preparar todas las solicitudes abiertas.
 - **Estados:** Pendiente → En proceso → Terminado; también puede pasar a Cancelado.
   - Para iniciarla, debe estar asignada a alguien.
   - **Terminar:** descuenta del inventario los productos del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza el stock, no deja terminarla y dice qué falta.

@@ -12,6 +12,7 @@ class Inventario
     private $tbinventarioprecioventa;
     private $tbinventariostock;
     private $tbinventariostockminimo;
+    private $tbinventariostockreservado;
     private $tbinventarioestado;
 
     public function __construct($datos = [])
@@ -26,6 +27,7 @@ class Inventario
         $this->tbinventarioprecioventa     = $datos['tbinventarioprecioventa'] ?? 0;
         $this->tbinventariostock           = $datos['tbinventariostock'] ?? 0;
         $this->tbinventariostockminimo     = $datos['tbinventariostockminimo'] ?? 0;
+        $this->tbinventariostockreservado  = $datos['tbinventariostockreservado'] ?? 0;
         $this->tbinventarioestado          = $datos['tbinventarioestado'] ?? 1;
     }
 
@@ -102,6 +104,22 @@ class Inventario
 
     public function tieneStockBajo()
     {
-        return (int) $this->tbinventariostock <= (int) $this->tbinventariostockminimo;
+        // Cuenta lo disponible: si casi todo está apartado para solicitudes, hay que pedir más
+        return $this->getDisponible() <= (int) $this->tbinventariostockminimo;
     }
+
+    public function getTbinventariostockreservado() {
+        return $this->tbinventariostockreservado; }
+
+    public function setTbinventariostockreservado($valor) {
+        $this->tbinventariostockreservado = $valor; }
+
+    // Lo que se puede usar: el stock menos lo apartado para solicitudes abiertas (nunca menos de 0)
+    public function getDisponible() {
+        return max(0, (int) $this->tbinventariostock - (int) $this->tbinventariostockreservado); }
+
+    // Cuánto falta para poder preparar todas las solicitudes abiertas (0 si alcanza)
+    public function getFaltante() {
+        return max(0, (int) $this->tbinventariostockreservado - (int) $this->tbinventariostock); }
 }
+

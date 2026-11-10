@@ -343,7 +343,8 @@ function opcionesproducto(linea) {
             const seleccionado = id === String(linea.tbinventarioid);
             const nocabe = disponible !== null && !seleccionado && preciounidad(producto) > disponible;
             const desactivado = !seleccionado && (usados.includes(id) || nocabe);
-            const extra = producto.tbinventariostock <= 0 ? ' (sin stock)' : nocabe ? ' (no alcanza)' : '';
+            // Lo disponible ya descuenta lo apartado para otras solicitudes abiertas
+            const extra = producto.tbinventariodisponible <= 0 ? ' (no hay disponible)' : nocabe ? ' (no alcanza)' : '';
             html += `<option value="${id}"${seleccionado ? ' selected' : ''}${desactivado ? ' disabled' : ''}>`
                 + `${escapar(producto.tbinventarionombre)} · ${montocorto(preciounidad(producto))}${extra}</option>`;
         });

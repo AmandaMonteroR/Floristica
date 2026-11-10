@@ -47,14 +47,18 @@ class iniciocontrolador
                 if ($producto->tieneStockBajo()) {
                     $stockbajo[] = [
                         'nombre'  => $producto->getTbinventarionombre(),
-                        'stock'   => (int) $producto->getTbinventariostock(),
-                        'minimo'  => (int) $producto->getTbinventariostockminimo(),
+                        'stock'      => (int) $producto->getTbinventariostock(),
+                        'minimo'     => (int) $producto->getTbinventariostockminimo(),
+                        'reservado'  => (int) $producto->getTbinventariostockreservado(),
+                        'disponible' => $producto->getDisponible(),
+                        'faltante'   => $producto->getFaltante(),
                     ];
                 }
             }
 
+            // Primero los que no alcanzan para las solicitudes abiertas, después los de menos disponible
             usort($stockbajo, function ($a, $b) {
-                return $a['stock'] <=> $b['stock'];
+                return [$b['faltante'], $a['disponible']] <=> [$a['faltante'], $b['disponible']];
             });
 
             $pedidos = new pedidocontrolador();

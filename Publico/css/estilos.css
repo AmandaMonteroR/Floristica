@@ -3623,3 +3623,16 @@ img[data-lupa] {
 .stock-linea {
     white-space: nowrap;
 }
+
+/* Parte 15: stock apartado para solicitudes abiertas */
+.nota-apartado {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.nota-apartado .aviso-stock {
+    display: inline;
+    font-size: inherit;
+}

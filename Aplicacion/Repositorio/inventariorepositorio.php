@@ -98,6 +98,27 @@ class inventariorepositorio
         return $sentencia->rowCount() === 1;
     }
 
+    // Stock reservado ("previsibilidad"): se vuelve a calcular con todas las solicitudes abiertas
+    // (pendientes o en proceso). Predefinidas: la receta del arreglo × cantidad; las dos: sus productos.
+    // Se llama cada vez que se crea, edita, cancela o termina una solicitud.
+    public function recalcularreservado()
+    {
+        $sql = "UPDATE tbinventario i SET tbinventariostockreservado = COALESCE((
+                    SELECT SUM(x.cantidad) FROM (
+                        SELECT d.tbinventarioid, d.tbarreglofloralinsumocantidad * s.tbsolicitudencargocantidad AS cantidad
+                        FROM tbsolicitudencargo s
+                        INNER JOIN tbarreglofloralinsumo d ON d.tbarreglofloralid = s.tbarreglofloralid
+                        WHERE s.tbsolicitudencargoestado IN ('Pendiente', 'En proceso') AND s.tbsolicitudencargotipo = 'Predefinido'
+                        UNION ALL
+                        SELECT n.tbinventarioid, n.tbsolicitudencargoinsumocantidad AS cantidad
+                        FROM tbsolicitudencargo s
+                        INNER JOIN tbsolicitudencargoinsumo n ON n.tbsolicitudencargoid = s.tbsolicitudencargoid
+                        WHERE s.tbsolicitudencargoestado IN ('Pendiente', 'En proceso')
+                    ) x WHERE x.tbinventarioid = i.tbinventarioid), 0)";
+
+        return $this->conexion->exec($sql) !== false;
+    }
+
     public function obtenerporid($id)
     {
         $sentencia = $this->conexion->prepare('SELECT * FROM tbinventario WHERE tbinventarioid = ?');

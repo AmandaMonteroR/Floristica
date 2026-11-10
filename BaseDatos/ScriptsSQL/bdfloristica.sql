@@ -90,6 +90,9 @@ CREATE TABLE tbinventario (
     tbinventarioprecioventa DECIMAL(10,2),
     tbinventariostock INT,
     tbinventariostockminimo INT,
+    -- Stock reservado: unidades apartadas para solicitudes pendientes o en proceso.
+    -- Disponible = stock - reservado. No se puede pedir más de lo disponible.
+    tbinventariostockreservado INT DEFAULT 0,
     tbinventarioestado TINYINT(1),
     PRIMARY KEY (tbinventarioid)
 );
