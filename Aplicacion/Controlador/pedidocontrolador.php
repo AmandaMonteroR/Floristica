@@ -4,6 +4,7 @@ require_once __DIR__ . '/../Repositorio/confirmacioncomprarepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariootroproveedorrepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 
 class pedidocontrolador
@@ -14,6 +15,7 @@ class pedidocontrolador
     private $proveedores;
     private $movimientos;
     private $historico;
+    private $otrosproveedores;
     private $tipospago = ['Contado', 'Crédito'];
 
     public function __construct()
@@ -24,6 +26,7 @@ class pedidocontrolador
         $this->proveedores = new proveedorrepositorio();
         $this->movimientos = new inventariomovimientorepositorio();
         $this->historico = new historicocontrolador();
+        $this->otrosproveedores = new inventariootroproveedorrepositorio();
     }
 
     public function proveedores()
@@ -39,15 +42,24 @@ class pedidocontrolador
         return $this->respuesta(true, '', $lista);
     }
 
+    // Insumos que se le pueden pedir a un proveedor: los que tienen a ese proveedor como principal y
+    // los que también le compran a él (con el precio que cobra ese proveedor)
     public function productos($idproveedor)
     {
+        $otros = $this->otrosproveedores->listarporproveedor((int) $idproveedor);
         $lista = [];
-        foreach ($this->inventario->listar('', '', 1, (int) $idproveedor) as $producto) {
+        foreach ($this->inventario->listar('', '', 1) as $producto) {
+            $id = (int) $producto->getTbinventarioid();
+            $esprincipal = (int) $producto->getTbproveedorid() === (int) $idproveedor;
+            if (!$esprincipal && !isset($otros[$id])) {
+                continue;
+            }
             $lista[] = [
-                'tbinventarioid'              => $producto->getTbinventarioid(),
+                'tbinventarioid'              => $id,
                 'tbinventarionombre'          => $producto->getTbinventarionombre(),
-                'tbinventariopreciopaquete'   => (float) $producto->getTbinventariopreciopaquete(),
+                'tbinventariopreciopaquete'   => $esprincipal ? (float) $producto->getTbinventariopreciopaquete() : $otros[$id],
                 'tbinventariounidadespaquete' => (int) $producto->getTbinventariounidadespaquete(),
+                'principal'                   => $esprincipal,
             ];
         }
 
@@ -348,6 +360,7 @@ class pedidocontrolador
         }
 
         $usados = [];
+        $otros = $this->otrosproveedores->listarporproveedor((int) $datos['tbproveedorid']);
         foreach ($detalles as $indice => $detalle) {
             $linea = 'Línea ' . ($indice + 1) . ': ';
             $producto = ctype_digit($detalle['tbinventarioid'])
@@ -360,8 +373,9 @@ class pedidocontrolador
                 $errores['detalles'] = $linea . 'el producto no existe.';
             } elseif (!$producto->estaActivo()) {
                 $errores['detalles'] = $linea . 'el producto está inactivo.';
-            } elseif ((int) $producto->getTbproveedorid() !== (int) $datos['tbproveedorid']) {
-                $errores['detalles'] = $linea . 'el producto no pertenece al proveedor seleccionado.';
+            } elseif ((int) $producto->getTbproveedorid() !== (int) $datos['tbproveedorid']
+                && !isset($otros[(int) $producto->getTbinventarioid()])) {
+                $errores['detalles'] = $linea . 'el producto no se le compra a este proveedor.';
             } elseif (in_array($detalle['tbinventarioid'], $usados, true)) {
                 $errores['detalles'] = $linea . 'el producto ya está en otra línea.';
             } elseif (!ctype_digit($detalle['tbpedidodetallecantidad'])

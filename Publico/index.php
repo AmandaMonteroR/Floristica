@@ -10,6 +10,7 @@ require_once __DIR__ . '/../Aplicacion/Controlador/clientecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/temporadacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/ventacontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/creditocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/busquedafotocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/valoracioncontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/asistentecontrolador.php';
@@ -101,6 +102,7 @@ if ($accion === '') {
         'zonaentrega' => 'zonaentregavista.php',
         'temporada'  => 'temporadavista.php',
         'venta'      => 'ventavista.php',
+        'credito'    => 'creditovista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -118,7 +120,7 @@ header('Content-Type: application/json; charset=utf-8');
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
     'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar',
-    'guardarcatalogo', 'estadocatalogo'];
+    'guardarcatalogo', 'estadocatalogo', 'abonar'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -425,6 +427,25 @@ try {
             switch ($accion) {
                 case 'resumen':
                     $respuesta = $controlador->resumen($_GET['desde'] ?? '', $_GET['hasta'] ?? '');
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        // Cuentas por pagar (pedidos a crédito) y por cobrar (solicitudes con saldo)
+        case 'credito':
+            $controlador = new creditocontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['todas'] ?? '');
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['tipo'] ?? '', $_GET['id'] ?? 0);
+                    break;
+                case 'abonar':
+                    $respuesta = $controlador->abonar($_POST, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

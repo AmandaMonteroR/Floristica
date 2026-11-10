@@ -23,6 +23,7 @@ $opcionesmenu = [
         ['texto' => 'Zonas de entrega (express)', 'modulo' => 'zonaentrega'],
         ['texto' => 'Temporada alta', 'modulo' => 'temporada'],
         ['texto' => 'Ventas y ganancias', 'modulo' => 'venta'],
+        ['texto' => 'Cuentas por cobrar y por pagar', 'modulo' => 'credito'],
     ]],
     ['texto' => 'Compras', 'hijos' => [
         ['texto' => 'Proveedores', 'hijos' => [

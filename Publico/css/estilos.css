@@ -3636,3 +3636,109 @@ img[data-lupa] {
     display: inline;
     font-size: inherit;
 }
+
+/* Parte 16: otros proveedores de un insumo */
+.lista-otros {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.fila-otro {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+    gap: 0.25rem 0.75rem;
+    align-items: end;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.fila-otro .campo {
+    margin: 0;
+}
+
+.fila-otro [data-quitarotro] {
+    align-self: end;
+    padding-bottom: 0.6rem;
+}
+
+.comparacion-otro {
+    grid-column: 1 / -1;
+    font-size: 0.8rem;
+    color: var(--texto-suave);
+}
+
+.comparacion-otro.mas-barato {
+    color: var(--verde);
+    font-weight: 600;
+}
+
+.comparacion-otro:empty {
+    display: none;
+}
+
+@media (max-width: 560px) {
+    .fila-otro {
+        grid-template-columns: 1fr;
+    }
+
+    .fila-otro [data-quitarotro] {
+        justify-self: start;
+        margin-top: 0;
+    }
+}
+
+/* Parte 17: cuentas por cobrar y por pagar */
+.tabla-cuentas .numero {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tarjeta-dato.tarjeta-alerta strong {
+    color: var(--peligro);
+}
+
+.campo-casilla {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.campo-casilla input {
+    width: auto;
+    accent-color: var(--principal);
+}
+
+.formulario-abono {
+    margin-top: 1.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid var(--borde);
+}
+
+.formulario-abono[hidden] {
+    display: none;
+}
+
+.monto-abono {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.monto-abono input {
+    flex: 1;
+    min-width: 0;
+}
+
+.boton-pequeno {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+    .tarjetas-ventas {
+        grid-template-columns: 1fr;
+    }
+}

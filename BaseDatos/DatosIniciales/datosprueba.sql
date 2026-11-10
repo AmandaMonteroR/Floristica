@@ -1304,6 +1304,39 @@ INSERT INTO `tbinventariostockminimohistorico` VALUES (65,65,2,1,'2026-10-02 09:
 INSERT INTO `tbinventarioestadohistorico` VALUES (65,65,1,1,'2026-10-02 09:08:00');
 INSERT INTO `tbinventariomovimiento` VALUES (72,65,'Inicial',6,6,NULL,NULL,1,'2026-10-02 09:08:00');
 
+-- Parte 16: insumos que también se le compran a otros proveedores (cada uno con su precio del paquete)
+INSERT INTO `tbinventariootroproveedor` VALUES (1,1,2,7500.00);
+INSERT INTO `tbinventariootroproveedor` VALUES (2,1,5,6500.00);
+INSERT INTO `tbinventariootroproveedor` VALUES (3,2,2,7200.00);
+INSERT INTO `tbinventariootroproveedor` VALUES (4,5,5,2800.00);
+INSERT INTO `tbinventariootroproveedor` VALUES (5,11,1,2700.00);
+INSERT INTO `tbinventariootroproveedor` VALUES (6,19,6,4500.00);
+INSERT INTO `tbinventariootroproveedorhistorico` VALUES (1,1,'2|7500.00',1,'2026-10-08 09:01:00');
+INSERT INTO `tbinventariootroproveedorhistorico` VALUES (2,1,'5|6500.00',1,'2026-10-08 09:01:00');
+INSERT INTO `tbinventariootroproveedorhistorico` VALUES (3,2,'2|7200.00',1,'2026-10-08 09:02:00');
+INSERT INTO `tbinventariootroproveedorhistorico` VALUES (4,5,'5|2800.00',1,'2026-10-08 09:03:00');
+INSERT INTO `tbinventariootroproveedorhistorico` VALUES (5,11,'1|2700.00',1,'2026-10-08 09:04:00');
+INSERT INTO `tbinventariootroproveedorhistorico` VALUES (6,19,'6|4500.00',1,'2026-10-08 09:05:00');
+
+-- Parte 17: abonos. Al proveedor: el pedido N.º 2 (a crédito, ₡15 000 a 30 días) lleva ₡5 000 pagados.
+INSERT INTO `tbpedidoabono` VALUES (1,2,'2026-10-20',5000.00,'Transferencia','Primer abono',1);
+-- De las clientas: las terminadas se pagaron, menos la N.º 17 y la N.º 20 (ventas a crédito);
+-- algunas pendientes dejaron un adelanto.
+INSERT INTO `tbsolicitudencargoabono` VALUES (1,7,'2026-10-11',12000.00,'SINPE Móvil','',3);
+INSERT INTO `tbsolicitudencargoabono` VALUES (2,13,'2026-10-02',24000.00,'Efectivo','',2);
+INSERT INTO `tbsolicitudencargoabono` VALUES (3,14,'2026-10-03',10500.00,'SINPE Móvil','',2);
+INSERT INTO `tbsolicitudencargoabono` VALUES (4,15,'2026-10-05',4710.00,'Efectivo','',3);
+INSERT INTO `tbsolicitudencargoabono` VALUES (5,16,'2026-10-07',7500.00,'Tarjeta','',1);
+INSERT INTO `tbsolicitudencargoabono` VALUES (6,17,'2026-10-08',12000.00,'SINPE Móvil','Adelanto',1);
+INSERT INTO `tbsolicitudencargoabono` VALUES (7,18,'2026-10-10',40000.00,'Transferencia','',1);
+INSERT INTO `tbsolicitudencargoabono` VALUES (8,19,'2026-10-14',13000.00,'SINPE Móvil','',2);
+INSERT INTO `tbsolicitudencargoabono` VALUES (9,20,'2026-10-16',20000.00,'Efectivo','Adelanto',3);
+INSERT INTO `tbsolicitudencargoabono` VALUES (10,21,'2026-09-20',6500.00,'Efectivo','',2);
+INSERT INTO `tbsolicitudencargoabono` VALUES (11,22,'2026-09-27',25000.00,'Tarjeta','',1);
+INSERT INTO `tbsolicitudencargoabono` VALUES (12,1,'2026-10-11',14000.00,'SINPE Móvil','Adelanto del 50%',2);
+INSERT INTO `tbsolicitudencargoabono` VALUES (13,4,'2026-10-11',20000.00,'Transferencia','Adelanto',3);
+INSERT INTO `tbsolicitudencargoabono` VALUES (14,12,'2026-10-14',18750.00,'SINPE Móvil','Adelanto del 50%',1);
+
 -- Stock reservado: lo que piden las solicitudes pendientes y en proceso queda apartado
 UPDATE tbinventario i SET tbinventariostockreservado = COALESCE((
     SELECT SUM(x.cantidad) FROM (

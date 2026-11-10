@@ -559,6 +559,16 @@ $categoriasinventario = [
         </fieldset>
 
         <fieldset class="seccion-categoria">
+            <legend>Otros proveedores</legend>
+            <p class="nota">Si este insumo también se le compra a otros proveedores, agréguelos con lo que cobran por el mismo
+                paquete. Al hacerle un pedido a ese proveedor, el insumo aparece con su precio. El costo del insumo sigue
+                siendo el del proveedor principal.</p>
+            <div class="lista-otros" id="otrosproveedores"></div>
+            <small class="error" data-error="otrosproveedores"></small>
+            <button type="button" class="boton" id="botonotroproveedor">+ Agregar otro proveedor</button>
+        </fieldset>
+
+        <fieldset class="seccion-categoria">
             <legend>Precio del proveedor en temporada alta</legend>
             <p class="nota">Escriba cuánto le cobra el proveedor por el paquete en temporada alta. El precio de venta sube solo
                 lo mismo que subió el costo (se mantiene la ganancia en colones), y también el de los arreglos que lo llevan.

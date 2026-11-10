@@ -12,6 +12,7 @@ require_once __DIR__ . '/historicocontrolador.php';
 require_once __DIR__ . '/preciotemporadacontrolador.php';
 require_once __DIR__ . '/../Repositorio/temporadarepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
+require_once __DIR__ . '/../Repositorio/abonorepositorio.php';
 
 // Solicitudes de pedido de arreglo:
 // - Predefinida: un arreglo del catálogo (el cliente lo eligió del catálogo de WhatsApp) + adicionales.
@@ -212,6 +213,9 @@ class encargocontrolador
         $datos['insumos'] = $this->convertirinsumos($encargo);
         $datos['materiales'] = $this->materiales($encargo);
         $datos['historial'] = $this->historial($encargo->getTbsolicitudencargoid());
+        // Lo que ya pagó la clienta y lo que le falta (los abonos se registran en Cuentas por cobrar)
+        $datos['abonado'] = (new abonorepositorio())->totalde('cobrar', $encargo->getTbsolicitudencargoid());
+        $datos['saldo'] = max(0, round((float) $encargo->getTbsolicitudencargototal() - $datos['abonado'], 2));
 
         return $this->respuesta(true, '', $datos);
     }
@@ -1136,6 +1140,16 @@ class encargocontrolador
         $datos['tbsolicitudencargototal'] = round($subtotal + $costopintura + $costoexpress, 2);
         $datos['tbsolicitudencargocosto'] = round($costo, 2);
         $datos['lineas'] = $insumos;
+
+        // Si la clienta ya abonó, el total no puede quedar por debajo de lo que pagó
+        if (!$errores && $actual !== null) {
+            $abonado = (new abonorepositorio())->totalde('cobrar', $actual->getTbsolicitudencargoid());
+            if ($datos['tbsolicitudencargototal'] < $abonado - 0.001) {
+                $errores[$tipo === 'Predefinido' ? 'tbsolicitudencargocantidad' : 'insumos'] = 'La clienta ya pagó '
+                    . historicocontrolador::monto($abonado) . ' y el total quedaría en '
+                    . historicocontrolador::monto($datos['tbsolicitudencargototal']) . '. El total no puede ser menor que lo pagado.';
+            }
+        }
 
         // No se deja crear (ni aumentar) una solicitud si no hay inventario disponible para prepararla
         if (!$errores) {

@@ -1517,6 +1517,131 @@ $inicio = $propietario->get('inicio', '');
 prueba('…y el inicio lo avisa entre los productos con stock bajo', strpos($inicio['texto'] ?? '', 'para las solicitudes abiertas') !== false);
 
 /* =====================================================================
+ * 19. Varios proveedores por insumo (Parte 16)
+ * =================================================================== */
+seccion('19. Varios proveedores por insumo');
+
+// Rosa roja: el principal es Flores del Valle (₡7 000) y también se le compra a Vivero Orosi y Floricultura Liberia
+$rosa = datos($propietario->get('inventario', 'obtener', ['id' => 1]));
+$otrosrosa = array_column($rosa['otrosproveedores'] ?? [], 'preciopaquete', 'tbproveedornombreempresa');
+prueba('La rosa roja tiene otros 2 proveedores, cada uno con su precio',
+    count($otrosrosa) === 2 && (float) ($otrosrosa['Vivero Orosi'] ?? 0) === 7500.0 && (float) ($otrosrosa['Floricultura Liberia'] ?? 0) === 6500.0,
+    json_encode($rosa['otrosproveedores'] ?? [], JSON_UNESCAPED_UNICODE));
+$enlista = array_column(datos($propietario->get('inventario', 'listar')) ?? [], 'cantidadotrosproveedores', 'tbinventarioid');
+prueba('La lista de insumos dice cuántos proveedores más tiene', ($enlista[1] ?? 0) === 2 && ($enlista[3] ?? -1) === 0);
+
+$tulipan = ['tbinventarionombre' => 'Tulipán rosado de prueba', 'tbinventariocategoriaflorcolor' => $idcolor('Rosado')] + $florvalida;
+$r = $propietario->post('inventario', 'crear', ['otrosproveedores' => [['tbproveedorid' => 1, 'preciopaquete' => '9000']]] + $tulipan);
+prueba('El principal no se puede poner también como otro proveedor', tieneerror($r, 'otrosproveedores'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['otrosproveedores' => [['tbproveedorid' => 2, 'preciopaquete' => '9000'], ['tbproveedorid' => 2, 'preciopaquete' => '9500']]] + $tulipan);
+prueba('No deja poner dos veces el mismo proveedor', tieneerror($r, 'otrosproveedores'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['otrosproveedores' => [['tbproveedorid' => 4, 'preciopaquete' => '9000']]] + $tulipan);
+prueba('No deja agregar un proveedor inactivo', tieneerror($r, 'otrosproveedores'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['otrosproveedores' => [['tbproveedorid' => 2, 'preciopaquete' => '0']]] + $tulipan);
+prueba('El precio del otro proveedor tiene que ser mayor que 0', tieneerror($r, 'otrosproveedores'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['otrosproveedores' => [['tbproveedorid' => 2, 'preciopaquete' => '']]] + $tulipan);
+prueba('…y es obligatorio si se eligió el proveedor', tieneerror($r, 'otrosproveedores'), mensaje($r));
+
+$r = $propietario->post('inventario', 'crear', ['otrosproveedores' => [['tbproveedorid' => 2, 'preciopaquete' => '9000'], ['tbproveedorid' => '', 'preciopaquete' => '']]] + $tulipan);
+$idtulipan = datos($r)['tbinventarioid'] ?? 0;
+prueba('Crea un insumo con otro proveedor (las filas vacías no cuentan)', exito($r) && $idtulipan > 0, mensaje($r));
+$guardado = datos($propietario->get('inventario', 'obtener', ['id' => $idtulipan]));
+prueba('…y lo guarda con su precio y el costo por unidad', count($guardado['otrosproveedores'] ?? []) === 1
+    && (float) $guardado['otrosproveedores'][0]['preciopaquete'] === 9000.0 && (float) $guardado['otrosproveedores'][0]['preciounidad'] === 450.0,
+    json_encode($guardado['otrosproveedores'] ?? [], JSON_UNESCAPED_UNICODE));
+
+// En los pedidos: el insumo aparece también en los de Vivero Orosi, con el precio de Vivero Orosi
+$deorosi = array_column(datos($propietario->get('pedido', 'productos', ['proveedor' => 2])) ?? [], null, 'tbinventarioid');
+prueba('Al pedirle a Vivero Orosi salen sus insumos y los que también le compran, con su precio',
+    (float) ($deorosi[1]['tbinventariopreciopaquete'] ?? 0) === 7500.0 && (float) ($deorosi[$idtulipan]['tbinventariopreciopaquete'] ?? 0) === 9000.0
+    && isset($deorosi[1]['principal']) && $deorosi[1]['principal'] === false);
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 2, 'tbpedidofecha' => $hoy,
+    'detalles' => [['tbinventarioid' => 1, 'tbpedidodetallecantidad' => 1, 'tbpedidodetalleprecio' => '7500']]]);
+prueba('Deja pedirle rosas rojas a Vivero Orosi', exito($r), mensaje($r));
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 3, 'tbpedidofecha' => $hoy,
+    'detalles' => [['tbinventarioid' => 1, 'tbpedidodetallecantidad' => 1, 'tbpedidodetalleprecio' => '7500']]]);
+prueba('…pero no a Empaques Tacares, que no las vende', tieneerror($r, 'detalles'), mensaje($r));
+
+// Cambiar el precio, quitar y agregar quedan en el historial del insumo
+$r = $propietario->post('inventario', 'actualizar', ['tbinventarioid' => $idtulipan,
+    'otrosproveedores' => [['tbproveedorid' => 2, 'preciopaquete' => '8500'], ['tbproveedorid' => 5, 'preciopaquete' => '9900']]] + $tulipan);
+prueba('Cambia el precio de otro proveedor y agrega uno nuevo', exito($r) && count(datos($propietario->get('inventario', 'obtener', ['id' => $idtulipan]))['otrosproveedores'] ?? []) === 2, mensaje($r));
+$r = $propietario->post('inventario', 'actualizar', ['tbinventarioid' => $idtulipan,
+    'otrosproveedores' => [['tbproveedorid' => 5, 'preciopaquete' => '9900']]] + $tulipan);
+prueba('Quita un proveedor de la lista', exito($r) && count(datos($propietario->get('inventario', 'obtener', ['id' => $idtulipan]))['otrosproveedores'] ?? []) === 1, mensaje($r));
+$textos = array_map(function ($h) { return ($h['anterior'] ?? '') . ' → ' . $h['nuevo']; },
+    array_values(array_filter(datos($propietario->get('inventario', 'historial', ['id' => $idtulipan])) ?? [], function ($h) { return $h['campo'] === 'otroproveedor'; })));
+prueba('El historial muestra cada cambio de otros proveedores', count($textos) === 4
+    && strpos(implode(' | ', $textos), 'Vivero Orosi: ₡9 000,00 el paquete → Vivero Orosi: ₡8 500,00 el paquete') !== false
+    && strpos(implode(' | ', $textos), 'Vivero Orosi: ya no se le compra') !== false, implode(' | ', $textos));
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 2, 'tbpedidofecha' => $hoy,
+    'detalles' => [['tbinventarioid' => $idtulipan, 'tbpedidodetallecantidad' => 1, 'tbpedidodetalleprecio' => '8500']]]);
+prueba('Después de quitarlo ya no se le puede pedir ese insumo', tieneerror($r, 'detalles'), mensaje($r));
+
+/* =====================================================================
+ * 20. Cuentas por cobrar y por pagar (Parte 17)
+ * =================================================================== */
+seccion('20. Cuentas por cobrar y por pagar');
+
+$cuentas = datos($propietario->get('credito', 'listar'));
+$porpagar = array_column($cuentas['porpagar'] ?? [], null, 'id');
+$porcobrar = array_column($cuentas['porcobrar'] ?? [], null, 'id');
+prueba('Por pagar: el pedido N.º 2 a crédito (₡15 000) tiene ₡5 000 abonados y debe ₡10 000',
+    (float) ($porpagar[2]['monto'] ?? 0) === 15000.0 && (float) ($porpagar[2]['saldo'] ?? 0) === 10000.0
+    && ($porpagar[2]['vence'] ?? '') === '2026-11-10', json_encode($porpagar[2] ?? null, JSON_UNESCAPED_UNICODE));
+prueba('…y los pedidos de contado no aparecen', !isset($porpagar[1]));
+prueba('Por cobrar: la solicitud N.º 17 se entregó y debe ₡20 000 (venta a crédito)',
+    (float) ($porcobrar[17]['saldo'] ?? 0) === 20000.0 && ($porcobrar[17]['estadocuenta'] ?? '') === 'Entregada sin pagar',
+    json_encode($porcobrar[17] ?? null, JSON_UNESCAPED_UNICODE));
+prueba('…la N.º 1 dejó un adelanto, las pagadas y las canceladas no aparecen',
+    ($porcobrar[1]['estadocuenta'] ?? '') === 'Con adelanto' && !isset($porcobrar[13]) && !isset($porcobrar[8]));
+$todas = array_column(datos($propietario->get('credito', 'listar', ['todas' => 1]))['porcobrar'] ?? [], null, 'id');
+prueba('Con "mostrar también las pagadas" sale la N.º 13 como pagada', ($todas[13]['estadocuenta'] ?? '') === 'Pagado');
+prueba('Un empleado no puede ver las cuentas (403)', $lorena->get('credito', 'listar')['codigo'] === 403);
+
+// Abonos al proveedor
+$abono = ['tipo' => 'pagar', 'id' => 2, 'monto' => '4000', 'fecha' => $hoy, 'metodo' => 'Transferencia', 'nota' => 'Segundo abono'];
+$r = $propietario->post('credito', 'abonar', ['monto' => '10000.01'] + $abono);
+prueba('El abono no puede pasar del saldo', tieneerror($r, 'monto'), mensaje($r));
+$r = $propietario->post('credito', 'abonar', ['monto' => '0'] + $abono);
+prueba('El abono tiene que ser mayor que 0', tieneerror($r, 'monto'));
+$r = $propietario->post('credito', 'abonar', ['fecha' => $manana] + $abono);
+prueba('La fecha no puede ser futura', tieneerror($r, 'fecha'));
+$r = $propietario->post('credito', 'abonar', ['fecha' => '2026-10-01'] + $abono);
+prueba('…ni anterior a la compra', tieneerror($r, 'fecha'), mensaje($r));
+$r = $propietario->post('credito', 'abonar', ['metodo' => 'Cheque'] + $abono);
+prueba('Hay que decir cómo se pagó', tieneerror($r, 'metodo'));
+$r = $propietario->post('credito', 'abonar', $abono);
+prueba('Registra un abono de ₡4 000 y dice cuánto falta', exito($r) && (float) (datos($r)['saldo'] ?? -1) === 6000.0, mensaje($r));
+$r = $propietario->post('credito', 'abonar', ['monto' => '6000'] + $abono);
+prueba('Con el último abono el pedido queda pagado', exito($r) && strpos(mensaje($r), 'pagado') !== false, mensaje($r));
+$cuenta = datos($propietario->get('credito', 'obtener', ['tipo' => 'pagar', 'id' => 2]));
+prueba('…tiene 3 abonos, con quién los registró, y ya no sale en la lista',
+    count($cuenta['abonos'] ?? []) === 3 && ($cuenta['abonos'][2]['hechopor'] ?? '') === 'Patricia Mora Solano'
+    && ($cuenta['estadocuenta'] ?? '') === 'Pagado'
+    && !in_array(2, array_column(datos($propietario->get('credito', 'listar'))['porpagar'] ?? [], 'id'), true));
+prueba('No deja abonar a una cuenta ya pagada', !exito($propietario->post('credito', 'abonar', ['monto' => '1'] + $abono)));
+
+// Abonos de la clienta
+$r = $propietario->post('credito', 'abonar', ['tipo' => 'cobrar', 'id' => 17, 'monto' => '5000', 'fecha' => $hoy, 'metodo' => 'Efectivo', 'nota' => '']);
+$solicitud17 = datos($propietario->get('encargo', 'obtener', ['id' => 17]));
+prueba('La clienta abona ₡5 000 y la solicitud dice cuánto ha pagado y cuánto falta',
+    exito($r) && (float) ($solicitud17['abonado'] ?? 0) === 17000.0 && (float) ($solicitud17['saldo'] ?? 0) === 15000.0, mensaje($r));
+prueba('No deja abonar a una solicitud cancelada', !exito($propietario->post('credito', 'abonar',
+    ['tipo' => 'cobrar', 'id' => 8, 'monto' => '1000', 'fecha' => $hoy, 'metodo' => 'Efectivo'])));
+
+// Una solicitud ya pagada no se puede editar para que el total quede por debajo de lo pagado
+$pagada = ['tbclienteid' => 6, 'tbempleadoid' => '', 'tbsolicitudencargofechaentrega' => $manana, 'tbsolicitudencargonota' => '',
+    'tbsolicitudencargotipo' => 'Predefinido', 'tbarreglofloralid' => 15, 'tbsolicitudencargocantidad' => 2, 'insumos' => []];
+$r = $propietario->post('encargo', 'crear', $pagada);
+$idpagada = datos($r)['tbsolicitudencargoid'] ?? 0;
+$totalpagada = (float) (datos($propietario->get('encargo', 'obtener', ['id' => $idpagada]))['tbsolicitudencargototal'] ?? 0);
+$r = $propietario->post('credito', 'abonar', ['tipo' => 'cobrar', 'id' => $idpagada, 'monto' => (string) $totalpagada, 'fecha' => $hoy, 'metodo' => 'SINPE Móvil']);
+prueba('Se paga completa una solicitud nueva', $idpagada > 0 && exito($r) && strpos(mensaje($r), 'pagada') !== false, mensaje($r));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idpagada, 'tbsolicitudencargocantidad' => 1] + $pagada);
+prueba('…y ya no se le puede bajar la cantidad para que cueste menos de lo que pagó', tieneerror($r, 'tbsolicitudencargocantidad'), mensaje($r));
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

@@ -5,6 +5,7 @@ require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 require_once __DIR__ . '/../Repositorio/colorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/tipoflorrepositorio.php';
+require_once __DIR__ . '/../Repositorio/inventariootroproveedorrepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 require_once __DIR__ . '/preciotemporadacontrolador.php';
 
@@ -19,6 +20,9 @@ class inventariocontrolador
     private $preciosvigentes = null;
     private $colores;
     private $tiposflor;
+    // Otros proveedores a los que también se les compra el insumo, cada uno con su precio
+    private $otrosproveedores;
+    private $conteootros = null;
     // Atributos de la categoría que tiene el producto que se está editando (un color o tipo de flor
     // que se inactivó después se puede dejar como estaba)
     private $actuales = [];
@@ -68,6 +72,7 @@ class inventariocontrolador
         $this->temporadas = new preciotemporadacontrolador();
         $this->colores = new colorrepositorio();
         $this->tiposflor = new tipoflorrepositorio();
+        $this->otrosproveedores = new inventariootroproveedorrepositorio();
     }
 
     /* ---------- Catálogos de colores y tipos de flor ---------- */
@@ -234,6 +239,7 @@ class inventariocontrolador
         $datos['categoria'] = $this->convertircategoria($inventario);
         $datos['preciostemporada'] = $this->temporadas->paraformulario('inventario', $inventario->getTbinventarioid());
         $datos['movimientos'] = $this->convertirmovimientos($inventario->getTbinventarioid());
+        $datos['otrosproveedores'] = $this->convertirotros($inventario);
 
         return $this->respuesta(true, '', $datos);
     }
@@ -241,9 +247,11 @@ class inventariocontrolador
     public function crear($datos, $usuario)
     {
         $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
+        $otros = $this->limpiarotros($datos['otrosproveedores'] ?? []);
         $datos = $this->limpiar($datos);
         $errores = $this->validar($datos);
         $errores += $this->validartemporadas($preciostemporada, $datos, $errores);
+        $errores += $this->validarotros($otros, $datos);
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -252,9 +260,10 @@ class inventariocontrolador
         $datos['tbinventariopreciounidad'] = $this->calcularpreciounidad($datos);
         $inventario = new Inventario($datos);
 
-        $id = $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $usuario) {
+        $id = $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $otros, $usuario) {
             $id = $this->repositorio->insertar($inventario);
             $this->temporadas->guardar('inventario', $id, $preciostemporada, $usuario['id']);
+            $this->guardarotros($id, $otros, $usuario['id']);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
             $this->movimientos->registrar($id, 'Inicial', (int) $datos['tbinventariostock'], $usuario['id']);
             $this->historico->registrar('inventario', $id, [], $this->datoshistorico($inventario), $usuario['id']);
@@ -275,10 +284,12 @@ class inventariocontrolador
         }
 
         $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
+        $otros = $this->limpiarotros($datos['otrosproveedores'] ?? []);
         $datos = $this->limpiar($datos);
         $this->actuales = $this->convertircategoria($inventario);
         $errores = $this->validar($datos, $id);
         $errores += $this->validartemporadas($preciostemporada, $datos, $errores);
+        $errores += $this->validarotros($otros, $datos, $this->otrosproveedores->listarporinsumo($id));
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -297,9 +308,10 @@ class inventariocontrolador
         $inventario->setTbinventariostock($datos['tbinventariostock']);
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
-        $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $id, $stockanterior, $anteriores, $usuario) {
+        $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $otros, $id, $stockanterior, $anteriores, $usuario) {
             $this->repositorio->actualizar($inventario);
             $this->temporadas->guardar('inventario', $id, $preciostemporada, $usuario['id']);
+            $this->guardarotros($id, $otros, $usuario['id']);
             $this->historico->registrar('inventario', $id, $anteriores, $this->datoshistorico($inventario), $usuario['id']);
             $this->atributos->eliminar($id);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
@@ -370,6 +382,7 @@ class inventariocontrolador
             'precio'      => 'Precio del paquete',
             'precioventa' => 'Precio de venta',
             'preciotemporada' => 'Precio del proveedor en temporada alta',
+            'otroproveedor' => 'Otro proveedor',
             'stockminimo' => 'Stock mínimo',
             'estado'      => 'Estado',
         ];
@@ -387,6 +400,11 @@ class inventariocontrolador
                     return historicocontrolador::monto($valor) . ' por unidad';
                 case 'preciotemporada':
                     return $this->temporadas->textohistorial($valor);
+                case 'otroproveedor':
+                    // "2|7500.00" → "Vivero Orosi: ₡7 500,00 el paquete"; "2|" → "Vivero Orosi: ya no"
+                    [$idproveedor, $precio] = explode('|', (string) $valor) + [1 => ''];
+                    return ($nombres[$idproveedor] ?? 'Proveedor eliminado') . ': '
+                        . ($precio === '' ? 'ya no se le compra' : historicocontrolador::monto($precio) . ' el paquete');
                 case 'estado':
                     return historicocontrolador::estado($valor);
                 default:
@@ -394,7 +412,113 @@ class inventariocontrolador
             }
         };
 
-        return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear, ['preciotemporada']));
+        return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear, ['preciotemporada', 'otroproveedor']));
+    }
+
+    /* ---------- Otros proveedores del insumo ---------- */
+
+    // Filas del formulario: [['tbproveedorid' => '2', 'preciopaquete' => '7500'], ...]. Las vacías no cuentan.
+    private function limpiarotros($filas)
+    {
+        if (!is_array($filas)) {
+            return [];
+        }
+
+        $limpias = [];
+        foreach ($filas as $fila) {
+            if (!is_array($fila)) {
+                continue;
+            }
+            $proveedor = $this->limpiartexto($fila['tbproveedorid'] ?? '');
+            $precio = str_replace(',', '.', $this->limpiartexto($fila['preciopaquete'] ?? ''));
+            if ($proveedor !== '' || $precio !== '') {
+                $limpias[] = ['tbproveedorid' => $proveedor, 'preciopaquete' => $precio];
+            }
+        }
+
+        return $limpias;
+    }
+
+    // Cada otro proveedor: que exista, esté activo (o ya estuviera antes), no sea el principal ni se repita,
+    // y que su precio del paquete sea un monto válido. $antes: los que ya tenía [idproveedor => precio].
+    private function validarotros($otros, $datos, $antes = [])
+    {
+        $usados = [];
+        foreach ($otros as $indice => $otro) {
+            $fila = count($otros) > 1 ? 'Otro proveedor ' . ($indice + 1) . ': ' : '';
+            $proveedor = ctype_digit($otro['tbproveedorid']) ? $this->proveedores->obtenerporid((int) $otro['tbproveedorid']) : null;
+
+            if ($otro['tbproveedorid'] === '') {
+                return ['otrosproveedores' => $fila . 'elija el proveedor.'];
+            }
+            if (!$proveedor) {
+                return ['otrosproveedores' => $fila . 'el proveedor no existe.'];
+            }
+            $nombre = $proveedor->getTbproveedornombreempresa();
+            if (!$proveedor->estaActivo() && !isset($antes[(int) $otro['tbproveedorid']])) {
+                return ['otrosproveedores' => $fila . $nombre . ' está inactivo.'];
+            }
+            if ($otro['tbproveedorid'] === $datos['tbproveedorid']) {
+                return ['otrosproveedores' => $fila . $nombre . ' ya es el proveedor principal.'];
+            }
+            if (in_array($otro['tbproveedorid'], $usados, true)) {
+                return ['otrosproveedores' => $fila . $nombre . ' está dos veces.'];
+            }
+            if ($otro['preciopaquete'] === '') {
+                return ['otrosproveedores' => $fila . 'escriba cuánto cobra ' . $nombre . ' por el paquete.'];
+            }
+            if (!preg_match('/^\d{1,8}(\.\d{1,2})?$/', $otro['preciopaquete']) || (float) $otro['preciopaquete'] <= 0) {
+                return ['otrosproveedores' => $fila . 'el precio de ' . $nombre . ' debe ser un monto mayor que 0, con máximo 2 decimales.'];
+            }
+            $usados[] = $otro['tbproveedorid'];
+        }
+
+        return [];
+    }
+
+    // Guarda los otros proveedores y deja en el historial solo lo que cambió ("idproveedor|precio",
+    // o "idproveedor|" si se quitó)
+    private function guardarotros($id, $otros, $idempleado)
+    {
+        $antes = $this->otrosproveedores->listarporinsumo($id);
+        $nuevos = [];
+        foreach ($otros as $otro) {
+            $nuevos[(int) $otro['tbproveedorid']] = number_format((float) $otro['preciopaquete'], 2, '.', '');
+        }
+
+        foreach ($antes as $idproveedor => $precio) {
+            if (!isset($nuevos[$idproveedor])) {
+                $this->otrosproveedores->eliminar($id, $idproveedor);
+                $this->historico->registrar('inventario', $id, [], ['otroproveedor' => $idproveedor . '|'], $idempleado);
+            }
+        }
+
+        foreach ($nuevos as $idproveedor => $precio) {
+            if (isset($antes[$idproveedor]) && number_format($antes[$idproveedor], 2, '.', '') === $precio) {
+                continue;
+            }
+            $this->otrosproveedores->guardar($id, $idproveedor, $precio);
+            $this->historico->registrar('inventario', $id, [], ['otroproveedor' => $idproveedor . '|' . $precio], $idempleado);
+        }
+    }
+
+    // Los otros proveedores del insumo con su precio del paquete y de la unidad, para compararlos con el principal
+    private function convertirotros(Inventario $inventario)
+    {
+        $unidades = max(1, (int) $inventario->getTbinventariounidadespaquete());
+        $lista = [];
+        foreach ($this->otrosproveedores->listarporinsumo($inventario->getTbinventarioid()) as $idproveedor => $precio) {
+            $proveedor = $this->proveedores->obtenerporid($idproveedor);
+            $lista[] = [
+                'tbproveedorid'            => $idproveedor,
+                'tbproveedornombreempresa' => $proveedor ? $proveedor->getTbproveedornombreempresa() : 'Proveedor eliminado',
+                'activo'                   => $proveedor ? $proveedor->estaActivo() : false,
+                'preciopaquete'            => $precio,
+                'preciounidad'             => round($precio / $unidades, 2),
+            ];
+        }
+
+        return $lista;
     }
 
     // Lo que cobra el proveedor por el paquete en cada temporada
@@ -1012,6 +1136,15 @@ class inventariocontrolador
         return $datos;
     }
 
+    private function contarotros($id)
+    {
+        if ($this->conteootros === null) {
+            $this->conteootros = $this->otrosproveedores->contar();
+        }
+
+        return $this->conteootros[(int) $id] ?? 0;
+    }
+
     private function convertirarreglo(Inventario $inventario, $nombres)
     {
         if ($this->preciosvigentes === null) {
@@ -1031,6 +1164,7 @@ class inventariocontrolador
             'tbinventarioid'              => $inventario->getTbinventarioid(),
             'tbproveedorid'               => (int) $inventario->getTbproveedorid(),
             'tbproveedornombreempresa'    => $nombres[$inventario->getTbproveedorid()] ?? '',
+            'cantidadotrosproveedores'    => $this->contarotros($id),
             'tbinventarionombre'          => $inventario->getTbinventarionombre(),
             'tbinventariocategoria'       => $inventario->getTbinventariocategoria(),
             'tbinventariopreciopaquete'   => (float) $inventario->getTbinventariopreciopaquete(),

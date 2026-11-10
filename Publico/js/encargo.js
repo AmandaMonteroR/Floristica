@@ -1036,6 +1036,9 @@ async function verdetalle(id) {
             ? `Express a ${encargo.tbzonaentreganombre}: ${encargo.tbsolicitudencargodireccionentrega}`
             : 'El cliente lo recoge en el local'],
         ['Total', formatearmonto(encargo.tbsolicitudencargototal)],
+        ['Pagado', encargo.abonado > 0
+            ? `${formatearmonto(encargo.abonado)}${encargo.saldo > 0 ? ` · falta ${formatearmonto(encargo.saldo)}` : ' (pagada completa)'}`
+            : 'Todavía no ha pagado'],
         ...(espropietario ? [
             ['Costo de flores y productos', formatearmonto(encargo.tbsolicitudencargocosto)],
             ['Ganancia', formatearmonto(encargo.tbsolicitudencargototal - encargo.tbsolicitudencargocosto)],

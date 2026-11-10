@@ -99,6 +99,8 @@ const campopersonalizable = document.getElementById('campopersonalizable');
 const etiquetatipoenvoltura = document.getElementById('etiquetatipoenvoltura');
 const etiquetamedidaenvoltura = document.getElementById('etiquetamedidaenvoltura');
 const contenedortemporadas = document.getElementById('preciostemporada');
+const contenedorotros = document.getElementById('otrosproveedores');
+const botonotroproveedor = document.getElementById('botonotroproveedor');
 const campospraycolor = document.getElementById('campospraycolor');
 const camposprayaroma = document.getElementById('camposprayaroma');
 const campospraycobro = document.getElementById('campospraycobro');
@@ -121,6 +123,9 @@ let datosservidor = {};
 let datosoriginales = {};
 // Catálogos de colores y de tipos de flor (tablas tbcolor y tbtipoflor)
 let catalogos = { colores: [], tiposflor: [] };
+// Proveedores activos (para el principal y para "Otros proveedores") y número de la siguiente fila
+let proveedoresactivos = [];
+let filaotros = 0;
 
 function escapar(texto) {
     const div = document.createElement('div');
@@ -215,6 +220,7 @@ async function cargarproveedores() {
         return;
     }
 
+    proveedoresactivos = respuesta.datos;
     selectproveedor.innerHTML = '';
     selectproveedor.add(new Option('Seleccione…', ''));
     respuesta.datos.forEach((proveedor) => {
@@ -307,6 +313,62 @@ function calcularpreciounidad() {
     gananciaunidad.classList.toggle('texto-peligro', costo !== null && venta > 0 && venta < costo);
 }
 
+/* ---------- Otros proveedores del insumo ---------- */
+
+// Una fila: proveedor, precio del paquete, cuánto sale la unidad comparado con el principal y "Quitar"
+function agregarotro(otro = {}) {
+    const numerofila = filaotros++;
+    const elegido = String(otro.tbproveedorid ?? '');
+    const lista = [...proveedoresactivos];
+    if (elegido !== '' && !lista.some((proveedor) => String(proveedor.tbproveedorid) === elegido)) {
+        lista.push({ tbproveedorid: elegido, tbproveedornombreempresa: `${otro.tbproveedornombreempresa} (inactivo)` });
+    }
+    const opciones = lista.map((proveedor) => `<option value="${proveedor.tbproveedorid}"${String(proveedor.tbproveedorid) === elegido ? ' selected' : ''}>`
+        + `${escapar(proveedor.tbproveedornombreempresa)}</option>`).join('');
+
+    contenedorotros.insertAdjacentHTML('beforeend', `
+        <div class="fila-otro">
+            <label class="campo">
+                <span>Proveedor</span>
+                <select name="otrosproveedores[${numerofila}][tbproveedorid]"><option value="">Seleccione…</option>${opciones}</select>
+            </label>
+            <label class="campo">
+                <span>Precio del paquete (₡)</span>
+                <input type="text" name="otrosproveedores[${numerofila}][preciopaquete]" inputmode="decimal" maxlength="11"
+                       autocomplete="off" data-filtro="decimal" value="${otro.preciopaquete !== undefined ? escapar(String(otro.preciopaquete)) : ''}">
+            </label>
+            <button type="button" class="enlace enlace-peligro" data-quitarotro>Quitar</button>
+            <small class="comparacion-otro" data-comparacion></small>
+        </div>`);
+}
+
+function dibujarotros(lista) {
+    contenedorotros.innerHTML = '';
+    (lista ?? []).forEach((otro) => agregarotro(otro));
+    compararotros();
+}
+
+// Debajo de cada uno: a cuánto sale la unidad y si es más barato o más caro que el principal
+function compararotros() {
+    const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
+    const principal = numero(formulario.elements.tbinventariopreciopaquete.value);
+    contenedorotros.querySelectorAll('.fila-otro').forEach((fila) => {
+        const salida = fila.querySelector('[data-comparacion]');
+        const precio = numero(fila.querySelector('input').value);
+        if (!(precio > 0) || !(unidades > 0)) {
+            salida.textContent = '';
+            return;
+        }
+        const diferencia = (precio - principal) / unidades;
+        let texto = `${formatearmonto(precio / unidades)} la unidad`;
+        if (principal > 0 && Math.abs(diferencia) >= 0.01) {
+            texto += diferencia < 0 ? ` · ${formatearmonto(-diferencia)} más barato` : ` · ${formatearmonto(diferencia)} más caro`;
+        }
+        salida.textContent = texto;
+        salida.classList.toggle('mas-barato', principal > 0 && diferencia <= -0.01);
+    });
+}
+
 // Precio del proveedor en temporada: se revisa mientras se escribe y se muestra a cuánto se vendería la unidad
 function revisartemporadas() {
     preciostemporada.revisar(contenedortemporadas, formulario.querySelector('[data-error="temporadas"]'));
@@ -373,6 +435,7 @@ function llenarformulario(datos) {
     prepararcolores(datos.categoria ?? {});
     preciostemporada.dibujar(contenedortemporadas, datos.preciostemporada);
     formulario.elements.tbinventarioid.value = datos.tbinventarioid ?? '';
+    dibujarotros(datos.otrosproveedores);
 
     if (datos.tbproveedorid && !selectproveedor.querySelector(`option[value="${datos.tbproveedorid}"]`)) {
         selectproveedor.add(new Option(`${datos.tbproveedornombreempresa} (inactivo)`, datos.tbproveedorid));
@@ -391,6 +454,7 @@ function llenarformulario(datos) {
     });
 
     preciostemporada.ventas(contenedortemporadas, Number(datos.tbinventariopreciopaquete), Number(datos.tbinventarioprecioventa));
+    compararotros();
     datosoriginales = leerformulario();
 }
 
@@ -486,7 +550,8 @@ async function cargarinventario() {
             <tr class="${activo ? '' : 'fila-inactiva'}">
                 <td>${escapar(producto.tbinventarionombre)}</td>
                 <td>${escapar(producto.tbinventariocategoria)}</td>
-                <td>${escapar(producto.tbproveedornombreempresa)}</td>
+                <td>${escapar(producto.tbproveedornombreempresa)}${producto.cantidadotrosproveedores > 0
+                    ? `<small class="texto-suave nota-apartado">y ${producto.cantidadotrosproveedores} ${producto.cantidadotrosproveedores === 1 ? 'proveedor más' : 'proveedores más'}</small>` : ''}</td>
                 <td>${formatearmonto(producto.preciounidadactual)}</td>
                 <td>${formatearmonto(producto.precioventaactual)}${producto.temporadaprecio
                     ? `<br><span class="estado estado-vigente">${escapar(producto.temporadaprecio)}</span>` : ''}</td>
@@ -572,7 +637,15 @@ async function verdetalle(id) {
     const producto = respuesta.datos;
     const filas = [
         ['Categoría', producto.tbinventariocategoria],
-        ['Proveedor', producto.tbproveedornombreempresa],
+        ['Proveedor', `${producto.tbproveedornombreempresa}${(producto.otrosproveedores ?? []).length > 0 ? ' (principal)' : ''}`],
+        // Otros proveedores: a cuánto vende cada uno el mismo paquete, comparado con el principal
+        ...(producto.otrosproveedores ?? []).map((otro) => {
+            const diferencia = (otro.preciopaquete - producto.tbinventariopreciopaquete) / Math.max(1, producto.tbinventariounidadespaquete);
+            const comparacion = Math.abs(diferencia) < 0.01 ? 'igual que el principal'
+                : `${formatearmonto(Math.abs(diferencia))} ${diferencia < 0 ? 'más barato' : 'más caro'} la unidad`;
+            return [`También: ${otro.tbproveedornombreempresa}${otro.activo ? '' : ' (inactivo)'}`,
+                `${formatearmonto(otro.preciopaquete)} el paquete (${formatearmonto(otro.preciounidad)} la unidad) · ${comparacion}`];
+        }),
         ['Precio del paquete', formatearmonto(producto.tbinventariopreciopaquete)],
         ['Unidades por paquete', String(producto.tbinventariounidadespaquete)],
         ['Costo por unidad', formatearmonto(producto.tbinventariopreciounidad)],
@@ -699,6 +772,11 @@ formulario.addEventListener('input', (evento) => {
         || campo.name === 'tbinventarioprecioventa') {
         revisartemporadas();
     }
+    if (campo.name.startsWith('otrosproveedores[') || campo.name === 'tbinventariopreciopaquete'
+        || campo.name === 'tbinventariounidadespaquete') {
+        formulario.querySelector('[data-error="otrosproveedores"]').textContent = '';
+        compararotros();
+    }
     guardarborrador();
 });
 
@@ -725,6 +803,18 @@ formulario.addEventListener('click', (evento) => {
     campo.value = String(Math.min(maximo, Math.max(minimo, nuevo)));
     // Avisa del cambio para que se limpie el error, se guarde el borrador y se recalcule el precio por unidad
     campo.dispatchEvent(new Event('input', { bubbles: true }));
+});
+botonotroproveedor.addEventListener('click', () => {
+    agregarotro();
+    contenedorotros.querySelector('.fila-otro:last-child select').focus();
+});
+contenedorotros.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('[data-quitarotro]');
+    if (boton) {
+        boton.closest('.fila-otro').remove();
+        formulario.querySelector('[data-error="otrosproveedores"]').textContent = '';
+        guardarborrador();
+    }
 });
 selectcategoria.addEventListener('change', mostrarseccioncategoria);
 formulario.elements.tbinventariocategoriaflortipo.addEventListener('change', () => actualizarvariedades());

@@ -97,6 +97,17 @@ CREATE TABLE tbinventario (
     PRIMARY KEY (tbinventarioid)
 );
 
+-- Otros proveedores de un insumo: el mismo insumo (el mismo paquete) también se le puede comprar
+-- a otros proveedores, cada uno con su precio. El proveedor principal sigue en tbinventario.tbproveedorid
+-- y su precio es el que se usa para el costo del insumo.
+CREATE TABLE tbinventariootroproveedor (
+    tbinventariootroproveedorid INT,
+    tbinventarioid INT,
+    tbproveedorid INT,
+    tbinventariootroproveedorpreciopaquete DECIMAL(10,2),
+    PRIMARY KEY (tbinventariootroproveedorid)
+);
+
 -- Catálogo de colores: los colores que se pueden elegir en los productos del inventario
 CREATE TABLE tbcolor (
     tbcolorid INT,
@@ -262,6 +273,34 @@ CREATE TABLE tbconfirmacioncompra (
     tbconfirmacioncompramonto DECIMAL(10,2),
     tbconfirmacioncompraplazodias INT,
     PRIMARY KEY (tbconfirmacioncompraid)
+);
+
+-- ---------- Cuentas por pagar y por cobrar ----------
+-- Abonos a un pedido comprado a crédito (cuenta por pagar al proveedor).
+-- Saldo del pedido = monto de la confirmación de compra - lo abonado. Vence: fecha de confirmación + plazo.
+-- Método: Efectivo, SINPE Móvil, Transferencia o Tarjeta.
+CREATE TABLE tbpedidoabono (
+    tbpedidoabonoid INT,
+    tbpedidoid INT,
+    tbpedidoabonofecha DATE,
+    tbpedidoabonomonto DECIMAL(10,2),
+    tbpedidoabonometodo VARCHAR(20),
+    tbpedidoabononota VARCHAR(100),
+    tbempleadoid INT,
+    PRIMARY KEY (tbpedidoabonoid)
+);
+
+-- Abonos de la clienta a una solicitud (cuenta por cobrar). Saldo = total de la solicitud - lo abonado.
+-- Puede pagar un adelanto al pedir y el resto después; si se entrega sin pagar todo, es una venta a crédito.
+CREATE TABLE tbsolicitudencargoabono (
+    tbsolicitudencargoabonoid INT,
+    tbsolicitudencargoid INT,
+    tbsolicitudencargoabonofecha DATE,
+    tbsolicitudencargoabonomonto DECIMAL(10,2),
+    tbsolicitudencargoabonometodo VARCHAR(20),
+    tbsolicitudencargoabononota VARCHAR(100),
+    tbempleadoid INT,
+    PRIMARY KEY (tbsolicitudencargoabonoid)
 );
 
 CREATE TABLE tbarreglofloral (
@@ -740,4 +779,14 @@ CREATE TABLE tbinventariopreciotemporadahistorico (
     tbempleadoid INT,
     tbinventariopreciotemporadahistoricofecha DATETIME,
     PRIMARY KEY (tbinventariopreciotemporadahistoricoid)
+);
+
+-- Otros proveedores de cada insumo. El valor es "idproveedor|precio"; si se quitó queda "idproveedor|".
+CREATE TABLE tbinventariootroproveedorhistorico (
+    tbinventariootroproveedorhistoricoid INT,
+    tbinventarioid INT,
+    tbinventariootroproveedorhistoricovalor VARCHAR(30),
+    tbempleadoid INT,
+    tbinventariootroproveedorhistoricofecha DATETIME,
+    PRIMARY KEY (tbinventariootroproveedorhistoricoid)
 );

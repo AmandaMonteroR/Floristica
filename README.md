@@ -139,6 +139,7 @@ Floristica/
 | Zonas de entrega y precios del express | ✓ | |
 | Temporada alta: precios del proveedor, encenderla y apagarla | ✓ | |
 | Ventas y ganancias | ✓ | |
+| Cuentas por cobrar y por pagar (abonos) | ✓ | |
 | Proveedores, inventario, pedidos y empleados | ✓ | |
 
 ## Módulos
@@ -181,6 +182,7 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
 - **Colores y tipos de flor (tablas catálogo):** el color de todos los insumos sale de `tbcolor` y el tipo de flor de `tbtipoflor` (con su clase, Flor o Follaje). En las tablas de categoría se guarda el id (`tbcolorid`, `tbtipoflorid`), así que ya no se puede escribir un color inventado como "carro". El tipo de flor tiene que ser de la misma clase que se eligió (Eucalipto es follaje). El propietario agrega colores y tipos, o los inactiva, en **Inventario → Colores y tipos de flor**; uno inactivo ya no se puede elegir en insumos nuevos, pero los que ya lo tienen no cambian.
 - **Medidas:** en centímetros, con formato `20` o `20 x 30`.
 - **Nombre:** no puede repetirse para el mismo proveedor.
+- **Varios proveedores:** cada insumo tiene un **proveedor principal** (`tbinventario.tbproveedorid`), y su precio es el costo del insumo. En **Otros proveedores** se agregan los demás a los que se les puede comprar el mismo paquete, cada uno con su precio (tabla `tbinventariootroproveedor`). El formulario muestra a cuánto sale la unidad con cada uno y si es más barato o más caro que el principal; en la lista dice "y 2 proveedores más", y en **Ver** salen todos con la comparación. No se puede repetir un proveedor, ni poner el principal, ni uno inactivo.
 - **Precios:**
   - El precio del paquete debe ser mayor que 0, con máximo 2 decimales.
   - El costo por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
@@ -193,7 +195,7 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
 
 ### Pedidos (compras a proveedores)
 
-- **Proveedor:** solo se puede pedir a proveedores activos, y solo productos de ese proveedor.
+- **Proveedor:** solo se puede pedir a proveedores activos, y solo insumos que se le compran a ese proveedor: los que lo tienen como principal y los que lo tienen en **Otros proveedores**. Cada insumo sale con el precio de ese proveedor.
 - **Fecha:** no puede ser posterior a hoy.
 - **Cantidades:** se piden en paquetes, de 1 a 9999.
 - **Estados:** Pendiente → Confirmado → Recibido.
@@ -318,6 +320,15 @@ Si sobra dinero, la propuesta lo dice, avisa si fue porque no hay más de alguna
 - **Lista:** cada venta con su total, su costo y su ganancia. Las que se cotizaron en temporada alta lo indican.
 - Solo el propietario la ve.
 
+### Cuentas por cobrar y por pagar
+
+En **Ventas → Cuentas por cobrar y por pagar** (solo el propietario), con dos pestañas:
+
+- **Por cobrar (clientas):** cada solicitud que no está cancelada tiene un saldo: total − lo que ha abonado la clienta (`tbsolicitudencargoabono`). Si dejó un adelanto dice "Con adelanto"; si se entregó sin pagar completa es una **venta a crédito** ("Entregada sin pagar") y sale de primera. En **Ver** de la solicitud dice cuánto ha pagado y cuánto falta. Si ya pagó, la solicitud no se puede editar para que el total quede por debajo de lo pagado.
+- **Por pagar (proveedores):** los pedidos que se confirmaron **a crédito**. Saldo = monto de la compra − abonos (`tbpedidoabono`). Vence en la fecha de confirmación + el plazo; dice "Por vencer" en los últimos 7 días y "Vencido" después. Los de contado se pagan al confirmar y no aparecen.
+- **Tarjetas:** lo que deben las clientas por arreglos entregados, lo que falta de las solicitudes abiertas y lo que se les debe a los proveedores (en rojo si hay algo vencido).
+- **Abonar:** monto (no más que el saldo; el botón "Todo el saldo" lo llena), fecha (no futura ni anterior a la compra o a la solicitud), cómo se pagó (efectivo, SINPE Móvil, transferencia o tarjeta) y una nota opcional. Cada abono guarda quién lo registró. Con "Mostrar también las que ya están pagadas" se ven las cuentas canceladas por completo.
+
 ### Empleados
 
 - **Nombre:** solo letras.
@@ -358,7 +369,7 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 
 | Módulo | Datos con histórico |
 |--------|---------------------|
-| Inventario | Nombre, proveedor, precio del paquete, precio de venta, precio del proveedor en cada temporada, stock mínimo y estado |
+| Inventario | Nombre, proveedor, otros proveedores (cuándo se agregó o quitó cada uno y su precio), precio del paquete, precio de venta, precio del proveedor en cada temporada, stock mínimo y estado |
 | Catálogo | Nombre, precio y estado |
 | Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
 | Clientes | Nombre, teléfono, dirección y estado |
