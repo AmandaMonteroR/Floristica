@@ -35,6 +35,8 @@ class arreglofloralcontrolador
                 'tbinventarionombre'       => $producto->getTbinventarionombre(),
                 'tbinventariocategoria'    => $producto->getTbinventariocategoria(),
                 'tbinventariopreciounidad' => (float) $producto->getTbinventariopreciounidad(),
+                'tbinventarioprecioventa'  => (float) $producto->getTbinventarioprecioventa(),
+                'tbinventariostock'        => (int) $producto->getTbinventariostock(),
             ];
         }
 
@@ -83,7 +85,7 @@ class arreglofloralcontrolador
         $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
         $datos = $this->limpiar($datos);
         $foto = $archivos['tbarreglofloralfoto'] ?? null;
-        $errores = $this->validar($datos, $detalles, $foto, true);
+        $errores = $this->validar($datos, $detalles, $foto, true, 0, [], $usuario);
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -120,7 +122,12 @@ class arreglofloralcontrolador
         $detalles = $this->limpiardetalles($datos['detalles'] ?? []);
         $datos = $this->limpiar($datos);
         $foto = $archivos['tbarreglofloralfoto'] ?? null;
-        $errores = $this->validar($datos, $detalles, $foto, false, $id);
+        // Lo que ya tenía la receta: si no se aumenta, no se vuelve a revisar contra el inventario
+        $anteriores = [];
+        foreach ($this->repositorio->listardetalles($id) as $detalle) {
+            $anteriores[(string) $detalle->getTbinventarioid()] = (int) $detalle->getTbarreglofloralinsumocantidad();
+        }
+        $errores = $this->validar($datos, $detalles, $foto, false, $id, $anteriores, $usuario);
 
         if ($errores) {
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
@@ -347,7 +354,8 @@ class arreglofloralcontrolador
         return $limpios;
     }
 
-    private function validar($datos, $detalles, $foto, $fotoobligatoria, $idexcluir = 0)
+    // $anteriores: [idproducto => unidades] que ya tenía el arreglo (al editar)
+    private function validar($datos, $detalles, $foto, $fotoobligatoria, $idexcluir = 0, $anteriores = [], $usuario = null)
     {
         $errores = [];
 
@@ -413,6 +421,12 @@ class arreglofloralcontrolador
                 || (int) $detalle['tbarreglofloralinsumocantidad'] < 1
                 || (int) $detalle['tbarreglofloralinsumocantidad'] > 999) {
                 $errores['detalles'] = $linea . 'la cantidad debe ser un número entero entre 1 y 999 unidades.';
+            } elseif ((int) $detalle['tbarreglofloralinsumocantidad'] > (int) $producto->getTbinventariostock()
+                && (int) $detalle['tbarreglofloralinsumocantidad'] > ($anteriores[$detalle['tbinventarioid']] ?? 0)) {
+                // Se revisa contra el inventario: no se puede armar con más de lo que hay
+                $errores['detalles'] = $linea . 'solo hay ' . (int) $producto->getTbinventariostock() . ' de '
+                    . $producto->getTbinventarionombre() . ' en inventario y se pusieron '
+                    . (int) $detalle['tbarreglofloralinsumocantidad'] . '.';
             }
 
             if (isset($errores['detalles'])) {
@@ -420,6 +434,14 @@ class arreglofloralcontrolador
             }
 
             $usados[] = $detalle['tbinventarioid'];
+            $costo = ($costo ?? 0) + (int) $detalle['tbarreglofloralinsumocantidad'] * (float) $producto->getTbinventariopreciounidad();
+        }
+
+        // Si un empleado pone un precio que no paga lo que cuestan los productos, no se guarda
+        if (!$errores && $usuario !== null && ($usuario['rol'] ?? '') !== 'Propietario'
+            && (float) $datos['tbarreglofloralprecio'] < ($costo ?? 0)) {
+            $errores['tbarreglofloralprecio'] = 'Ese precio no alcanza a pagar lo que cuestan los productos del arreglo ('
+                . '₡' . number_format($costo, 2, ',', ' ') . '). Súbalo o consulte con la dueña.';
         }
 
         return $errores;

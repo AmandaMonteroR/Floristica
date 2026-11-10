@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../Repositorio/encargorepositorio.php';
+require_once __DIR__ . '/../Repositorio/colorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/empleadorepositorio.php';
 require_once __DIR__ . '/../Repositorio/arreglofloralrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
@@ -87,6 +88,10 @@ class encargocontrolador
     private function pinturas()
     {
         $atributos = new inventariocategoriarepositorio();
+        $colores = [];
+        foreach ((new colorrepositorio())->listar() as $color) {
+            $colores[(int) $color->getTbcolorid()] = $color->getTbcolornombre();
+        }
         $lista = [];
         foreach ($this->inventario->listar('', 'Spray', 1) as $spray) {
             $datos = $atributos->obtener('Spray', $spray->getTbinventarioid());
@@ -94,7 +99,7 @@ class encargocontrolador
                 $lista[] = [
                     'tbinventarioid'     => (int) $spray->getTbinventarioid(),
                     'tbinventarionombre' => $spray->getTbinventarionombre(),
-                    'color'              => (string) $datos->getTbinventariocategoriaspraycolor(),
+                    'color'              => $colores[(int) $datos->getTbinventariocategoriaspraycolor()] ?? '',
                     'cobroflor'          => (float) $datos->getTbinventariocategoriaspraycobroflor(),
                 ];
             }
@@ -103,11 +108,20 @@ class encargocontrolador
         return $lista;
     }
 
+    // Hasta cuántos meses adelante se puede pedir un arreglo
+    const MESESMAXIMOS = 6;
+
+    public static function fechamaxima()
+    {
+        return date('Y-m-d', strtotime('+' . self::MESESMAXIMOS . ' months'));
+    }
+
     // Todo lo que se necesita para llenar el formulario, en una sola consulta
     public function opciones()
     {
         $datos = ['arreglos' => [], 'empleados' => [], 'clientes' => [], 'zonas' => [], 'productos' => [],
-            'temporada' => $this->temporadas->datosvigente(), 'pinturas' => $this->pinturas(), 'porcentaje' => 100];
+            'temporada' => $this->temporadas->datosvigente(), 'pinturas' => $this->pinturas(), 'porcentaje' => 100,
+            'fechamaxima' => self::fechamaxima()];
 
         $idalta = $this->temporadas->idalta();
         $normales = $this->temporadas->productos(0);
@@ -294,6 +308,12 @@ class encargocontrolador
 
         if (!$encargo->estaAbierto()) {
             return $this->respuesta(false, 'Solo se pueden asignar solicitudes pendientes o en proceso.');
+        }
+
+        // Un empleado puede asignar las solicitudes sin asignar o pasarle a otra persona las suyas
+        if (($usuario['rol'] ?? '') !== 'Propietario' && $encargo->getTbempleadoid()
+            && (int) $encargo->getTbempleadoid() !== (int) $usuario['id']) {
+            return $this->respuesta(false, 'Esta solicitud ya la tiene otra persona. Solo puede asignar las que están sin asignar o las suyas.');
         }
 
         $error = $this->validarempleado($idempleado);
@@ -1039,6 +1059,10 @@ class encargocontrolador
             $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega no es válida.';
         } elseif ($datos['tbsolicitudencargofechaentrega'] < date('Y-m-d') && !$mismafecha) {
             $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega no puede ser anterior a hoy.';
+        } elseif ($datos['tbsolicitudencargofechaentrega'] > self::fechamaxima() && !$mismafecha) {
+            // No se reciben solicitudes para dentro de años (por ejemplo, para el 2030)
+            $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega puede ser como máximo dentro de '
+                . self::MESESMAXIMOS . ' meses (hasta el ' . date('d/m/Y', strtotime(self::fechamaxima())) . ').';
         }
 
         if (mb_strlen($datos['tbsolicitudencargonota']) > 255) {

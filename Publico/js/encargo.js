@@ -215,6 +215,10 @@ async function cargaropciones() {
     const respuesta = await consultar('opciones');
     if (respuesta.exito) {
         opciones = respuesta.datos;
+        // Hasta qué fecha se puede pedir (6 meses desde hoy)
+        if (opciones.fechamaxima) {
+            formulario.elements.tbsolicitudencargofechaentrega.max = opciones.fechamaxima;
+        }
     }
 
     llenarselect(formulario.elements.tbclienteid, 'Seleccione…', opciones.clientes, 'tbclienteid',
@@ -823,14 +827,19 @@ function accionesencargo(encargo) {
     const esmio = encargo.tbempleadoid === usuarioactual.id;
     const acciones = [boton('ver', id, 'Ver')];
 
-    // Empleado: tomar solicitudes libres y mover solo las suyas
+    // Empleado: tomar solicitudes libres, mover solo las suyas y asignarle a otra persona
+    // las que están sin asignar o son suyas
     if (!espropietario) {
+        const abierta = ['Pendiente', 'En proceso'].includes(encargo.tbsolicitudencargoestado);
         if (encargo.tbsolicitudencargoestado === 'Pendiente' && !encargo.tbempleadoid) {
             acciones.push(boton('asignarme', id, 'Asignármela'));
         } else if (encargo.tbsolicitudencargoestado === 'Pendiente' && esmio) {
             acciones.push(boton('iniciar', id, 'Iniciar'));
         } else if (encargo.tbsolicitudencargoestado === 'En proceso' && esmio) {
             acciones.push(boton('terminar', id, 'Terminar'));
+        }
+        if (abierta && (!encargo.tbempleadoid || esmio)) {
+            acciones.push(boton('asignar', id, esmio ? 'Pasar a otra persona' : 'Asignar'));
         }
         return acciones.join(' ');
     }

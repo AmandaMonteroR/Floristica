@@ -127,10 +127,12 @@ Floristica/
 |--------|:-----:|:--------:|
 | Ver el inicio | ✓ | ✓ |
 | Ver el catálogo (sin costos ni ganancias) | ✓ | ✓ |
-| Crear, editar o inactivar arreglos | ✓ | |
+| Crear y editar arreglos (con el costo de los productos y el precio sugerido) | ✓ | ✓ |
+| Inactivar o reactivar arreglos | ✓ | |
 | Registrar, editar e inactivar clientes | ✓ | ✓ |
 | Registrar solicitudes de pedido de arreglo | ✓ | ✓ (sin asignar o para sí mismo) |
 | Asignar o reasignar solicitudes a cualquiera | ✓ | |
+| Asignar una solicitud sin asignar, o pasarle la suya a otra persona | ✓ | ✓ |
 | Asignarse una solicitud libre | ✓ | ✓ |
 | Iniciar y terminar solicitudes | ✓ (todas) | ✓ (solo las suyas) |
 | Cancelar o editar solicitudes | ✓ | |
@@ -160,13 +162,13 @@ Resumen según el rol:
 - **Correo:** opcional; si se ingresa, debe ser válido y no repetirse.
 - **Ubicación:** provincia, cantón y distrito deben corresponder entre sí, según `BaseDatos/DatosIniciales/ubicaciones.txt`.
 
-### Inventario
+### Inventario de insumos
 
-Cada producto tiene los datos generales en `tbinventario` y sus atributos en la tabla de su categoría (`tbinventariocategoria<categoría>`):
+Los **insumos** son lo que se le compra a los proveedores para armar los arreglos o agregarlos como adicionales (flores, papel, cintas, bases, chocolates…). Los arreglos que se venden están en el Catálogo. Cada insumo tiene los datos generales en `tbinventario` y sus atributos en la tabla de su categoría (`tbinventariocategoria<categoría>`):
 
 | Categoría | Atributos |
 |-----------|-----------|
-| Flor | Tipo (flor o follaje), variedad, color, largo del tallo y días de duración |
+| Flor | Flor o follaje, tipo de flor (Rosa, Eucalipto…), color, largo del tallo y días de duración |
 | Envoltura | Papel o cinta, tipo, color, diseño, medida y material. El papel lleva acabado y la cinta indica si es personalizable |
 | Base | Tipo, material, color, forma, medidas y diseño |
 | Chocolate | Tipo, marca, presentación, peso, sabor y fecha de vencimiento (no anterior a hoy) |
@@ -176,6 +178,7 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 | Accesorio | Tipo (corona, perfume, splash, moño, topper u otro), tamaño y, si se quiere, color y material. Se puede poner en un arreglo o agregar como adicional |
 
 - **Listas:** las opciones de cada lista están en `inventariocontrolador::opciones()`. La pantalla y la validación usan las mismas.
+- **Colores y tipos de flor (tablas catálogo):** el color de todos los insumos sale de `tbcolor` y el tipo de flor de `tbtipoflor` (con su clase, Flor o Follaje). En las tablas de categoría se guarda el id (`tbcolorid`, `tbtipoflorid`), así que ya no se puede escribir un color inventado como "carro". El tipo de flor tiene que ser de la misma clase que se eligió (Eucalipto es follaje). El propietario agrega colores y tipos, o los inactiva, en **Inventario → Colores y tipos de flor**; uno inactivo ya no se puede elegir en insumos nuevos, pero los que ya lo tienen no cambian.
 - **Medidas:** en centímetros, con formato `20` o `20 x 30`.
 - **Nombre:** no puede repetirse para el mismo proveedor.
 - **Precios:**
@@ -202,7 +205,10 @@ Cada producto tiene los datos generales en `tbinventario` y sus atributos en la 
 - **Foto:** obligatoria; JPG, PNG o WEBP de máximo 2 MB.
 - **Nombre:** no puede repetirse.
 - **Precio:** mayor que 0.
-- **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades (tabla `tbarreglofloralinsumo`).
+- **Productos:** cada arreglo lleva al menos un producto del inventario, con su cantidad en unidades (tabla `tbarreglofloralinsumo`). Se eligen en la ventana **Agregar productos**, con buscador, filtro por categoría y las unidades que hay en inventario.
+- **Contra el inventario:** no se puede poner más unidades de un producto de las que hay en inventario (al editar, solo se revisa lo que se aumentó).
+- **Precio sugerido:** se elige el % de ganancia (100% por defecto, con − y +, o 50%, 80%, 100% y 150%) y el precio de venta se llena solo con el costo de los productos más ese %, redondeado hacia arriba a ₡100. Se puede escribir otro precio; al tocar un % vuelve al sugerido. Al editar, el % que se muestra es el que da el precio que ya tiene el arreglo.
+- **Empleados:** también crean y editan arreglos, con el costo de los productos para ponerles precio. Si ponen un precio que no paga lo que cuestan los productos, no se guarda. Inactivar o reactivar es solo del propietario.
 - **Dos precios:** cada tarjeta muestra el precio **normal** y el de **temporada alta**; el que se cobra ahora va resaltado.
 - **Ver:** foto, los dos precios y lo que incluye. El costo y la ganancia (normal y en temporada alta) están en **Costo y ganancia**, que solo ve el propietario y se abre con un clic.
 - **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo el propietario los ve.
@@ -259,7 +265,7 @@ La foto de la clienta se guarda en `Publico/imagenes/solicitudes/referencia_…`
 
 ### Solicitudes de pedido de arreglo
 
-- **Datos de toda solicitud:** cliente, tipo, fecha de entrega (no anterior a hoy), nota opcional y, si se quiere, a quién se asigna.
+- **Datos de toda solicitud:** cliente, tipo, fecha de entrega (no anterior a hoy y como máximo dentro de 6 meses), nota opcional y, si se quiere, a quién se asigna.
 - **Predefinida:** un arreglo del catálogo (el que el cliente eligió del catálogo de WhatsApp) por la cantidad (1 a 99), más **adicionales** opcionales: chocolates, cintas, peluches, tarjetas u otros productos, cada uno a su precio de venta.
 - **Personalizada:** el cliente elige los productos. Cada producto se cobra a **su costo + el % de ganancia** que se elige (100% por defecto, es decir, el doble del costo), redondeado hacia arriba a ₡10. El % se cambia con − y +, con los botones 50%, 80%, 100% y 150%, o escribiéndolo (de 0 a 500), y se guarda en la solicitud.
   - **Con presupuesto:** los productos y las flores pintadas no pueden pasarse del monto que dio el cliente. Los precios ya llevan el % de ganancia: debajo de cada uno se ve "costo ₡294 + 80%" (el costo solo lo ve el propietario). La pantalla muestra cuánto queda, desactiva los productos que ya no alcanzan y no deja pintar más flores de las que alcanzan.

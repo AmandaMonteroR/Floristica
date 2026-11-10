@@ -94,15 +94,32 @@ CREATE TABLE tbinventario (
     PRIMARY KEY (tbinventarioid)
 );
 
+-- Catálogo de colores: los colores que se pueden elegir en los productos del inventario
+CREATE TABLE tbcolor (
+    tbcolorid INT,
+    tbcolornombre VARCHAR(30),
+    tbcolorestado TINYINT(1),
+    PRIMARY KEY (tbcolorid)
+);
+
+-- Catálogo de tipos de flor (Rosa, Girasol...) y de follaje (Eucalipto, Helecho...).
+-- Clase: Flor o Follaje.
+CREATE TABLE tbtipoflor (
+    tbtipoflorid INT,
+    tbtipoflornombre VARCHAR(50),
+    tbtipoflorclase VARCHAR(10),
+    tbtipoflorestado TINYINT(1),
+    PRIMARY KEY (tbtipoflorid)
+);
+
 -- Flores y follaje. Tipo: Flor o Follaje.
--- Variedad: Rosa, Gerbera, Girasol, Clavel, Lirio, Lisianthus, Dragón, Popis, Fully, Áster, Gypson;
--- en follaje: Eucalipto, Helecho, Baby eucalipto (se pueden escribir otras).
+-- El tipo de flor (Rosa, Eucalipto...) y el color vienen de las tablas catálogo tbtipoflor y tbcolor.
 CREATE TABLE tbinventariocategoriaflor (
     tbinventariocategoriaflorid INT,
     tbinventarioid INT,
     tbinventariocategoriaflortipo VARCHAR(20),
-    tbinventariocategoriaflorvariedad VARCHAR(50),
-    tbinventariocategoriaflorcolor VARCHAR(30),
+    tbtipoflorid INT,
+    tbcolorid INT,
     tbinventariocategoriaflorlargotallo INT,
     tbinventariocategoriaflordiasduracion INT,
     PRIMARY KEY (tbinventariocategoriaflorid)
@@ -120,7 +137,7 @@ CREATE TABLE tbinventariocategoriaenvoltura (
     tbinventarioid INT,
     tbinventariocategoriaenvolturaclase VARCHAR(10),
     tbinventariocategoriaenvolturatipo VARCHAR(30),
-    tbinventariocategoriaenvolturacolor VARCHAR(30),
+    tbcolorid INT,
     tbinventariocategoriaenvolturadiseno VARCHAR(50),
     tbinventariocategoriaenvolturamedida VARCHAR(30),
     tbinventariocategoriaenvolturamaterial VARCHAR(30),
@@ -137,7 +154,7 @@ CREATE TABLE tbinventariocategoriabase (
     tbinventarioid INT,
     tbinventariocategoriabasetipo VARCHAR(30),
     tbinventariocategoriabasematerial VARCHAR(30),
-    tbinventariocategoriabasecolor VARCHAR(30),
+    tbcolorid INT,
     tbinventariocategoriabaseforma VARCHAR(30),
     tbinventariocategoriabasemedida VARCHAR(30),
     tbinventariocategoriabasediseno VARCHAR(50),
@@ -164,7 +181,7 @@ CREATE TABLE tbinventariocategoriapeluche (
     tbinventarioid INT,
     tbinventariocategoriapeluchetipo VARCHAR(30),
     tbinventariocategoriapeluchetamano INT,
-    tbinventariocategoriapeluchecolor VARCHAR(30),
+    tbcolorid INT,
     tbinventariocategoriapeluchediseno VARCHAR(50),
     tbinventariocategoriapeluchematerial VARCHAR(30),
     PRIMARY KEY (tbinventariocategoriapelucheid)
@@ -181,7 +198,7 @@ CREATE TABLE tbinventariocategoriatarjeta (
     tbinventarioid INT,
     tbinventariocategoriatarjetatipo VARCHAR(30),
     tbinventariocategoriatarjetatematica VARCHAR(30),
-    tbinventariocategoriatarjetacolor VARCHAR(30),
+    tbcolorid INT,
     tbinventariocategoriatarjetamaterial VARCHAR(30),
     tbinventariocategoriatarjetamedida VARCHAR(30),
     tbinventariocategoriatarjetapersonalizable TINYINT(1),
@@ -197,7 +214,7 @@ CREATE TABLE tbinventariocategoriaspray (
     tbinventarioid INT,
     tbinventariocategoriaspraytipo VARCHAR(30),
     tbinventariocategoriaspraymarca VARCHAR(50),
-    tbinventariocategoriaspraycolor VARCHAR(30),
+    tbcolorid INT,
     tbinventariocategoriasprayaroma VARCHAR(30),
     tbinventariocategoriaspraycontenido INT,
     tbinventariocategoriasprayfechavencimiento DATE,
@@ -212,7 +229,7 @@ CREATE TABLE tbinventariocategoriaaccesorio (
     tbinventarioid INT,
     tbinventariocategoriaaccesoriotipo VARCHAR(30),
     tbinventariocategoriaaccesoriotamano VARCHAR(20),
-    tbinventariocategoriaaccesoriocolor VARCHAR(30),
+    tbcolorid INT,
     tbinventariocategoriaaccesoriomaterial VARCHAR(30),
     PRIMARY KEY (tbinventariocategoriaaccesorioid)
 );

@@ -15,8 +15,8 @@ const filtros = {
 // Nombre de cada atributo de la categoría, para mostrarlo en "Ver"
 const etiquetascategoria = {
     Flor: {
-        tbinventariocategoriaflortipo: 'Tipo',
-        tbinventariocategoriaflorvariedad: 'Variedad',
+        tbinventariocategoriaflortipo: 'Flor o follaje',
+        tbinventariocategoriaflorvariedad: 'Tipo de flor',
         tbinventariocategoriaflorcolor: 'Color',
         tbinventariocategoriaflorlargotallo: 'Largo del tallo (cm)',
         tbinventariocategoriaflordiasduracion: 'Días de duración',
@@ -98,7 +98,6 @@ const campoacabado = document.getElementById('campoacabado');
 const campopersonalizable = document.getElementById('campopersonalizable');
 const etiquetatipoenvoltura = document.getElementById('etiquetatipoenvoltura');
 const etiquetamedidaenvoltura = document.getElementById('etiquetamedidaenvoltura');
-const listavariedades = document.getElementById('listavariedades');
 const contenedortemporadas = document.getElementById('preciostemporada');
 const campospraycolor = document.getElementById('campospraycolor');
 const camposprayaroma = document.getElementById('camposprayaroma');
@@ -120,6 +119,8 @@ let temporizadorbusqueda;
 let temporizadoraviso;
 let datosservidor = {};
 let datosoriginales = {};
+// Catálogos de colores y de tipos de flor (tablas tbcolor y tbtipoflor)
+let catalogos = { colores: [], tiposflor: [] };
 
 function escapar(texto) {
     const div = document.createElement('div');
@@ -238,11 +239,38 @@ function actualizarspray() {
     camposprayaroma.hidden = tipo !== 'Aromatizante floral';
 }
 
-// Sugerencias de variedad según sea flor o follaje
-function actualizarvariedades() {
-    const tipo = formulario.elements.tbinventariocategoriaflortipo.value;
-    const lista = variedadesflor[tipo] ?? [...variedadesflor.Flor, ...variedadesflor.Follaje];
-    listavariedades.innerHTML = lista.map((variedad) => `<option value="${escapar(variedad)}">`).join('');
+async function cargarcatalogos() {
+    const respuesta = await consultar('catalogos');
+    if (respuesta.exito) {
+        catalogos = respuesta.datos;
+    }
+}
+
+// Los colores que se pueden elegir: los activos y, si el insumo ya tenía uno inactivo, ese también
+function prepararcolores(datos = {}) {
+    formulario.querySelectorAll('select[data-lista="colores"]').forEach((select) => {
+        const elegido = String(datos[select.name] ?? '');
+        const vacio = select.options[0] ? select.options[0].text : 'Seleccione…';
+        select.innerHTML = '';
+        select.add(new Option(vacio, ''));
+        catalogos.colores
+            .filter((color) => color.estado === 1 || String(color.id) === elegido)
+            .forEach((color) => select.add(new Option(color.nombre + (color.estado === 1 ? '' : ' (inactivo)'), color.id)));
+        select.value = elegido;
+    });
+}
+
+// Los tipos de flor según sea flor o follaje (del catálogo tbtipoflor)
+function actualizarvariedades(elegido = formulario.elements.tbinventariocategoriaflorvariedad.value) {
+    const clase = formulario.elements.tbinventariocategoriaflortipo.value;
+    const select = formulario.elements.tbinventariocategoriaflorvariedad;
+    const lista = catalogos.tiposflor.filter((tipo) => tipo.clase === clase
+        && (tipo.estado === 1 || String(tipo.id) === String(elegido)));
+
+    select.innerHTML = '';
+    select.add(new Option(clase ? 'Seleccione…' : 'Primero elija flor o follaje', ''));
+    lista.forEach((tipo) => select.add(new Option(tipo.nombre + (tipo.estado === 1 ? '' : ' (inactivo)'), tipo.id)));
+    select.value = lista.some((tipo) => String(tipo.id) === String(elegido)) ? String(elegido) : '';
 }
 
 // Los tipos cambian si es papel o cinta; el acabado solo aplica al papel y "personalizable" solo a la cinta
@@ -334,13 +362,15 @@ function asignarcampos(datos) {
     });
 
     mostrarseccioncategoria();
-    // El tipo de papel o cinta se asigna después de cargar sus opciones
+    // El tipo de papel o cinta y el tipo de flor se asignan después de cargar sus opciones
     actualizarenvoltura(datos.tbinventariocategoriaenvolturatipo ?? '');
+    actualizarvariedades(datos.tbinventariocategoriaflorvariedad ?? '');
     calcularpreciounidad();
 }
 
 function llenarformulario(datos) {
     formulario.reset();
+    prepararcolores(datos.categoria ?? {});
     preciostemporada.dibujar(contenedortemporadas, datos.preciostemporada);
     formulario.elements.tbinventarioid.value = datos.tbinventarioid ?? '';
 
@@ -427,7 +457,7 @@ async function cargarinventario() {
         const sinfiltros = busqueda.value.trim() === '' && filtrocategoria.value === ''
             && filtroestado.value === '' && filtrostock.value === '';
         const mensaje = sinfiltros
-            ? 'Aún no hay productos registrados. Use "Nuevo producto" para agregar el primero.'
+            ? 'Aún no hay insumos registrados. Use "Nuevo insumo" para agregar el primero.'
             : 'No hay productos que coincidan con la búsqueda.';
         cuerpotabla.innerHTML = `<tr><td colspan="8" class="vacio">${mensaje}</td></tr>`;
         return;
@@ -488,18 +518,20 @@ function mostrarerrores(errores) {
 
 async function abrirnuevo() {
     await proveedoreslistos;
+    await catalogoslistos;
     const temporadas = await consultar('temporadas');
     datosservidor = { preciostemporada: temporadas.exito ? temporadas.datos : [] };
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
-    tituloformulario.textContent = 'Nuevo producto';
-    botonguardar.textContent = 'Guardar producto';
+    tituloformulario.textContent = 'Nuevo insumo';
+    botonguardar.textContent = 'Guardar insumo';
     dialogoformulario.showModal();
 }
 
 async function abrireditar(id) {
     await proveedoreslistos;
+    await catalogoslistos;
     const respuesta = await consultar('obtener', { id });
 
     if (!respuesta.exito) {
@@ -511,7 +543,7 @@ async function abrireditar(id) {
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
-    tituloformulario.textContent = 'Editar producto';
+    tituloformulario.textContent = 'Editar insumo';
     botonguardar.textContent = 'Guardar cambios';
     dialogoformulario.showModal();
 }
@@ -567,6 +599,10 @@ async function verdetalle(id) {
         }
         if (campo.endsWith('personalizable') && valor !== null && valor !== undefined) {
             valor = Number(valor) === 1 ? 'Sí' : 'No';
+        }
+        // El color y el tipo de flor se guardan como id: se muestra su nombre
+        if ((campo + 'nombre') in producto.categoria) {
+            valor = producto.categoria[campo + 'nombre'];
         }
         filas.push([etiqueta, valor === null || valor === undefined ? '' : String(valor)]);
     });
@@ -676,7 +712,7 @@ formulario.addEventListener('click', (evento) => {
     campo.dispatchEvent(new Event('input', { bubbles: true }));
 });
 selectcategoria.addEventListener('change', mostrarseccioncategoria);
-formulario.elements.tbinventariocategoriaflortipo.addEventListener('change', actualizarvariedades);
+formulario.elements.tbinventariocategoriaflortipo.addEventListener('change', () => actualizarvariedades());
 formulario.elements.tbinventariocategoriaenvolturaclase.addEventListener('change', () => actualizarenvoltura());
 formulario.elements.tbinventariocategoriaspraytipo.addEventListener('change', actualizarspray);
 formulario.elements.tbinventariopreciopaquete.addEventListener('input', calcularpreciounidad);
@@ -773,7 +809,88 @@ document.getElementById('botondescartarborrador').addEventListener('click', desc
 formulario.elements.tbinventariocategoriachocolatefechavencimiento.min = new Date().toLocaleDateString('en-CA');
 formulario.elements.tbinventariocategoriasprayfechavencimiento.min = new Date().toLocaleDateString('en-CA');
 
+/* ---------- Colores y tipos de flor (tablas catálogo) ---------- */
+
+const dialogocatalogos = document.getElementById('dialogocatalogos');
+const avisocatalogos = document.getElementById('avisocatalogos');
+
+function filacatalogo(catalogo, item) {
+    const activo = item.estado === 1;
+    const clase = item.clase ? `<small class="etiqueta-clase">${escapar(item.clase)}</small>` : '';
+    return `
+        <li class="${activo ? '' : 'catalogo-inactivo'}">
+            <span class="nombre-catalogo">${escapar(item.nombre)} ${clase}</span>
+            <small class="texto-suave">${item.usos === 1 ? '1 insumo' : `${item.usos} insumos`}</small>
+            <span class="tarjeta-acciones">
+                <button type="button" class="enlace ${activo ? 'enlace-peligro' : ''}" data-accion="${activo ? 'inactivar' : 'reactivar'}"
+                        data-catalogo="${catalogo}" data-id="${item.id}" data-estado="${activo ? 0 : 1}">${activo ? 'Inactivar' : 'Reactivar'}</button>
+            </span>
+        </li>`;
+}
+
+function dibujarcatalogos() {
+    document.getElementById('listacolores').innerHTML = catalogos.colores.map((color) => filacatalogo('color', color)).join('');
+    document.getElementById('listatiposflor').innerHTML = catalogos.tiposflor.map((tipo) => filacatalogo('tipoflor', tipo)).join('');
+}
+
+function avisarcatalogos(mensaje, tipo) {
+    avisocatalogos.textContent = mensaje;
+    avisocatalogos.className = `aviso aviso-${tipo}`;
+    avisocatalogos.hidden = false;
+}
+
+async function abrircatalogos() {
+    await cargarcatalogos();
+    avisocatalogos.hidden = true;
+    dibujarcatalogos();
+    dialogocatalogos.showModal();
+}
+
+dialogocatalogos.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    const formulariocatalogo = evento.target;
+    const datos = new FormData(formulariocatalogo);
+    datos.append('catalogo', formulariocatalogo.dataset.catalogo);
+
+    const respuesta = await enviar('guardarcatalogo', datos);
+    avisarcatalogos(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
+    if (respuesta.exito) {
+        formulariocatalogo.elements.nombre.value = '';
+        await cargarcatalogos();
+        dibujarcatalogos();
+    }
+});
+
+dialogocatalogos.addEventListener('click', async (evento) => {
+    const boton = evento.target.closest('button[data-catalogo]');
+    if (!boton) {
+        return;
+    }
+    const datos = new FormData();
+    datos.append('catalogo', boton.dataset.catalogo);
+    datos.append('id', boton.dataset.id);
+    datos.append('estado', boton.dataset.estado);
+
+    const respuesta = await enviar('estadocatalogo', datos);
+    avisarcatalogos(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
+    if (respuesta.exito) {
+        await cargarcatalogos();
+        dibujarcatalogos();
+    }
+});
+
+// Solo letras y espacios en los nombres
+dialogocatalogos.addEventListener('input', (evento) => {
+    if (evento.target.name === 'nombre') {
+        evento.target.value = filtros.letras(evento.target.value);
+    }
+});
+
+document.getElementById('botoncatalogos').addEventListener('click', abrircatalogos);
+document.getElementById('botoncerrarcatalogos').addEventListener('click', () => dialogocatalogos.close());
+
 const proveedoreslistos = cargarproveedores();
+const catalogoslistos = cargarcatalogos();
 filtrosdesdeurl({ categoria: filtrocategoria, estado: filtroestado, stock: filtrostock });
 cargarinventario();
 

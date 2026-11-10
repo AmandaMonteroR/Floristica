@@ -117,7 +117,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
-    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar'];
+    'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar',
+    'guardarcatalogo', 'estadocatalogo'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -181,6 +182,15 @@ try {
                     break;
                 case 'proveedores':
                     $respuesta = $controlador->proveedores();
+                    break;
+                case 'catalogos':
+                    $respuesta = $controlador->catalogos();
+                    break;
+                case 'guardarcatalogo':
+                    $respuesta = $controlador->guardarcatalogo($_POST);
+                    break;
+                case 'estadocatalogo':
+                    $respuesta = $controlador->estadocatalogo($_POST);
                     break;
                 case 'crear':
                     $respuesta = $controlador->crear($_POST, $usuarioactual);

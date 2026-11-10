@@ -3466,3 +3466,160 @@ img[data-lupa] {
         white-space: normal;
     }
 }
+
+/* ---------- Parte 14: catálogos de colores y tipos de flor ---------- */
+.catalogos-inventario {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 1.25rem;
+}
+
+.catalogos-inventario h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+
+.agregar-catalogo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+}
+
+.agregar-catalogo input,
+.agregar-catalogo select {
+    font: inherit;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+    background: var(--superficie);
+    color: var(--texto);
+}
+
+.agregar-catalogo input:focus,
+.agregar-catalogo select:focus {
+    outline: 2px solid var(--principal);
+    outline-offset: 1px;
+    border-color: var(--principal);
+}
+
+.agregar-catalogo input {
+    flex: 1 1 8rem;
+    min-width: 0;
+}
+
+.agregar-catalogo select {
+    flex: 0 0 auto;
+    width: auto;
+}
+
+.lista-catalogo {
+    max-height: 22rem;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.lista-catalogo li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem;
+    border-bottom: 1px solid var(--borde);
+}
+
+.lista-catalogo li:last-child {
+    border-bottom: none;
+}
+
+.lista-catalogo .nombre-catalogo {
+    flex: 1;
+}
+
+.catalogo-inactivo .nombre-catalogo {
+    color: var(--texto-suave);
+    text-decoration: line-through;
+}
+
+.etiqueta-clase {
+    margin-left: 0.3rem;
+    padding: 0.05rem 0.45rem;
+    font-size: 0.72rem;
+    color: var(--texto-suave);
+    background: #f6eaf0;
+    border-radius: 999px;
+}
+
+/* Ventana para elegir los productos de un arreglo */
+.buscador-productos {
+    display: grid;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.chips-categoria {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.lista-productos {
+    max-height: min(55vh, 28rem);
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    list-style: none;
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.lista-productos li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--borde);
+}
+
+.lista-productos li:last-child {
+    border-bottom: none;
+}
+
+.lista-productos li.vacio {
+    justify-content: center;
+    color: var(--texto-suave);
+}
+
+.lista-productos .producto-elegido {
+    background: #fdf2f6;
+}
+
+.info-producto {
+    display: grid;
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.stock-producto {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.cantidad-producto {
+    min-width: 2rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+#dialogoproductos .acciones-dialogo {
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stock-linea {
+    white-space: nowrap;
+}

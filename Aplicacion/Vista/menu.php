@@ -18,7 +18,6 @@ $opcionesmenu = [
         ]],
     ]],
     ['texto' => 'Ventas', 'hijos' => [
-        ['texto' => 'Cotizaciones', 'modulo' => 'cotizacion'],
         ['texto' => 'Catálogo de arreglos', 'modulo' => 'catalogo'],
         ['texto' => 'Solicitudes de pedido de arreglo', 'modulo' => 'encargo'],
         ['texto' => 'Zonas de entrega (express)', 'modulo' => 'zonaentrega'],
@@ -33,10 +32,9 @@ $opcionesmenu = [
         ['texto' => 'Pedidos', 'modulo' => 'pedido'],
     ]],
     ['texto' => 'Inventario', 'hijos' => [
-        ['texto' => 'Agregar nuevo producto', 'modulo' => 'inventario', 'nuevo' => true],
-        ['texto' => 'Lista de productos', 'modulo' => 'inventario'],
+        ['texto' => 'Agregar nuevo insumo', 'modulo' => 'inventario', 'nuevo' => true],
+        ['texto' => 'Lista de insumos', 'modulo' => 'inventario'],
     ]],
-    ['texto' => 'Reportes', 'modulo' => 'reporte'],
 ];
 
 // Quita las opciones que el rol del usuario no puede abrir, las de módulos

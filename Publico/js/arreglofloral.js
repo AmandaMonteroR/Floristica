@@ -16,6 +16,15 @@ const botonguardar = document.getElementById('botonguardar');
 const cuerpolineas = document.getElementById('cuerpolineas');
 const costoarreglo = document.getElementById('costoarreglo');
 const gananciaarreglo = document.getElementById('gananciaarreglo');
+const sugeridoarreglo = document.getElementById('sugeridoarreglo');
+const porcentajearreglo = document.getElementById('porcentajearreglo');
+const notaprecio = document.getElementById('notaprecio');
+const dialogoproductos = document.getElementById('dialogoproductos');
+const buscarproductoinput = document.getElementById('buscarproducto');
+const chipscategoria = document.getElementById('chipscategoria');
+const listaproductos = document.getElementById('listaproductos');
+const resumenproductos = document.getElementById('resumenproductos');
+const categoriasproducto = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'];
 const campofoto = document.getElementById('campofoto');
 const vistafoto = document.getElementById('vistafoto');
 const textofoto = document.getElementById('textofoto');
@@ -36,8 +45,13 @@ const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmaci
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 const camposformulario = ['tbarreglofloralnombre', 'tbarreglofloraldescripcion', 'tbarreglofloralprecio'];
 
-// usuarioactual viene de menu.php. Un empleado solo puede ver el catálogo.
+// usuarioactual viene de menu.php. Los empleados también crean y editan arreglos (con el costo
+// de los productos para ponerle precio), pero inactivarlos o reactivarlos es solo del propietario.
 const espropietario = usuarioactual.rol === 'Propietario';
+let categoriaelegida = '';
+// Mientras sea true, el precio de venta sigue al precio sugerido (arreglo nuevo, o al cambiar el %).
+// Si la persona escribe otro precio, se respeta.
+let precioautomatico = true;
 
 let temporizadorbusqueda;
 let temporizadoraviso;
@@ -199,74 +213,107 @@ function subtotal(linea) {
     return (parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0) * costounidad(linea);
 }
 
-function actualizartotales() {
-    const costo = lineas.reduce((suma, linea) => suma + subtotal(linea), 0);
-    const precio = parseFloat(formulario.elements.tbarreglofloralprecio.value) || 0;
-    const ganancia = precio - costo;
-
-    costoarreglo.textContent = formatearmonto(costo);
-    gananciaarreglo.textContent = formatearmonto(ganancia);
-    gananciaarreglo.classList.toggle('texto-peligro', ganancia < 0);
+// % de ganancia elegido (0 a 500)
+function porcentajeganancia() {
+    const valor = parseInt(porcentajearreglo.value, 10);
+    return Number.isNaN(valor) ? 0 : Math.min(500, Math.max(0, valor));
 }
 
-function opcionesproducto(linea) {
-    const usados = lineas
-        .filter((otra) => otra !== linea && otra.tbinventarioid !== '')
-        .map((otra) => String(otra.tbinventarioid));
+// Precio sugerido: el costo de los productos más el %, redondeado hacia arriba a ₡100
+function preciosugerido(costo) {
+    return costo > 0 ? Math.ceil((costo * (1 + porcentajeganancia() / 100)) / 100) * 100 : 0;
+}
 
-    let opciones = '<option value="">Seleccione…</option>';
+function costoproductos() {
+    return lineas.reduce((suma, linea) => suma + subtotal(linea), 0);
+}
 
-    ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'].forEach((categoria) => {
-        const grupo = productos.filter((producto) => producto.tbinventariocategoria === categoria);
-        if (grupo.length === 0) {
-            return;
-        }
+function actualizartotales() {
+    const costo = costoproductos();
+    const sugerido = preciosugerido(costo);
+    const campoprecio = formulario.elements.tbarreglofloralprecio;
 
-        opciones += `<optgroup label="${categoria}">`;
-        grupo.forEach((producto) => {
-            const id = String(producto.tbinventarioid);
-            const seleccionado = id === String(linea.tbinventarioid) ? ' selected' : '';
-            const usado = usados.includes(id) ? ' disabled' : '';
-            opciones += `<option value="${id}"${seleccionado}${usado}>${escapar(producto.tbinventarionombre)}</option>`;
-        });
-        opciones += '</optgroup>';
-    });
-
-    // Producto guardado que ya no está activo
-    if (linea.tbinventarioid !== '' && !buscarproducto(linea.tbinventarioid)) {
-        opciones += `<option value="${linea.tbinventarioid}" selected>${escapar(linea.tbinventarionombre || 'Producto')} (inactivo)</option>`;
+    if (precioautomatico && sugerido > 0 && campoprecio.value !== String(sugerido)) {
+        campoprecio.value = String(sugerido);
+        formulario.querySelector('[data-error="tbarreglofloralprecio"]').textContent = '';
     }
 
-    return opciones;
+    const precio = parseFloat(campoprecio.value) || 0;
+    const ganancia = precio - costo;
+    const porcentajereal = costo > 0 ? Math.round((ganancia / costo) * 100) : 0;
+
+    costoarreglo.textContent = formatearmonto(costo);
+    sugeridoarreglo.textContent = formatearmonto(sugerido);
+    gananciaarreglo.textContent = costo > 0 && precio > 0 ? `${formatearmonto(ganancia)} (${porcentajereal}%)` : formatearmonto(ganancia);
+    gananciaarreglo.classList.toggle('texto-peligro', ganancia < 0);
+
+    notaprecio.textContent = sugerido === 0 ? 'Agregue los productos y se calcula el precio sugerido.'
+        : precioautomatico ? 'Es el precio sugerido; puede escribir otro.'
+            : precio !== sugerido ? 'Usted puso otro precio. Toque un % para volver al sugerido.' : '';
+
+    formulario.querySelectorAll('[data-porcentaje]').forEach((chip) => {
+        chip.classList.toggle('chip-activo', Number(chip.dataset.porcentaje) === porcentajeganancia() && porcentajearreglo.value !== '');
+    });
+}
+
+function cambiarporcentaje(valor) {
+    porcentajearreglo.value = String(Math.min(500, Math.max(0, valor)));
+    precioautomatico = true;
+    actualizartotales();
+    guardarborrador();
+}
+
+// Unidades que hay en inventario del producto de la línea (null si ya no está activo)
+function stocklinea(linea) {
+    const producto = buscarproducto(linea.tbinventarioid);
+    return producto ? Number(producto.tbinventariostock) : null;
+}
+
+function celdastock(linea) {
+    const stock = stocklinea(linea);
+    const cantidad = parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0;
+    if (stock === null) {
+        return '<span class="texto-suave">Inactivo</span>';
+    }
+    return cantidad > stock
+        ? `<span class="texto-peligro"><strong>Solo hay ${stock}</strong></span>`
+        : `${stock}`;
 }
 
 function dibujarlineas() {
+    const columnas = 6;
     if (lineas.length === 0) {
-        cuerpolineas.innerHTML = '<tr><td colspan="5" class="vacio">Use "Agregar producto" para elegir las flores, el papel, las cintas, la base y lo demás del arreglo.</td></tr>';
+        cuerpolineas.innerHTML = `<tr><td colspan="${columnas}" class="vacio">Use "Agregar productos" para elegir las flores, el papel, las cintas, la base y lo demás del arreglo.</td></tr>`;
         actualizartotales();
         return;
     }
 
-    cuerpolineas.innerHTML = lineas.map((linea, indice) => `
+    cuerpolineas.innerHTML = lineas.map((linea, indice) => {
+        const producto = buscarproducto(linea.tbinventarioid);
+        const nombre = producto ? producto.tbinventarionombre : `${linea.tbinventarionombre || 'Producto'} (inactivo)`;
+        return `
         <tr data-indice="${indice}">
-            <td><select data-campo="tbinventarioid" aria-label="Producto de la línea ${indice + 1}">${opcionesproducto(linea)}</select></td>
+            <td>${escapar(nombre)}${producto ? `<br><small class="texto-suave">${escapar(producto.tbinventariocategoria)}</small>` : ''}</td>
             <td>
                 <div class="contador">
-                    <button type="button" class="boton-contador" data-paso="-1" aria-label="Quitar una unidad en la línea ${indice + 1}">−</button>
-                    <input type="text" data-campo="tbarreglofloralinsumocantidad" inputmode="numeric" maxlength="3" autocomplete="off" value="${escapar(linea.tbarreglofloralinsumocantidad)}" aria-label="Unidades de la línea ${indice + 1}">
-                    <button type="button" class="boton-contador" data-paso="1" aria-label="Agregar una unidad en la línea ${indice + 1}">+</button>
+                    <button type="button" class="boton-contador" data-paso="-1" aria-label="Quitar una unidad de ${escapar(nombre)}">−</button>
+                    <input type="text" data-campo="tbarreglofloralinsumocantidad" inputmode="numeric" maxlength="3" autocomplete="off" value="${escapar(linea.tbarreglofloralinsumocantidad)}" aria-label="Unidades de ${escapar(nombre)}">
+                    <button type="button" class="boton-contador" data-paso="1" aria-label="Agregar una unidad de ${escapar(nombre)}">+</button>
                 </div>
             </td>
+            <td class="stock-linea">${celdastock(linea)}</td>
             <td>${formatearmonto(costounidad(linea))}</td>
             <td class="subtotal-linea">${formatearmonto(subtotal(linea))}</td>
-            <td><button type="button" class="enlace enlace-peligro" data-quitar="${indice}" aria-label="Quitar línea ${indice + 1}">Quitar</button></td>
-        </tr>`).join('');
+            <td><button type="button" class="enlace enlace-peligro" data-quitar="${indice}" aria-label="Quitar ${escapar(nombre)}">Quitar</button></td>
+        </tr>`;
+    }).join('');
 
     actualizartotales();
 }
 
 function actualizarfila(fila, linea) {
     fila.querySelector('[data-campo="tbarreglofloralinsumocantidad"]').value = linea.tbarreglofloralinsumocantidad;
+    fila.querySelector('.stock-linea').innerHTML = celdastock(linea);
     fila.querySelector('.subtotal-linea').textContent = formatearmonto(subtotal(linea));
     formulario.querySelector('[data-error="detalles"]').textContent = '';
     actualizartotales();
@@ -416,10 +463,9 @@ async function cargararreglos() {
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
             : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
-        const botonespropietario = espropietario
-            ? `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
-                        ${botonestado}`
-            : '';
+        // Editar lo pueden hacer todos; inactivar o reactivar, solo el propietario
+        const botonespropietario = `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
+                        ${espropietario ? botonestado : ''}`;
 
         return `
             <article class="tarjeta-arreglo ${activo ? '' : 'tarjeta-inactiva'}" data-nombre="${escapar(arreglo.tbarreglofloralnombre)}">
@@ -472,26 +518,23 @@ function mostrarerrores(errores) {
 /* ---------- Abrir formulario y detalle ---------- */
 
 async function abrirnuevo() {
-    // Solo el propietario crea arreglos (el servidor también lo bloquea)
-    if (!espropietario) {
-        return;
-    }
-
     await cargarproductos();
     datosservidor = {};
+    precioautomatico = false;
+    porcentajearreglo.value = '100';
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
+    // Arreglo nuevo: el precio sigue al sugerido, salvo que el borrador traiga otro precio
+    const precio = formulario.elements.tbarreglofloralprecio.value;
+    precioautomatico = precio === '' || Number(precio) === preciosugerido(costoproductos());
+    actualizartotales();
     tituloformulario.textContent = 'Nuevo arreglo';
     botonguardar.textContent = 'Guardar arreglo';
     dialogoformulario.showModal();
 }
 
 async function abrireditar(id) {
-    if (!espropietario) {
-        return;
-    }
-
     await cargarproductos();
     const respuesta = await consultar('obtener', { id });
 
@@ -501,9 +544,15 @@ async function abrireditar(id) {
     }
 
     datosservidor = respuesta.datos;
+    // Al editar se respeta el precio que tiene; el % que se muestra es el que da ese precio
+    precioautomatico = false;
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
+    const costo = costoproductos();
+    const precio = Number(formulario.elements.tbarreglofloralprecio.value) || 0;
+    porcentajearreglo.value = String(costo > 0 && precio > 0 ? Math.min(500, Math.max(0, Math.round((precio / costo - 1) * 100))) : 100);
+    actualizartotales();
     tituloformulario.textContent = 'Editar arreglo';
     botonguardar.textContent = 'Guardar cambios';
     dialogoformulario.showModal();
@@ -598,12 +647,106 @@ async function cambiarestado(accion, id, nombre) {
 
 /* ---------- Eventos ---------- */
 
-function agregarlinea() {
-    lineas.push(lineavacia());
-    dibujarlineas();
-    guardarborrador();
-    cuerpolineas.querySelector('tr:last-child select').focus();
+/* ---------- Ventana para elegir productos ---------- */
+
+function lineade(id) {
+    return lineas.find((linea) => String(linea.tbinventarioid) === String(id));
 }
+
+function dibujarproductos() {
+    const texto = buscarproductoinput.value.trim().toLowerCase();
+    const lista = productos.filter((producto) => (categoriaelegida === '' || producto.tbinventariocategoria === categoriaelegida)
+        && producto.tbinventarionombre.toLowerCase().includes(texto));
+
+    chipscategoria.innerHTML = ['', ...categoriasproducto]
+        .filter((categoria) => categoria === '' || productos.some((producto) => producto.tbinventariocategoria === categoria))
+        .map((categoria) => `<button type="button" class="chip ${categoria === categoriaelegida ? 'chip-activo' : ''}" data-categoria="${categoria}">${categoria || 'Todas'}</button>`)
+        .join('');
+
+    listaproductos.innerHTML = lista.length ? lista.map((producto) => {
+        const linea = lineade(producto.tbinventarioid);
+        const stock = Number(producto.tbinventariostock);
+        const cantidad = linea ? parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0 : 0;
+        const precio = `Costo ${formatearmonto(producto.tbinventariopreciounidad)}`;
+        const control = linea
+            ? `<div class="contador">
+                    <button type="button" class="boton-contador" data-producto="${producto.tbinventarioid}" data-paso="-1" aria-label="Una unidad menos">−</button>
+                    <span class="cantidad-producto">${cantidad}</span>
+                    <button type="button" class="boton-contador" data-producto="${producto.tbinventarioid}" data-paso="1" aria-label="Una unidad más" ${cantidad >= stock ? 'disabled' : ''}>+</button>
+               </div>`
+            : `<button type="button" class="boton" data-producto="${producto.tbinventarioid}" data-paso="1" ${stock < 1 ? 'disabled' : ''}>${stock < 1 ? 'Sin stock' : 'Agregar'}</button>`;
+        return `
+            <li class="${linea ? 'producto-elegido' : ''}">
+                <div class="info-producto">
+                    <strong>${escapar(producto.tbinventarionombre)}</strong>
+                    <small class="texto-suave">${escapar(producto.tbinventariocategoria)} · ${precio}</small>
+                </div>
+                <span class="stock-producto ${stock < 1 ? 'texto-peligro' : ''}">${stock} en inventario</span>
+                ${control}
+            </li>`;
+    }).join('') : '<li class="vacio">No hay productos que coincidan.</li>';
+
+    const elegidos = lineas.filter((linea) => linea.tbinventarioid !== '').length;
+    resumenproductos.textContent = elegidos === 1 ? '1 producto en el arreglo' : `${elegidos} productos en el arreglo`;
+}
+
+function cambiarproducto(id, paso) {
+    const producto = buscarproducto(id);
+    if (!producto) {
+        return;
+    }
+    let linea = lineade(id);
+    if (!linea) {
+        linea = { ...lineavacia(), tbinventarioid: String(id), tbinventarionombre: producto.tbinventarionombre,
+            tbinventariopreciounidad: producto.tbinventariopreciounidad ?? 0, tbarreglofloralinsumocantidad: '0' };
+        lineas.push(linea);
+    }
+    const cantidad = (parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0) + paso;
+    if (cantidad < 1) {
+        lineas.splice(lineas.indexOf(linea), 1);
+    } else {
+        linea.tbarreglofloralinsumocantidad = String(Math.min(cantidad, Math.max(Number(producto.tbinventariostock), 1), 999));
+    }
+    formulario.querySelector('[data-error="detalles"]').textContent = '';
+    dibujarlineas();
+    dibujarproductos();
+    guardarborrador();
+}
+
+function agregarlinea() {
+    categoriaelegida = '';
+    buscarproductoinput.value = '';
+    dibujarproductos();
+    dialogoproductos.showModal();
+    buscarproductoinput.focus();
+}
+
+buscarproductoinput.addEventListener('input', dibujarproductos);
+chipscategoria.addEventListener('click', (evento) => {
+    const chip = evento.target.closest('[data-categoria]');
+    if (chip) {
+        categoriaelegida = chip.dataset.categoria;
+        dibujarproductos();
+    }
+});
+listaproductos.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-producto]');
+    if (boton) {
+        cambiarproducto(boton.dataset.producto, Number(boton.dataset.paso));
+    }
+});
+document.getElementById('botonlistoproductos').addEventListener('click', () => dialogoproductos.close());
+
+// % de ganancia: botones − y +, y los porcentajes rápidos
+formulario.addEventListener('click', (evento) => {
+    const paso = evento.target.closest('[data-pasoporcentaje]');
+    const chip = evento.target.closest('[data-porcentaje]');
+    if (paso) {
+        cambiarporcentaje(porcentajeganancia() + Number(paso.dataset.pasoporcentaje));
+    } else if (chip) {
+        cambiarporcentaje(Number(chip.dataset.porcentaje));
+    }
+});
 
 campofoto.addEventListener('change', revisarfoto);
 
@@ -612,7 +755,15 @@ formulario.addEventListener('input', (evento) => {
 
     if (campo.name === 'tbarreglofloralprecio') {
         campo.value = solodecimal(campo.value);
+        precioautomatico = false;
         actualizartotales();
+    }
+
+    if (campo === porcentajearreglo) {
+        campo.value = campo.value.replace(/\D/g, '').slice(0, 3);
+        precioautomatico = true;
+        actualizartotales();
+        return;
     }
 
     const error = formulario.querySelector(`[data-error="${campo.name}"]`);
@@ -636,26 +787,6 @@ cuerpolineas.addEventListener('input', (evento) => {
     const linea = lineas[Number(fila.dataset.indice)];
     linea.tbarreglofloralinsumocantidad = soloentero(campo.value);
     actualizarfila(fila, linea);
-});
-
-cuerpolineas.addEventListener('change', (evento) => {
-    const campo = evento.target;
-    if (campo.dataset.campo !== 'tbinventarioid') {
-        return;
-    }
-
-    const linea = lineas[Number(campo.closest('tr').dataset.indice)];
-    const producto = buscarproducto(campo.value);
-    linea.tbinventarioid = campo.value;
-    linea.tbinventarionombre = producto ? producto.tbinventarionombre : '';
-    linea.tbinventariopreciounidad = producto ? producto.tbinventariopreciounidad : 0;
-
-    if (producto && linea.tbarreglofloralinsumocantidad === '') {
-        linea.tbarreglofloralinsumocantidad = '1';
-    }
-
-    dibujarlineas();
-    guardarborrador();
 });
 
 cuerpolineas.addEventListener('click', (evento) => {

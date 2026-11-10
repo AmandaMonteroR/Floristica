@@ -23,6 +23,9 @@ class inventariocategoriarepositorio
         'Spray'     => ['clase' => 'Inventariocategoriaspray', 'campos' => ['tipo', 'marca', 'color', 'aroma', 'contenido', 'fechavencimiento', 'cobroflor']],
         'Accesorio' => ['clase' => 'Inventariocategoriaaccesorio', 'campos' => ['tipo', 'tamano', 'color', 'material']],
     ];
+    // El color y la variedad de flor se guardan como el id de su tabla catálogo (tbcolor y tbtipoflor).
+    // En el formulario y en el modelo siguen llamándose tbinventariocategoria<categoría>color y ...florvariedad.
+    private $columnas = ['color' => 'tbcolorid', 'variedad' => 'tbtipoflorid'];
 
     public function __construct()
     {
@@ -56,6 +59,17 @@ class inventariocategoriarepositorio
         return $campos;
     }
 
+    // Columna de la base donde se guarda cada campo
+    private function columnas($categoria)
+    {
+        $columnas = [];
+        foreach ($this->categorias[$categoria]['campos'] as $campo) {
+            $columnas[] = $this->columnas[$campo] ?? $this->tabla($categoria) . $campo;
+        }
+
+        return $columnas;
+    }
+
     public function insertar($categoria, $idinventario, $datos)
     {
         $tabla = $this->tabla($categoria);
@@ -66,7 +80,7 @@ class inventariocategoriarepositorio
         $modelo->{'set' . ucfirst($tabla) . 'id'}($this->siguienteid($tabla));
         $modelo->setTbinventarioid($idinventario);
 
-        $sql = "INSERT INTO {$tabla} ({$tabla}id, tbinventarioid, " . implode(', ', $campos) . ')
+        $sql = "INSERT INTO {$tabla} ({$tabla}id, tbinventarioid, " . implode(', ', $this->columnas($categoria)) . ')
                 VALUES (?, ?, ' . implode(', ', array_fill(0, count($campos), '?')) . ')';
 
         $valores = [
@@ -90,7 +104,16 @@ class inventariocategoriarepositorio
         $sentencia->execute([$idinventario]);
         $fila = $sentencia->fetch();
 
-        return $fila ? new $clase($fila) : null;
+        if (!$fila) {
+            return null;
+        }
+        foreach ($this->categorias[$categoria]['campos'] as $campo) {
+            if (isset($this->columnas[$campo])) {
+                $fila[$tabla . $campo] = $fila[$this->columnas[$campo]];
+            }
+        }
+
+        return new $clase($fila);
     }
 
     public function eliminar($idinventario)

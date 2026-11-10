@@ -10,9 +10,9 @@ class Seguridad
         'inicio'     => '*',
         'cuenta'     => ['cambiarclave'],
         'cliente'    => '*',
-        'cotizacion' => '*',
-        'catalogo'   => ['', 'listar', 'obtener', 'buscarporfoto', 'valorar'],
-        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignarme', 'iniciar', 'terminar', 'subirfoto', 'sugerir'],
+        // Los empleados también crean y editan arreglos (sin ver costos); inactivarlos es del propietario
+        'catalogo'   => ['', 'listar', 'obtener', 'productos', 'crear', 'actualizar', 'buscarporfoto', 'valorar'],
+        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignar', 'asignarme', 'iniciar', 'terminar', 'subirfoto', 'sugerir'],
     ];
 
     private static $usuario = false;

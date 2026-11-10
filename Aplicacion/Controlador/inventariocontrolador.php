@@ -3,6 +3,8 @@ require_once __DIR__ . '/../Repositorio/inventariorepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
+require_once __DIR__ . '/../Repositorio/colorrepositorio.php';
+require_once __DIR__ . '/../Repositorio/tipoflorrepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 require_once __DIR__ . '/preciotemporadacontrolador.php';
 
@@ -15,6 +17,11 @@ class inventariocontrolador
     private $historico;
     private $temporadas;
     private $preciosvigentes = null;
+    private $colores;
+    private $tiposflor;
+    // Atributos de la categoría que tiene el producto que se está editando (un color o tipo de flor
+    // que se inactivó después se puede dejar como estaba)
+    private $actuales = [];
     private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray', 'Accesorio'];
 
     // Opciones de las listas de cada categoría. La vista las usa para llenar los select
@@ -22,14 +29,9 @@ class inventariocontrolador
     public static function opciones()
     {
         return [
+            // Flor o follaje. Los tipos de flor (Rosa, Eucalipto...) y los colores están en las tablas
+            // catálogo tbtipoflor y tbcolor, y se manejan en Inventario → "Colores y tipos de flor".
             'tiposflor'               => ['Flor', 'Follaje'],
-            'variedades'              => [
-                'Flor'    => ['Alstroemeria', 'Anturio', 'Áster', 'Cala', 'Clavel', 'Clavelina', 'Dalia', 'Dragón', 'Estatiz',
-                    'Estrella', 'Fully', 'Gerbera', 'Girasol', 'Gladiola', 'Gypson', 'Hortensia', 'Lirio', 'Lisianthus',
-                    'Margarita', 'Peonía', 'Pinocho', 'Poma', 'Popis', 'Rosa', 'Tulipán'],
-                'Follaje' => ['Areca', 'Baby eucalipto', 'Cordeline', 'Dusty miller', 'Espárrago', 'Eucalipto', 'Fénix',
-                    'Helecho', 'Hiedra', 'Monstera', 'Ramas', 'Ruscus'],
-            ],
             'clasesenvoltura'         => ['Papel', 'Cinta'],
             'tiposenvoltura'          => [
                 'Papel' => ['Coreano', 'Kraft', 'Seda', 'Celofán', 'Encerado'],
@@ -64,6 +66,135 @@ class inventariocontrolador
         $this->movimientos = new inventariomovimientorepositorio();
         $this->historico = new historicocontrolador();
         $this->temporadas = new preciotemporadacontrolador();
+        $this->colores = new colorrepositorio();
+        $this->tiposflor = new tipoflorrepositorio();
+    }
+
+    /* ---------- Catálogos de colores y tipos de flor ---------- */
+
+    public function catalogos()
+    {
+        $colores = [];
+        foreach ($this->colores->listar() as $color) {
+            $colores[] = [
+                'id'     => (int) $color->getTbcolorid(),
+                'nombre' => $color->getTbcolornombre(),
+                'estado' => (int) $color->getTbcolorestado(),
+                'usos'   => $this->colores->usos($color->getTbcolorid()),
+            ];
+        }
+
+        $tipos = [];
+        foreach ($this->tiposflor->listar() as $tipo) {
+            $tipos[] = [
+                'id'     => (int) $tipo->getTbtipoflorid(),
+                'nombre' => $tipo->getTbtipoflornombre(),
+                'clase'  => $tipo->getTbtipoflorclase(),
+                'estado' => (int) $tipo->getTbtipoflorestado(),
+                'usos'   => $this->tiposflor->usos($tipo->getTbtipoflorid()),
+            ];
+        }
+
+        return $this->respuesta(true, '', ['colores' => $colores, 'tiposflor' => $tipos]);
+    }
+
+    // Agrega o corrige un color o un tipo de flor. $datos: catalogo (color o tipoflor), id (vacío si es nuevo), nombre, clase
+    public function guardarcatalogo($datos)
+    {
+        $catalogo = (string) ($datos['catalogo'] ?? '');
+        $id = (int) ($datos['id'] ?? 0);
+        $nombre = $this->limpiartexto($datos['nombre'] ?? '');
+        $clase = $this->limpiartexto($datos['clase'] ?? '');
+        $errores = [];
+
+        if (!in_array($catalogo, ['color', 'tipoflor'], true)) {
+            return $this->respuesta(false, 'Catálogo no válido.');
+        }
+
+        $repositorio = $catalogo === 'color' ? $this->colores : $this->tiposflor;
+        $existente = $id > 0 ? $repositorio->obtenerporid($id) : null;
+        if ($id > 0 && !$existente) {
+            return $this->respuesta(false, $catalogo === 'color' ? 'El color no existe.' : 'El tipo de flor no existe.');
+        }
+
+        $maximo = $catalogo === 'color' ? 30 : 50;
+        if ($nombre === '') {
+            $errores['nombre'] = 'El nombre es obligatorio.';
+        } elseif (mb_strlen($nombre) < 3 || mb_strlen($nombre) > $maximo) {
+            $errores['nombre'] = 'El nombre debe tener entre 3 y ' . $maximo . ' letras.';
+        } elseif (!preg_match('/^[\p{L}]+( [\p{L}]+)*$/u', $nombre)) {
+            $errores['nombre'] = 'El nombre solo puede contener letras y espacios.';
+        } elseif ($repositorio->existenombre($nombre, $id)) {
+            $errores['nombre'] = $catalogo === 'color' ? 'Ya existe un color con ese nombre.' : 'Ya existe un tipo de flor con ese nombre.';
+        }
+
+        if ($catalogo === 'tipoflor' && !in_array($clase, self::opciones()['tiposflor'], true)) {
+            $errores['clase'] = 'Elija si es flor o follaje.';
+        }
+
+        if ($errores) {
+            return $this->respuesta(false, reset($errores), ['errores' => $errores]);
+        }
+
+        // El nombre se guarda con la primera letra en mayúscula: "rosa" → "Rosa"
+        $nombre = mb_strtoupper(mb_substr($nombre, 0, 1)) . mb_substr($nombre, 1);
+
+        if ($catalogo === 'color') {
+            $modelo = $existente ?: new Color();
+            $modelo->setTbcolornombre($nombre);
+        } else {
+            $modelo = $existente ?: new Tipoflor();
+            $modelo->setTbtipoflornombre($nombre);
+            $modelo->setTbtipoflorclase($clase);
+        }
+
+        if ($existente) {
+            $repositorio->actualizar($modelo);
+            return $this->respuesta(true, 'Se guardó "' . $nombre . '".');
+        }
+
+        $nuevo = $repositorio->insertar($modelo);
+        return $this->respuesta(true, 'Se agregó "' . $nombre . '".', ['id' => $nuevo]);
+    }
+
+    // Inactivar o reactivar un color o tipo de flor. Uno inactivo ya no se puede elegir en productos nuevos.
+    public function estadocatalogo($datos)
+    {
+        $catalogo = (string) ($datos['catalogo'] ?? '');
+        $id = (int) ($datos['id'] ?? 0);
+        $estado = (string) ($datos['estado'] ?? '');
+
+        if (!in_array($catalogo, ['color', 'tipoflor'], true) || !in_array($estado, ['0', '1'], true)) {
+            return $this->respuesta(false, 'Datos no válidos.');
+        }
+
+        $repositorio = $catalogo === 'color' ? $this->colores : $this->tiposflor;
+        if (!$repositorio->obtenerporid($id)) {
+            return $this->respuesta(false, $catalogo === 'color' ? 'El color no existe.' : 'El tipo de flor no existe.');
+        }
+
+        $repositorio->cambiarestado($id, (int) $estado);
+        return $this->respuesta(true, $estado === '1' ? 'Se reactivó.' : 'Se inactivó. Los productos que ya lo tienen no cambian.');
+    }
+
+    // Color: el id de un color del catálogo
+    private function validarcolor(&$errores, $datos, $campo, $nombre, $obligatorio)
+    {
+        $valor = (string) ($datos[$campo] ?? '');
+
+        if ($valor === '') {
+            if ($obligatorio) {
+                $errores[$campo] = $nombre . ' es obligatorio.';
+            }
+            return;
+        }
+
+        $color = ctype_digit($valor) ? $this->colores->obtenerporid((int) $valor) : null;
+        if (!$color) {
+            $errores[$campo] = $nombre . ' seleccionado no es válido.';
+        } elseif ((int) $color->getTbcolorestado() !== 1 && (string) ($this->actuales[$campo] ?? '') !== $valor) {
+            $errores[$campo] = $nombre . ' seleccionado está inactivo.';
+        }
     }
 
     public function proveedores()
@@ -131,7 +262,7 @@ class inventariocontrolador
             return $id;
         });
 
-        return $this->respuesta(true, 'Producto registrado correctamente.', ['tbinventarioid' => $id]);
+        return $this->respuesta(true, 'Insumo registrado correctamente.', ['tbinventarioid' => $id]);
     }
 
     public function actualizar($datos, $usuario)
@@ -145,6 +276,7 @@ class inventariocontrolador
 
         $preciostemporada = $this->temporadas->limpiar($datos['temporadas'] ?? []);
         $datos = $this->limpiar($datos);
+        $this->actuales = $this->convertircategoria($inventario);
         $errores = $this->validar($datos, $id);
         $errores += $this->validartemporadas($preciostemporada, $datos, $errores);
 
@@ -179,7 +311,7 @@ class inventariocontrolador
             }
         });
 
-        return $this->respuesta(true, 'Producto actualizado correctamente.');
+        return $this->respuesta(true, 'Insumo actualizado correctamente.');
     }
 
     public function inactivar($id, $usuario)
@@ -200,7 +332,7 @@ class inventariocontrolador
             $this->historico->registrar('inventario', $id, ['estado' => 1], ['estado' => 0], $usuario['id']);
         });
 
-        return $this->respuesta(true, 'Producto inactivado correctamente.');
+        return $this->respuesta(true, 'Insumo inactivado correctamente.');
     }
 
     public function reactivar($id, $usuario)
@@ -221,7 +353,7 @@ class inventariocontrolador
             $this->historico->registrar('inventario', $id, ['estado' => 0], ['estado' => 1], $usuario['id']);
         });
 
-        return $this->respuesta(true, 'Producto reactivado correctamente.');
+        return $this->respuesta(true, 'Insumo reactivado correctamente.');
     }
 
     public function historial($id)
@@ -650,9 +782,23 @@ class inventariocontrolador
         $errores = [];
         $opciones = self::opciones();
 
-        $this->validarlista($errores, $datos, 'tbinventariocategoriaflortipo', 'El tipo', $opciones['tiposflor']);
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaflorvariedad', 'La variedad', 50, true);
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaflorcolor', 'El color', 30, true);
+        $this->validarlista($errores, $datos, 'tbinventariocategoriaflortipo', 'Si es flor o follaje', $opciones['tiposflor']);
+
+        // El tipo de flor viene del catálogo y tiene que ser de la misma clase (una rosa no puede ser follaje)
+        $valor = (string) $datos['tbinventariocategoriaflorvariedad'];
+        $tipo = ctype_digit($valor) ? $this->tiposflor->obtenerporid((int) $valor) : null;
+        if ($valor === '') {
+            $errores['tbinventariocategoriaflorvariedad'] = 'El tipo de flor es obligatorio.';
+        } elseif (!$tipo) {
+            $errores['tbinventariocategoriaflorvariedad'] = 'El tipo de flor seleccionado no es válido.';
+        } elseif ((int) $tipo->getTbtipoflorestado() !== 1 && (string) ($this->actuales['tbinventariocategoriaflorvariedad'] ?? '') !== $valor) {
+            $errores['tbinventariocategoriaflorvariedad'] = 'El tipo de flor seleccionado está inactivo.';
+        } elseif (!isset($errores['tbinventariocategoriaflortipo']) && $tipo->getTbtipoflorclase() !== $datos['tbinventariocategoriaflortipo']) {
+            $errores['tbinventariocategoriaflorvariedad'] = $tipo->getTbtipoflornombre() . ' es ' . mb_strtolower($tipo->getTbtipoflorclase())
+                . ', no ' . mb_strtolower($datos['tbinventariocategoriaflortipo']) . '.';
+        }
+
+        $this->validarcolor($errores, $datos, 'tbinventariocategoriaflorcolor', 'El color', true);
 
         $this->validarentero($errores, $datos, 'tbinventariocategoriaflorlargotallo', 1, 300,
             'El largo del tallo es obligatorio.',
@@ -679,7 +825,7 @@ class inventariocontrolador
                 $clase === 'Papel' ? 'El tipo de papel' : 'El tipo de cinta', $opciones['tiposenvoltura'][$clase]);
         }
 
-        $this->validarletras($errores, $datos, 'tbinventariocategoriaenvolturacolor', 'El color', 30, true);
+        $this->validarcolor($errores, $datos, 'tbinventariocategoriaenvolturacolor', 'El color', true);
         $this->validarletras($errores, $datos, 'tbinventariocategoriaenvolturadiseno', 'El diseño', 50, false);
         $this->validarmedida($errores, $datos, 'tbinventariocategoriaenvolturamedida');
         $this->validarletras($errores, $datos, 'tbinventariocategoriaenvolturamaterial', 'El material', 30, false);
@@ -703,7 +849,7 @@ class inventariocontrolador
 
         $this->validarlista($errores, $datos, 'tbinventariocategoriabasetipo', 'El tipo de base', $opciones['tiposbase']);
         $this->validarlista($errores, $datos, 'tbinventariocategoriabasematerial', 'El material', $opciones['materialesbase']);
-        $this->validarletras($errores, $datos, 'tbinventariocategoriabasecolor', 'El color', 30, true);
+        $this->validarcolor($errores, $datos, 'tbinventariocategoriabasecolor', 'El color', true);
         $this->validarletras($errores, $datos, 'tbinventariocategoriabaseforma', 'La forma', 30, false);
         $this->validarmedida($errores, $datos, 'tbinventariocategoriabasemedida');
         $this->validarletras($errores, $datos, 'tbinventariocategoriabasediseno', 'El diseño', 50, false);
@@ -751,7 +897,7 @@ class inventariocontrolador
             'El tamaño es obligatorio.',
             'El tamaño debe ser un número entero entre 1 y 200 cm.');
 
-        $this->validarletras($errores, $datos, 'tbinventariocategoriapeluchecolor', 'El color', 30, true);
+        $this->validarcolor($errores, $datos, 'tbinventariocategoriapeluchecolor', 'El color', true);
         $this->validartexto($errores, $datos, 'tbinventariocategoriapeluchediseno', 'El diseño', 50);
         $this->validarlista($errores, $datos, 'tbinventariocategoriapeluchematerial', 'El material', $opciones['materialespeluche'], false);
 
@@ -765,7 +911,7 @@ class inventariocontrolador
 
         $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetatipo', 'El tipo de tarjeta', $opciones['tipostarjeta']);
         $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetatematica', 'La temática', $opciones['tematicastarjeta']);
-        $this->validarletras($errores, $datos, 'tbinventariocategoriatarjetacolor', 'El color', 30, true);
+        $this->validarcolor($errores, $datos, 'tbinventariocategoriatarjetacolor', 'El color', true);
         $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetamaterial', 'El material', $opciones['materialestarjeta']);
         $this->validarmedida($errores, $datos, 'tbinventariocategoriatarjetamedida');
         $this->validarlista($errores, $datos, 'tbinventariocategoriatarjetapersonalizable',
@@ -783,7 +929,7 @@ class inventariocontrolador
         $this->validarlista($errores, $datos, 'tbinventariocategoriaaccesoriotipo', 'El tipo de accesorio', $opciones['tiposaccesorio']);
         $this->validarlista($errores, $datos, 'tbinventariocategoriaaccesoriotamano', 'El tamaño', $opciones['tamanosaccesorio']);
         if ($datos['tbinventariocategoriaaccesoriocolor'] !== null) {
-            $this->validarletras($errores, $datos, 'tbinventariocategoriaaccesoriocolor', 'El color', 30, false);
+            $this->validarcolor($errores, $datos, 'tbinventariocategoriaaccesoriocolor', 'El color', false);
         }
         if ($datos['tbinventariocategoriaaccesoriomaterial'] !== null) {
             $this->validartexto($errores, $datos, 'tbinventariocategoriaaccesoriomaterial', 'El material', 30);
@@ -807,7 +953,7 @@ class inventariocontrolador
         }
 
         if ($tipo === 'Pintura floral') {
-            $this->validarletras($errores, $datos, 'tbinventariocategoriaspraycolor', 'El color de la pintura', 30, true);
+            $this->validarcolor($errores, $datos, 'tbinventariocategoriaspraycolor', 'El color de la pintura', true);
 
             $cobro = (string) $datos['tbinventariocategoriaspraycobroflor'];
             if ($cobro === '') {
@@ -852,6 +998,15 @@ class inventariocontrolador
         $datos = [];
         foreach ($this->atributos->campos($categoria) as $campo) {
             $datos[$campo] = $atributos ? $atributos->{'get' . ucfirst($campo)}() : '';
+
+            // El color y el tipo de flor se guardan como id; también se manda el nombre para mostrarlo
+            if (substr($campo, -5) === 'color') {
+                $color = $datos[$campo] !== null && $datos[$campo] !== '' ? $this->colores->obtenerporid($datos[$campo]) : null;
+                $datos[$campo . 'nombre'] = $color ? $color->getTbcolornombre() : null;
+            } elseif ($campo === 'tbinventariocategoriaflorvariedad') {
+                $tipo = $datos[$campo] !== '' ? $this->tiposflor->obtenerporid($datos[$campo]) : null;
+                $datos[$campo . 'nombre'] = $tipo ? $tipo->getTbtipoflornombre() : null;
+            }
         }
 
         return $datos;

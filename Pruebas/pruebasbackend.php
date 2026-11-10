@@ -238,12 +238,12 @@ prueba('Carlos entra con empleado2 / empleado2', exito($carlos->ingresar('emplea
 seccion('2. Permisos de los empleados');
 
 foreach ([['proveedor', 'listar'], ['inventario', 'listar'], ['pedido', 'listar'], ['empleado', 'listar'],
-          ['catalogo', 'productos'], ['catalogo', 'historial']] as [$modulo, $accion]) {
+          ['catalogo', 'historial']] as [$modulo, $accion]) {
     $r = $lorena->get($modulo, $accion, ['id' => 1]);
     prueba("Empleado no puede usar {$modulo} → {$accion} (403)", $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
 }
 
-foreach ([['catalogo', 'crear'], ['catalogo', 'inactivar'], ['encargo', 'cancelar'], ['encargo', 'asignar'], ['encargo', 'actualizar']] as [$modulo, $accion]) {
+foreach ([['catalogo', 'inactivar'], ['catalogo', 'reactivar'], ['encargo', 'cancelar'], ['encargo', 'actualizar']] as [$modulo, $accion]) {
     $r = $lorena->post($modulo, $accion, ['id' => 1]);
     prueba("Empleado no puede hacer {$modulo} → {$accion} (403)", $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
 }
@@ -340,6 +340,20 @@ prueba('Lo reactiva', exito($propietario->post('proveedor', 'reactivar', ['id' =
  * =================================================================== */
 seccion('4. Inventario');
 
+// Los colores y los tipos de flor son tablas catálogo: en los formularios se manda su id
+$catalogosinventario = datos($propietario->get('inventario', 'catalogos'));
+$idcatalogo = function ($lista, $nombre) use ($catalogosinventario) {
+    foreach ($catalogosinventario[$lista] ?? [] as $item) {
+        if ($item['nombre'] === $nombre) {
+            return (string) $item['id'];
+        }
+    }
+    return '0';
+};
+$idcolor = function ($nombre) use ($idcatalogo) {
+    return $idcatalogo('colores', $nombre);
+};
+
 $florvalida = [
     'tbproveedorid'                         => 1,
     'tbinventarionombre'                    => 'Tulipán de prueba',
@@ -350,8 +364,8 @@ $florvalida = [
     'tbinventariostock'                     => 40,
     'tbinventariostockminimo'               => 10,
     'tbinventariocategoriaflortipo'         => 'Flor',
-    'tbinventariocategoriaflorvariedad'     => 'Tulipán',
-    'tbinventariocategoriaflorcolor'        => 'Amarillo',
+    'tbinventariocategoriaflorvariedad'     => $idcatalogo('tiposflor', 'Tulipán'),
+    'tbinventariocategoriaflorcolor'        => $idcolor('Amarillo'),
     'tbinventariocategoriaflorlargotallo'   => 40,
     'tbinventariocategoriaflordiasduracion' => 7,
 ];
@@ -382,7 +396,7 @@ $cintavalida = [
     'tbinventariopreciopaquete' => '3000', 'tbinventariounidadespaquete' => 10, 'tbinventarioprecioventa' => '600',
     'tbinventariostock' => 10, 'tbinventariostockminimo' => 2,
     'tbinventariocategoriaenvolturaclase' => 'Cinta', 'tbinventariocategoriaenvolturatipo' => 'Satín',
-    'tbinventariocategoriaenvolturacolor' => 'Azul', 'tbinventariocategoriaenvolturadiseno' => 'Lisa',
+    'tbinventariocategoriaenvolturacolor' => $idcolor('Azul'), 'tbinventariocategoriaenvolturadiseno' => 'Lisa',
     'tbinventariocategoriaenvolturamedida' => '2.5', 'tbinventariocategoriaenvolturamaterial' => 'Tela',
     'tbinventariocategoriaenvolturaacabado' => 'Brillante', 'tbinventariocategoriaenvolturapersonalizable' => '1',
 ];
@@ -404,7 +418,7 @@ $r = $propietario->post('inventario', 'crear', [
     'tbproveedorid' => 6, 'tbinventarionombre' => 'Caja prueba', 'tbinventariocategoria' => 'Base',
     'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventarioprecioventa' => '2000',
     'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
-    'tbinventariocategoriabasetipo' => 'Caja', 'tbinventariocategoriabasematerial' => 'Madera', 'tbinventariocategoriabasecolor' => 'Café',
+    'tbinventariocategoriabasetipo' => 'Caja', 'tbinventariocategoriabasematerial' => 'Madera', 'tbinventariocategoriabasecolor' => $idcolor('Café'),
     'tbinventariocategoriabaseforma' => 'Cuadrada', 'tbinventariocategoriabasemedida' => 'grande',
 ]);
 prueba('La medida debe ir en centímetros (ej. 20 x 30)', tieneerror($r, 'tbinventariocategoriabasemedida'));
@@ -424,7 +438,7 @@ $r = $propietario->post('inventario', 'crear', [
     'tbinventariopreciopaquete' => '2000', 'tbinventariounidadespaquete' => 20, 'tbinventarioprecioventa' => '500',
     'tbinventariostock' => 20, 'tbinventariostockminimo' => 5,
     'tbinventariocategoriatarjetatipo' => 'Dedicatoria', 'tbinventariocategoriatarjetatematica' => 'Amor',
-    'tbinventariocategoriatarjetacolor' => 'Rojo', 'tbinventariocategoriatarjetamaterial' => 'Opalina',
+    'tbinventariocategoriatarjetacolor' => $idcolor('Rojo'), 'tbinventariocategoriatarjetamaterial' => 'Opalina',
     'tbinventariocategoriatarjetamedida' => '8 x 5', 'tbinventariocategoriatarjetapersonalizable' => '1',
     'tbinventariocategoriatarjetaelaboracion' => 'Hecha en el negocio',
 ]);
@@ -1004,7 +1018,7 @@ $sprayvalido = [
     'tbinventariostockminimo'                    => 2,
     'tbinventariocategoriaspraytipo'             => 'Pintura floral',
     'tbinventariocategoriaspraymarca'            => 'Design Master',
-    'tbinventariocategoriaspraycolor'            => 'Rosado',
+    'tbinventariocategoriaspraycolor'            => $idcolor('Rosado'),
     'tbinventariocategoriasprayaroma'            => '',
     'tbinventariocategoriaspraycontenido'        => 340,
     'tbinventariocategoriasprayfechavencimiento' => '',
@@ -1021,7 +1035,7 @@ prueba('La fecha de vencimiento no puede ser anterior a hoy', tieneerror($r, 'tb
 $r = $propietario->post('inventario', 'crear', $sprayvalido);
 $idspray = datos($r)['tbinventarioid'] ?? 0;
 $spray = datos($propietario->get('inventario', 'obtener', ['id' => $idspray]));
-prueba('Registra un spray de pintura floral', exito($r) && ($spray['categoria']['tbinventariocategoriaspraycolor'] ?? '') === 'Rosado'
+prueba('Registra un spray de pintura floral', exito($r) && ($spray['categoria']['tbinventariocategoriaspraycolornombre'] ?? '') === 'Rosado'
     && (float) ($spray['categoria']['tbinventariocategoriaspraycobroflor'] ?? 0) === 250.0, mensaje($r));
 $r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Abrillantador de prueba',
     'tbinventariocategoriaspraytipo' => 'Abrillantador de follaje'] + $sprayvalido);
@@ -1075,7 +1089,7 @@ $accesoriovalido = [
     'tbinventariostockminimo'                => 3,
     'tbinventariocategoriaaccesoriotipo'     => 'Corona',
     'tbinventariocategoriaaccesoriotamano'   => 'Grande',
-    'tbinventariocategoriaaccesoriocolor'    => 'Plateado',
+    'tbinventariocategoriaaccesoriocolor'    => $idcolor('Plateado'),
     'tbinventariocategoriaaccesoriomaterial' => '',
 ];
 $r = $propietario->post('inventario', 'crear', ['tbinventariocategoriaaccesoriotipo' => '', 'tbinventariocategoriaaccesoriotamano' => ''] + $accesoriovalido);
@@ -1341,6 +1355,95 @@ $r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idr
 $conf = datos($propietario->get('encargo', 'obtener', ['id' => $idreferencia]));
 prueba('Se puede quitar la foto de referencia y queda en el historial', exito($r) && ($conf['tbsolicitudencargoreferencia'] ?? 'x') === ''
     && in_array('Se quitó la foto de referencia', array_column($conf['historial'] ?? [], 'texto'), true), mensaje($r));
+
+/* =====================================================================
+ * 17. Catálogos de colores y tipos de flor, arreglos de empleados, fecha y asignar (Parte 14)
+ * =================================================================== */
+seccion('17. Colores, tipos de flor, arreglos de empleados, fecha de entrega y asignar');
+
+// Colores y tipos de flor: tablas catálogo
+$r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Flor color carro', 'tbinventariocategoriaflorcolor' => 'carro'] + $florvalida);
+prueba('El color ya no acepta texto libre ("carro")', tieneerror($r, 'tbinventariocategoriaflorcolor'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Flor color 999', 'tbinventariocategoriaflorcolor' => '999'] + $florvalida);
+prueba('El color tiene que existir en el catálogo', tieneerror($r, 'tbinventariocategoriaflorcolor'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Eucalipto como flor',
+    'tbinventariocategoriaflorvariedad' => $idcatalogo('tiposflor', 'Eucalipto')] + $florvalida);
+prueba('El tipo de flor tiene que ser de la misma clase (Eucalipto es follaje, no flor)', tieneerror($r, 'tbinventariocategoriaflorvariedad'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Flor sin tipo', 'tbinventariocategoriaflorvariedad' => 'Rosa'] + $florvalida);
+prueba('El tipo de flor se elige del catálogo (no se escribe)', tieneerror($r, 'tbinventariocategoriaflorvariedad'), mensaje($r));
+
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'turquesa']);
+$idturquesa = (string) (datos($r)['id'] ?? 0);
+prueba('Se agrega un color nuevo al catálogo (con mayúscula: "Turquesa")', exito($r) && $idcatalogo('colores', 'Rojo') !== '0'
+    && in_array('Turquesa', array_column(datos($propietario->get('inventario', 'catalogos'))['colores'] ?? [], 'nombre'), true), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'ROJO']);
+prueba('No deja repetir un color', tieneerror($r, 'nombre'), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'Carro 2']);
+prueba('El nombre del color solo lleva letras', tieneerror($r, 'nombre'), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'tipoflor', 'nombre' => 'Orquídea', 'clase' => 'Flor']);
+prueba('Se agrega un tipo de flor nuevo', exito($r), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'tipoflor', 'nombre' => 'Bromelia', 'clase' => 'Árbol']);
+prueba('El tipo de flor pide si es flor o follaje', tieneerror($r, 'clase'), mensaje($r));
+$r = $propietario->post('inventario', 'estadocatalogo', ['catalogo' => 'color', 'id' => $idturquesa, 'estado' => '0']);
+$r2 = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'Flor turquesa', 'tbinventariocategoriaflorcolor' => $idturquesa] + $florvalida);
+prueba('Un color inactivo ya no se puede elegir en insumos nuevos', exito($r) && tieneerror($r2, 'tbinventariocategoriaflorcolor'), mensaje($r2));
+$r = $lorena->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'Lavanda']);
+prueba('Un empleado no puede cambiar los catálogos (403)', $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
+$rosa = datos($propietario->get('inventario', 'obtener', ['id' => 1]))['categoria'] ?? [];
+prueba('"Ver" un insumo trae el nombre del color y del tipo de flor', ($rosa['tbinventariocategoriaflorcolornombre'] ?? '') === 'Rojo'
+    && ($rosa['tbinventariocategoriaflorvariedadnombre'] ?? '') === 'Rosa', json_encode($rosa, JSON_UNESCAPED_UNICODE));
+
+// Los empleados también crean arreglos (con los costos) y no pueden pasarse del inventario
+$productosarreglo = datos($lorena->get('catalogo', 'productos'));
+$primerproducto = $productosarreglo[0] ?? [];
+prueba('Un empleado ve los productos para armar arreglos con su stock y su costo (para ponerle precio)',
+    count($productosarreglo) > 0 && array_key_exists('tbinventariostock', $primerproducto) && array_key_exists('tbinventariopreciounidad', $primerproducto));
+$stockrosa = (int) (array_column($productosarreglo, 'tbinventariostock', 'tbinventarioid')[1] ?? 0);
+$arreglolorena = [
+    'tbarreglofloralnombre'      => 'Arreglo de Lorena',
+    'tbarreglofloraldescripcion' => 'Lo creó una empleada',
+    'tbarreglofloralprecio'      => '20000',
+    'detalles'                   => [
+        ['tbinventarioid' => 1, 'tbarreglofloralinsumocantidad' => 6],
+        ['tbinventarioid' => 11, 'tbarreglofloralinsumocantidad' => 2],
+    ],
+];
+$r = $lorena->post('catalogo', 'crear', ['detalles' => [['tbinventarioid' => 1, 'tbarreglofloralinsumocantidad' => $stockrosa + 1]]] + $arreglolorena,
+    ['tbarreglofloralfoto' => $fotoprueba]);
+prueba('No deja poner más unidades de las que hay en inventario', tieneerror($r, 'detalles')
+    && strpos(mensaje($r) . json_encode(datos($r), JSON_UNESCAPED_UNICODE), 'solo hay ' . $stockrosa) !== false, json_encode(datos($r), JSON_UNESCAPED_UNICODE));
+$r = $lorena->post('catalogo', 'crear', ['tbarreglofloralprecio' => '100'] + $arreglolorena, ['tbarreglofloralfoto' => $fotoprueba]);
+prueba('A un empleado le avisa si el precio no alcanza para pagar los productos', tieneerror($r, 'tbarreglofloralprecio'), mensaje($r));
+$r = $lorena->post('catalogo', 'crear', $arreglolorena, ['tbarreglofloralfoto' => $fotoprueba]);
+$idarreglolorena = datos($r)['tbarreglofloralid'] ?? 0;
+prueba('Un empleado crea un arreglo', exito($r) && $idarreglolorena > 0, mensaje($r));
+$r = $lorena->post('catalogo', 'actualizar', ['tbarreglofloralid' => $idarreglolorena, 'tbarreglofloralprecio' => '21000'] + $arreglolorena);
+prueba('…y lo puede editar', exito($r), mensaje($r));
+$r = $lorena->post('catalogo', 'inactivar', ['id' => $idarreglolorena]);
+prueba('…pero inactivarlo es solo del propietario (403)', $r['codigo'] === 403, 'HTTP ' . $r['codigo']);
+
+// Fecha de entrega: como máximo 6 meses adelante
+$base = [
+    'tbclienteid' => 3, 'tbempleadoid' => '', 'tbsolicitudencargofechaentrega' => $manana, 'tbsolicitudencargonota' => '',
+    'tbsolicitudencargotipo' => 'Predefinido', 'tbarreglofloralid' => 1, 'tbsolicitudencargocantidad' => '1', 'insumos' => [],
+];
+$r = $lorena->post('encargo', 'crear', ['tbsolicitudencargofechaentrega' => '2030-05-10'] + $base);
+prueba('No deja guardar una solicitud para el 2030', tieneerror($r, 'tbsolicitudencargofechaentrega'), mensaje($r));
+$r = $lorena->post('encargo', 'crear', ['tbsolicitudencargofechaentrega' => date('Y-m-d', strtotime('+6 months'))] + $base);
+prueba('Sí deja guardar una solicitud para dentro de 6 meses', exito($r), mensaje($r));
+$opcionesencargo = datos($lorena->get('encargo', 'opciones'));
+prueba('El formulario sabe hasta qué fecha se puede pedir', ($opcionesencargo['fechamaxima'] ?? '') === date('Y-m-d', strtotime('+6 months')));
+
+// Asignar: un empleado asigna las solicitudes sin asignar y le pasa las suyas a otra persona
+$idlibre = datos($lorena->post('encargo', 'crear', $base))['tbsolicitudencargoid'] ?? 0;
+$r = $lorena->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idlibre, 'tbempleadoid' => 3]);
+prueba('Un empleado asigna una solicitud sin asignar a otro empleado', exito($r), mensaje($r));
+$r = $lorena->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idlibre, 'tbempleadoid' => 2]);
+prueba('…pero no puede quitarle a otra persona una solicitud que ya tiene', !exito($r), mensaje($r));
+$r = $carlos->post('encargo', 'asignar', ['tbsolicitudencargoid' => $idlibre, 'tbempleadoid' => 2]);
+$asignada = datos($propietario->get('encargo', 'obtener', ['id' => $idlibre]));
+prueba('Quien la tiene se la puede pasar a otra persona, y queda en el historial', exito($r) && (int) ($asignada['tbempleadoid'] ?? 0) === 2
+    && count(array_filter($asignada['historial'] ?? [], function ($h) { return stripos($h['texto'], 'asign') !== false; })) >= 2, mensaje($r));
 
 /* =====================================================================
  * Resumen

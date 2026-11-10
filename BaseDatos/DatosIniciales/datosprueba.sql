@@ -2,6 +2,66 @@ SET NAMES utf8mb4;
 USE bdfloristica;
 
 
+-- Catálogos de colores y de tipos de flor
+INSERT INTO `tbcolor` VALUES (1,'Amarillo',1);
+INSERT INTO `tbcolor` VALUES (2,'Azul',1);
+INSERT INTO `tbcolor` VALUES (3,'Blanco',1);
+INSERT INTO `tbcolor` VALUES (4,'Café',1);
+INSERT INTO `tbcolor` VALUES (5,'Celeste',1);
+INSERT INTO `tbcolor` VALUES (6,'Crema',1);
+INSERT INTO `tbcolor` VALUES (7,'Dorado',1);
+INSERT INTO `tbcolor` VALUES (8,'Fucsia',1);
+INSERT INTO `tbcolor` VALUES (9,'Gris',1);
+INSERT INTO `tbcolor` VALUES (10,'Lila',1);
+INSERT INTO `tbcolor` VALUES (11,'Morado',1);
+INSERT INTO `tbcolor` VALUES (12,'Naranja',1);
+INSERT INTO `tbcolor` VALUES (13,'Natural',1);
+INSERT INTO `tbcolor` VALUES (14,'Negro',1);
+INSERT INTO `tbcolor` VALUES (15,'Plateado',1);
+INSERT INTO `tbcolor` VALUES (16,'Rojo',1);
+INSERT INTO `tbcolor` VALUES (17,'Rosado',1);
+INSERT INTO `tbcolor` VALUES (18,'Surtido',1);
+INSERT INTO `tbcolor` VALUES (19,'Transparente',1);
+INSERT INTO `tbcolor` VALUES (20,'Verde',1);
+INSERT INTO `tbcolor` VALUES (21,'Vino',1);
+INSERT INTO `tbtipoflor` VALUES (1,'Alstroemeria','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (2,'Anturio','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (3,'Áster','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (4,'Cala','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (5,'Clavel','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (6,'Clavelina','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (7,'Dalia','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (8,'Dragón','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (9,'Estatiz','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (10,'Estrella','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (11,'Fully','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (12,'Gerbera','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (13,'Girasol','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (14,'Gladiola','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (15,'Gypson','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (16,'Hortensia','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (17,'Lirio','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (18,'Lisianthus','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (19,'Margarita','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (20,'Peonía','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (21,'Pinocho','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (22,'Poma','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (23,'Popis','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (24,'Rosa','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (25,'Tulipán','Flor',1);
+INSERT INTO `tbtipoflor` VALUES (26,'Areca','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (27,'Baby eucalipto','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (28,'Cordeline','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (29,'Dusty miller','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (30,'Espárrago','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (31,'Eucalipto','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (32,'Fénix','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (33,'Helecho','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (34,'Hiedra','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (35,'Monstera','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (36,'Ramas','Follaje',1);
+INSERT INTO `tbtipoflor` VALUES (37,'Ruscus','Follaje',1);
+
 -- Proveedores
 INSERT INTO `tbproveedor` VALUES (1,'Flores del Valle','María Fernanda Rojas','8888-1001','ventas@floresdelvalle.cr','Heredia','Barva','San Pedro','300 m sur de la iglesia','Rosas, claveles y girasoles',1,'2026-10-05');
 INSERT INTO `tbproveedor` VALUES (2,'Vivero Orosi','Daniela Quesada Mora','8888-2002','contacto@viveroorosi.cr','Cartago','Cartago','Oriental','100 m este de la Basílica','Plantas ornamentales y follaje',1,'2026-10-05');
@@ -98,48 +158,48 @@ INSERT INTO `tbinventario` VALUES (31,6,'Conejo de peluche','Peluche',21000.00,6
 INSERT INTO `tbinventario` VALUES (32,6,'Barra de chocolate oscuro','Chocolate',18000.00,12,1500.00,3000.00,12,4,1);
 
 -- Flores y follaje
-INSERT INTO `tbinventariocategoriaflor` VALUES (1,1,'Flor','Rosa','Rojo',60,7);
-INSERT INTO `tbinventariocategoriaflor` VALUES (2,2,'Flor','Rosa','Rosado',50,7);
-INSERT INTO `tbinventariocategoriaflor` VALUES (3,3,'Flor','Rosa','Blanco',50,7);
-INSERT INTO `tbinventariocategoriaflor` VALUES (4,4,'Flor','Rosa','Rosado',35,6);
-INSERT INTO `tbinventariocategoriaflor` VALUES (5,5,'Flor','Girasol','Amarillo',60,6);
-INSERT INTO `tbinventariocategoriaflor` VALUES (6,6,'Flor','Clavel','Blanco',45,10);
-INSERT INTO `tbinventariocategoriaflor` VALUES (7,7,'Flor','Dalia','Rosado',40,5);
-INSERT INTO `tbinventariocategoriaflor` VALUES (8,8,'Flor','Margarita','Blanco',40,8);
-INSERT INTO `tbinventariocategoriaflor` VALUES (9,9,'Flor','Peonía','Fucsia',45,5);
-INSERT INTO `tbinventariocategoriaflor` VALUES (10,10,'Flor','Lirio','Rosado',70,9);
-INSERT INTO `tbinventariocategoriaflor` VALUES (11,11,'Follaje','Eucalipto','Verde',50,14);
-INSERT INTO `tbinventariocategoriaflor` VALUES (12,12,'Follaje','Dusty miller','Gris',30,12);
-INSERT INTO `tbinventariocategoriaflor` VALUES (13,13,'Follaje','Ramas','Café',80,20);
-INSERT INTO `tbinventariocategoriaflor` VALUES (14,25,'Flor','Gerbera','Naranja',45,7);
-INSERT INTO `tbinventariocategoriaflor` VALUES (15,26,'Flor','Gypson','Blanco',50,10);
-INSERT INTO `tbinventariocategoriaflor` VALUES (16,27,'Follaje','Helecho','Verde',60,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (1,1,'Flor',24,16,60,7);
+INSERT INTO `tbinventariocategoriaflor` VALUES (2,2,'Flor',24,17,50,7);
+INSERT INTO `tbinventariocategoriaflor` VALUES (3,3,'Flor',24,3,50,7);
+INSERT INTO `tbinventariocategoriaflor` VALUES (4,4,'Flor',24,17,35,6);
+INSERT INTO `tbinventariocategoriaflor` VALUES (5,5,'Flor',13,1,60,6);
+INSERT INTO `tbinventariocategoriaflor` VALUES (6,6,'Flor',5,3,45,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (7,7,'Flor',7,17,40,5);
+INSERT INTO `tbinventariocategoriaflor` VALUES (8,8,'Flor',19,3,40,8);
+INSERT INTO `tbinventariocategoriaflor` VALUES (9,9,'Flor',20,8,45,5);
+INSERT INTO `tbinventariocategoriaflor` VALUES (10,10,'Flor',17,17,70,9);
+INSERT INTO `tbinventariocategoriaflor` VALUES (11,11,'Follaje',31,20,50,14);
+INSERT INTO `tbinventariocategoriaflor` VALUES (12,12,'Follaje',29,9,30,12);
+INSERT INTO `tbinventariocategoriaflor` VALUES (13,13,'Follaje',36,4,80,20);
+INSERT INTO `tbinventariocategoriaflor` VALUES (14,25,'Flor',12,12,45,7);
+INSERT INTO `tbinventariocategoriaflor` VALUES (15,26,'Flor',15,3,50,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (16,27,'Follaje',33,20,60,15);
 
 -- Papel y cinta
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (1,17,'Papel','Coreano','Rosado','Liso','60 x 60','Papel','Mate',NULL);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (2,18,'Papel','Coreano','Crema','Liso','60 x 60','Papel','Mate',NULL);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (3,19,'Papel','Kraft','Café','Liso','50 x 70','Papel','Mate',NULL);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (4,20,'Cinta','Satín','Rojo','Lisa','2.5','Poliéster',NULL,1);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (5,21,'Cinta','Satín','Rosado','Lisa','2.5','Poliéster',NULL,1);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (6,29,'Papel','Celofán','Transparente','Liso','70 x 100','Plástico','Transparente',NULL);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (7,30,'Cinta','Organza','Dorado','Con brillo','4','Tela',NULL,0);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (1,17,'Papel','Coreano',17,'Liso','60 x 60','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (2,18,'Papel','Coreano',6,'Liso','60 x 60','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (3,19,'Papel','Kraft',4,'Liso','50 x 70','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (4,20,'Cinta','Satín',16,'Lisa','2.5','Poliéster',NULL,1);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (5,21,'Cinta','Satín',17,'Lisa','2.5','Poliéster',NULL,1);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (6,29,'Papel','Celofán',19,'Liso','70 x 100','Plástico','Transparente',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (7,30,'Cinta','Organza',7,'Con brillo','4','Tela',NULL,0);
 
 -- Bases
-INSERT INTO `tbinventariocategoriabase` VALUES (1,14,'Florero','Plástico','Transparente','Cilíndrica','12 x 25','Liso');
-INSERT INTO `tbinventariocategoriabase` VALUES (2,15,'Plástica','Plástico','Negro','Rectangular','30 x 15 x 8','Liso');
-INSERT INTO `tbinventariocategoriabase` VALUES (3,16,'Caja','Madera','Natural','Cuadrada','20 x 20 x 15','Rústico');
-INSERT INTO `tbinventariocategoriabase` VALUES (4,28,'Canasta','Mimbre','Natural','Ovalada','30 x 20 x 12','Tejido');
+INSERT INTO `tbinventariocategoriabase` VALUES (1,14,'Florero','Plástico',19,'Cilíndrica','12 x 25','Liso');
+INSERT INTO `tbinventariocategoriabase` VALUES (2,15,'Plástica','Plástico',14,'Rectangular','30 x 15 x 8','Liso');
+INSERT INTO `tbinventariocategoriabase` VALUES (3,16,'Caja','Madera',13,'Cuadrada','20 x 20 x 15','Rústico');
+INSERT INTO `tbinventariocategoriabase` VALUES (4,28,'Canasta','Mimbre',13,'Ovalada','30 x 20 x 12','Tejido');
 
 -- Chocolates
 INSERT INTO `tbinventariocategoriachocolate` VALUES (1,24,'Con leche','Chocolates Tico','Caja de chocolates',200,'Surtido','2027-03-31');
 INSERT INTO `tbinventariocategoriachocolate` VALUES (2,32,'Oscuro','Chocolates Tico','Barra',100,'Natural','2027-01-31');
 
 -- Peluches
-INSERT INTO `tbinventariocategoriapeluche` VALUES (1,23,'Oso',20,'Café','Osito con corazón','Felpa');
-INSERT INTO `tbinventariocategoriapeluche` VALUES (2,31,'Conejo',25,'Blanco','Conejo con moño','Felpa');
+INSERT INTO `tbinventariocategoriapeluche` VALUES (1,23,'Oso',20,4,'Osito con corazón','Felpa');
+INSERT INTO `tbinventariocategoriapeluche` VALUES (2,31,'Conejo',25,3,'Conejo con moño','Felpa');
 
 -- Tarjetas
-INSERT INTO `tbinventariocategoriatarjeta` VALUES (1,22,'Felicitación','Cumpleaños','Blanco','Cartulina','10 x 7',1,'Comprada');
+INSERT INTO `tbinventariocategoriatarjeta` VALUES (1,22,'Felicitación','Cumpleaños',3,'Cartulina','10 x 7',1,'Comprada');
 
 -- Pedidos a proveedores
 INSERT INTO `tbpedido` VALUES (1,1,'2026-10-01','Recibido');
@@ -883,53 +943,53 @@ INSERT INTO `tbtemporadaestadohistorico` VALUES (1,1,1,1,'2026-10-01 07:30:00');
 
 -- Parte 9: flores y follajes con los precios reales del proveedor (temporada baja)
 INSERT INTO `tbinventario` VALUES (33,1,'Alstroemeria','Flor',2000.00,12,166.67,400.00,24,12,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (17,33,'Flor','Alstroemeria','Rosado',60,12);
+INSERT INTO `tbinventariocategoriaflor` VALUES (17,33,'Flor',1,17,60,12);
 INSERT INTO `tbinventario` VALUES (34,7,'Anturio rojo','Flor',4000.00,10,400.00,800.00,10,5,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (18,34,'Flor','Anturio','Rojo',50,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (18,34,'Flor',2,16,50,15);
 INSERT INTO `tbinventario` VALUES (35,5,'Áster blanco','Flor',1500.00,10,150.00,300.00,20,10,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (19,35,'Flor','Áster','Blanco',50,8);
+INSERT INTO `tbinventariocategoriaflor` VALUES (19,35,'Flor',3,3,50,8);
 INSERT INTO `tbinventario` VALUES (36,7,'Cala blanca','Flor',4000.00,12,333.33,700.00,12,6,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (20,36,'Flor','Cala','Blanco',60,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (20,36,'Flor',4,3,60,10);
 INSERT INTO `tbinventario` VALUES (37,1,'Clavel mini','Flor',3000.00,12,250.00,500.00,24,12,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (21,37,'Flor','Clavel','Surtido',40,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (21,37,'Flor',5,18,40,10);
 INSERT INTO `tbinventario` VALUES (38,1,'Clavelina','Flor',3000.00,12,250.00,500.00,12,12,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (22,38,'Flor','Clavelina','Surtido',40,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (22,38,'Flor',6,18,40,10);
 INSERT INTO `tbinventario` VALUES (39,5,'Dragón','Flor',3000.00,12,250.00,500.00,12,6,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (23,39,'Flor','Dragón','Surtido',70,8);
+INSERT INTO `tbinventariocategoriaflor` VALUES (23,39,'Flor',8,18,70,8);
 INSERT INTO `tbinventario` VALUES (40,5,'Estatiz morado','Flor',3000.00,10,300.00,600.00,10,5,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (24,40,'Flor','Estatiz','Morado',50,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (24,40,'Flor',9,11,50,15);
 INSERT INTO `tbinventario` VALUES (41,5,'Estrella blanca','Flor',2000.00,12,166.67,400.00,12,6,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (25,41,'Flor','Estrella','Blanco',50,12);
+INSERT INTO `tbinventariocategoriaflor` VALUES (25,41,'Flor',10,3,50,12);
 INSERT INTO `tbinventario` VALUES (42,1,'Fully (moon)','Flor',3200.00,10,320.00,700.00,10,5,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (26,42,'Flor','Fully','Blanco',60,14);
+INSERT INTO `tbinventariocategoriaflor` VALUES (26,42,'Flor',11,3,60,14);
 INSERT INTO `tbinventario` VALUES (43,1,'Gladiola','Flor',4000.00,12,333.33,700.00,12,6,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (27,43,'Flor','Gladiola','Surtido',90,8);
+INSERT INTO `tbinventariocategoriaflor` VALUES (27,43,'Flor',14,18,90,8);
 INSERT INTO `tbinventario` VALUES (44,1,'Hortensia','Flor',600.00,1,600.00,1200.00,6,3,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (28,44,'Flor','Hortensia','Azul',40,6);
+INSERT INTO `tbinventariocategoriaflor` VALUES (28,44,'Flor',16,2,40,6);
 INSERT INTO `tbinventario` VALUES (45,5,'Pinocho','Flor',1750.00,10,175.00,400.00,10,5,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (29,45,'Flor','Pinocho','Amarillo',50,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (29,45,'Flor',21,1,50,10);
 INSERT INTO `tbinventario` VALUES (46,5,'Poma','Flor',1750.00,10,175.00,400.00,10,5,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (30,46,'Flor','Poma','Blanco',50,10);
+INSERT INTO `tbinventariocategoriaflor` VALUES (30,46,'Flor',22,3,50,10);
 INSERT INTO `tbinventario` VALUES (47,7,'Tulipán','Flor',11000.00,10,1100.00,2200.00,10,5,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (31,47,'Flor','Tulipán','Surtido',40,6);
+INSERT INTO `tbinventariocategoriaflor` VALUES (31,47,'Flor',25,18,40,6);
 INSERT INTO `tbinventario` VALUES (48,8,'Cordeline','Flor',1500.00,10,150.00,300.00,20,10,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (32,48,'Follaje','Cordeline','Rojo',60,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (32,48,'Follaje',28,16,60,15);
 INSERT INTO `tbinventario` VALUES (49,8,'Areca','Flor',1500.00,12,125.00,300.00,24,12,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (33,49,'Follaje','Areca','Verde',80,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (33,49,'Follaje',26,20,80,15);
 INSERT INTO `tbinventario` VALUES (50,8,'Fénix','Flor',1500.00,16,93.75,200.00,32,16,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (34,50,'Follaje','Fénix','Verde',70,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (34,50,'Follaje',32,20,70,15);
 INSERT INTO `tbinventario` VALUES (51,8,'Hiedra','Flor',1500.00,12,125.00,300.00,24,12,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (35,51,'Follaje','Hiedra','Verde',50,12);
+INSERT INTO `tbinventariocategoriaflor` VALUES (35,51,'Follaje',34,20,50,12);
 INSERT INTO `tbinventario` VALUES (52,8,'Ruscus','Flor',2000.00,10,200.00,400.00,20,10,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (36,52,'Follaje','Ruscus','Verde',60,15);
+INSERT INTO `tbinventariocategoriaflor` VALUES (36,52,'Follaje',37,20,60,15);
 INSERT INTO `tbinventario` VALUES (53,8,'Espárrago','Flor',2000.00,10,200.00,400.00,20,10,1);
-INSERT INTO `tbinventariocategoriaflor` VALUES (37,53,'Follaje','Espárrago','Verde',50,12);
+INSERT INTO `tbinventariocategoriaflor` VALUES (37,53,'Follaje',30,20,50,12);
 
 -- Sprays (el de pintura floral se cobra por cada flor pintada)
 INSERT INTO `tbinventario` VALUES (54,3,'Spray pintura floral azul','Spray',30000.00,6,5000.00,10000.00,6,2,1);
-INSERT INTO `tbinventariocategoriaspray` VALUES (1,54,'Pintura floral','Design Master','Azul',NULL,340,NULL,300.00);
+INSERT INTO `tbinventariocategoriaspray` VALUES (1,54,'Pintura floral','Design Master',2,NULL,340,NULL,300.00);
 INSERT INTO `tbinventario` VALUES (55,3,'Spray pintura floral dorado','Spray',33000.00,6,5500.00,11000.00,4,2,1);
-INSERT INTO `tbinventariocategoriaspray` VALUES (2,55,'Pintura floral','Design Master','Dorado',NULL,340,NULL,350.00);
+INSERT INTO `tbinventariocategoriaspray` VALUES (2,55,'Pintura floral','Design Master',7,NULL,340,NULL,350.00);
 INSERT INTO `tbinventario` VALUES (56,3,'Abrillantador de follaje','Spray',24000.00,6,4000.00,8000.00,5,2,1);
 INSERT INTO `tbinventariocategoriaspray` VALUES (3,56,'Abrillantador de follaje','Chrysal',NULL,NULL,400,NULL,NULL);
 INSERT INTO `tbinventario` VALUES (57,3,'Aromatizante floral de rosas','Spray',18000.00,6,3000.00,6000.00,4,2,1);
@@ -1172,17 +1232,17 @@ INSERT INTO `tbinventariopreciotemporadahistorico` VALUES (28,53,'1|2300.00',1,'
 
 -- Parte 10: papel negro, cinta con frase, cajas y accesorios (corona, perfume, splash)
 INSERT INTO `tbinventario` VALUES (58,3,'Papel coreano negro','Envoltura',6000.00,20,300.00,600.00,40,10,1);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (8,58,'Papel','Coreano','Negro','Liso','60 x 60','Papel','Mate',NULL);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (8,58,'Papel','Coreano',14,'Liso','60 x 60','Papel','Mate',NULL);
 INSERT INTO `tbinventario` VALUES (59,3,'Cinta con frase personalizada','Envoltura',5000.00,10,500.00,2000.00,20,5,1);
-INSERT INTO `tbinventariocategoriaenvoltura` VALUES (9,59,'Cinta','Satín','Blanco','Con frase dorada','2.5','Poliéster',NULL,1);
+INSERT INTO `tbinventariocategoriaenvoltura` VALUES (9,59,'Cinta','Satín',3,'Con frase dorada','2.5','Poliéster',NULL,1);
 INSERT INTO `tbinventario` VALUES (60,6,'Caja de regalo I love you','Base',15000.00,10,1500.00,3000.00,10,3,1);
-INSERT INTO `tbinventariocategoriabase` VALUES (5,60,'Caja','Cartón','Blanco','Rectangular','20 x 12 x 25','Con frase dorada');
+INSERT INTO `tbinventariocategoriabase` VALUES (5,60,'Caja','Cartón',3,'Rectangular','20 x 12 x 25','Con frase dorada');
 INSERT INTO `tbinventario` VALUES (61,6,'Caja redonda rosada','Base',12000.00,10,1200.00,2500.00,10,3,1);
-INSERT INTO `tbinventariocategoriabase` VALUES (6,61,'Caja','Cartón','Rosado','Cilíndrica','15 x 15','Liso');
+INSERT INTO `tbinventariocategoriabase` VALUES (6,61,'Caja','Cartón',17,'Cilíndrica','15 x 15','Liso');
 INSERT INTO `tbinventario` VALUES (62,6,'Corona pequeña dorada','Accesorio',6000.00,12,500.00,1000.00,12,4,1);
-INSERT INTO `tbinventariocategoriaaccesorio` VALUES (1,62,'Corona','Pequeño','Dorado','Metal');
+INSERT INTO `tbinventariocategoriaaccesorio` VALUES (1,62,'Corona','Pequeño',7,'Metal');
 INSERT INTO `tbinventario` VALUES (63,6,'Corona mediana dorada','Accesorio',12000.00,12,1000.00,2000.00,12,4,1);
-INSERT INTO `tbinventariocategoriaaccesorio` VALUES (2,63,'Corona','Mediano','Dorado','Metal');
+INSERT INTO `tbinventariocategoriaaccesorio` VALUES (2,63,'Corona','Mediano',7,'Metal');
 INSERT INTO `tbinventario` VALUES (64,6,'Perfume Yara','Accesorio',54000.00,6,9000.00,13000.00,6,2,1);
 INSERT INTO `tbinventariocategoriaaccesorio` VALUES (3,64,'Perfume','Único',NULL,'Vidrio');
 INSERT INTO `tbinventario` VALUES (65,6,'Splash Victoria Secret','Accesorio',33000.00,6,5500.00,9000.00,6,2,1);

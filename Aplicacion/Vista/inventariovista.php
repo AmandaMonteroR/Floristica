@@ -43,16 +43,21 @@ $categoriasinventario = [
 <main class="contenedor">
     <header class="encabezado">
         <div>
-            <h1>Inventario</h1>
-            <p class="subtitulo">Flores, papel, cintas, bases, chocolates, peluches, tarjetas, sprays y accesorios de la floristería.</p>
+            <h1>Inventario de insumos</h1>
+            <p class="subtitulo">Los insumos son lo que se le compra a los proveedores para armar los arreglos o agregarlos como
+                adicionales: flores, papel, cintas, bases, chocolates, peluches, tarjetas, sprays y accesorios.
+                Los arreglos que se venden están en el Catálogo.</p>
         </div>
-        <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo producto</button>
+        <div class="botones-encabezado">
+            <button type="button" class="boton boton-borde-claro" id="botoncatalogos">Colores y tipos de flor</button>
+            <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo insumo</button>
+        </div>
     </header>
 
     <section class="filtros">
         <label class="campo campo-busqueda">
             <span>Buscar</span>
-            <input type="search" id="busqueda" placeholder="Nombre del producto">
+            <input type="search" id="busqueda" placeholder="Nombre del insumo">
         </label>
         <label class="campo">
             <span>Categoría</span>
@@ -113,7 +118,7 @@ $categoriasinventario = [
 
 <dialog id="dialogoformulario" class="dialogo">
     <form id="formulario" novalidate>
-        <h2 id="tituloformulario">Nuevo producto</h2>
+        <h2 id="tituloformulario">Nuevo insumo</h2>
         <p class="nota">Los campos con * son obligatorios.</p>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
@@ -126,7 +131,7 @@ $categoriasinventario = [
 
         <div class="rejilla">
             <label class="campo campo-completo">
-                <span>Nombre del producto *</span>
+                <span>Nombre del insumo *</span>
                 <input type="text" name="tbinventarionombre" maxlength="100" data-filtro="nombre">
                 <small class="error" data-error="tbinventarionombre"></small>
             </label>
@@ -193,7 +198,7 @@ $categoriasinventario = [
             <legend>Datos de la flor o follaje</legend>
             <div class="rejilla">
                 <label class="campo">
-                    <span>Tipo *</span>
+                    <span>Flor o follaje *</span>
                     <select name="tbinventariocategoriaflortipo">
                         <option value="">Seleccione…</option>
                         <?php opcionesinventario($opciones['tiposflor']); ?>
@@ -201,14 +206,17 @@ $categoriasinventario = [
                     <small class="error" data-error="tbinventariocategoriaflortipo"></small>
                 </label>
                 <label class="campo">
-                    <span>Variedad *</span>
-                    <input type="text" name="tbinventariocategoriaflorvariedad" maxlength="50" data-filtro="letras" list="listavariedades" placeholder="Rosa, girasol, eucalipto…">
-                    <datalist id="listavariedades"></datalist>
+                    <span>Tipo de flor *</span>
+                    <select name="tbinventariocategoriaflorvariedad" data-lista="tiposflor">
+                        <option value="">Primero elija flor o follaje</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriaflorvariedad"></small>
                 </label>
                 <label class="campo">
                     <span>Color *</span>
-                    <input type="text" name="tbinventariocategoriaflorcolor" maxlength="30" data-filtro="letras">
+                    <select name="tbinventariocategoriaflorcolor" data-lista="colores">
+                        <option value="">Seleccione…</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriaflorcolor"></small>
                 </label>
                 <label class="campo">
@@ -245,7 +253,9 @@ $categoriasinventario = [
                 </label>
                 <label class="campo">
                     <span>Color *</span>
-                    <input type="text" name="tbinventariocategoriaenvolturacolor" maxlength="30" data-filtro="letras">
+                    <select name="tbinventariocategoriaenvolturacolor" data-lista="colores">
+                        <option value="">Seleccione…</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriaenvolturacolor"></small>
                 </label>
                 <label class="campo">
@@ -304,7 +314,9 @@ $categoriasinventario = [
                 </label>
                 <label class="campo">
                     <span>Color *</span>
-                    <input type="text" name="tbinventariocategoriabasecolor" maxlength="30" data-filtro="letras">
+                    <select name="tbinventariocategoriabasecolor" data-lista="colores">
+                        <option value="">Seleccione…</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriabasecolor"></small>
                 </label>
                 <label class="campo">
@@ -385,7 +397,9 @@ $categoriasinventario = [
                 </label>
                 <label class="campo">
                     <span>Color *</span>
-                    <input type="text" name="tbinventariocategoriapeluchecolor" maxlength="30" data-filtro="letras">
+                    <select name="tbinventariocategoriapeluchecolor" data-lista="colores">
+                        <option value="">Seleccione…</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriapeluchecolor"></small>
                 </label>
                 <label class="campo">
@@ -425,7 +439,9 @@ $categoriasinventario = [
                 </label>
                 <label class="campo">
                     <span>Color *</span>
-                    <input type="text" name="tbinventariocategoriatarjetacolor" maxlength="30" data-filtro="letras">
+                    <select name="tbinventariocategoriatarjetacolor" data-lista="colores">
+                        <option value="">Seleccione…</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriatarjetacolor"></small>
                 </label>
                 <label class="campo">
@@ -479,7 +495,9 @@ $categoriasinventario = [
                 </label>
                 <label class="campo" id="campospraycolor" hidden>
                     <span>Color de la pintura *</span>
-                    <input type="text" name="tbinventariocategoriaspraycolor" maxlength="30" data-filtro="letras" placeholder="Azul, dorado, plateado…">
+                    <select name="tbinventariocategoriaspraycolor" data-lista="colores">
+                        <option value="">Seleccione…</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriaspraycolor"></small>
                 </label>
                 <label class="campo" id="camposprayaroma" hidden>
@@ -527,7 +545,9 @@ $categoriasinventario = [
                 </label>
                 <label class="campo">
                     <span>Color</span>
-                    <input type="text" name="tbinventariocategoriaaccesoriocolor" maxlength="30" data-filtro="letras" placeholder="Dorado, plateado…">
+                    <select name="tbinventariocategoriaaccesoriocolor" data-lista="colores">
+                        <option value="">Sin color</option>
+                    </select>
                     <small class="error" data-error="tbinventariocategoriaaccesoriocolor"></small>
                 </label>
                 <label class="campo">
@@ -549,7 +569,7 @@ $categoriasinventario = [
 
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>
-            <button type="submit" class="boton boton-principal" id="botonguardar">Guardar producto</button>
+            <button type="submit" class="boton boton-principal" id="botonguardar">Guardar insumo</button>
         </div>
     </form>
 </dialog>
@@ -601,6 +621,38 @@ $categoriasinventario = [
     </div>
 </dialog>
 
+<dialog id="dialogocatalogos" class="dialogo dialogo-ancho" aria-labelledby="titulocatalogos">
+    <h2 id="titulocatalogos">Colores y tipos de flor</h2>
+    <p class="nota">Son las listas que se eligen al registrar un insumo. Si inactiva uno, ya no se puede elegir en
+        insumos nuevos, pero los que ya lo tienen no cambian.</p>
+    <div id="avisocatalogos" class="aviso" role="status" hidden></div>
+    <div class="catalogos-inventario">
+        <section>
+            <h3>Colores</h3>
+            <form class="agregar-catalogo" data-catalogo="color" novalidate>
+                <input type="text" name="nombre" maxlength="30" placeholder="Nuevo color" aria-label="Nombre del nuevo color">
+                <button type="submit" class="boton">Agregar</button>
+            </form>
+            <ul class="lista-catalogo" id="listacolores"></ul>
+        </section>
+        <section>
+            <h3>Tipos de flor y de follaje</h3>
+            <form class="agregar-catalogo" data-catalogo="tipoflor" novalidate>
+                <input type="text" name="nombre" maxlength="50" placeholder="Nuevo tipo" aria-label="Nombre del nuevo tipo de flor">
+                <select name="clase" aria-label="Flor o follaje">
+                    <option value="Flor">Flor</option>
+                    <option value="Follaje">Follaje</option>
+                </select>
+                <button type="submit" class="boton">Agregar</button>
+            </form>
+            <ul class="lista-catalogo" id="listatiposflor"></ul>
+        </section>
+    </div>
+    <div class="acciones-dialogo">
+        <button type="button" class="boton boton-principal" id="botoncerrarcatalogos">Cerrar</button>
+    </div>
+</dialog>
+
 <dialog id="dialogoconfirmacion" class="dialogo dialogo-confirmacion">
     <div class="icono-confirmacion" id="iconoconfirmacion" aria-hidden="true"></div>
     <h2 id="tituloconfirmacion"></h2>
@@ -613,10 +665,6 @@ $categoriasinventario = [
 
 <script src="js/menu.js"></script>
 <script src="js/historial.js"></script>
-<script>
-    // Sugerencias de variedad según el tipo (flor o follaje)
-    const variedadesflor = <?= json_encode($opciones['variedades'], JSON_UNESCAPED_UNICODE) ?>;
-</script>
 <script src="js/preciostemporada.js"></script>
 <script src="js/inventario.js"></script>
 </body>

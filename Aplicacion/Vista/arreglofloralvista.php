@@ -18,10 +18,9 @@
         </div>
         <div class="botones-encabezado">
             <button type="button" class="boton boton-borde-claro" id="botonbuscarfoto">Buscar por foto</button>
-            <?php if (Seguridad::espropietario()): ?>
-                <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
-            <?php endif; ?>    </header>
+            <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
         </div>
+    </header>
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
         <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Arreglos</a>
@@ -85,13 +84,32 @@
                     <textarea name="tbarreglofloraldescripcion" maxlength="255" placeholder="Ideal para cumpleaños, incluye tarjeta…"></textarea>
                     <small class="error" data-error="tbarreglofloraldescripcion"></small>
                 </label>
+                <div class="campo campo-completo">
+                    <span id="etiquetagananciaarreglo">Ganancia sobre el costo (%)</span>
+                    <div class="fila-porcentaje">
+                        <div class="contador">
+                            <button type="button" class="boton-contador" data-pasoporcentaje="-10" aria-label="Bajar 10%">−</button>
+                            <input type="text" id="porcentajearreglo" inputmode="numeric" maxlength="3" autocomplete="off" value="100" aria-labelledby="etiquetagananciaarreglo">
+                            <button type="button" class="boton-contador" data-pasoporcentaje="10" aria-label="Subir 10%">+</button>
+                        </div>
+                        <div class="chips-porcentaje" role="group" aria-label="Porcentajes rápidos">
+                            <button type="button" class="chip" data-porcentaje="50">50%</button>
+                            <button type="button" class="chip" data-porcentaje="80">80%</button>
+                            <button type="button" class="chip" data-porcentaje="100">100%</button>
+                            <button type="button" class="chip" data-porcentaje="150">150%</button>
+                        </div>
+                    </div>
+                    <small class="nota-campo texto-suave">El precio sugerido es el costo de los productos más este %, redondeado hacia arriba a ₡100.</small>
+                </div>
                 <label class="campo">
                     <span>Precio de venta (₡) *</span>
                     <input type="text" name="tbarreglofloralprecio" inputmode="decimal" maxlength="11" autocomplete="off" placeholder="25000">
+                    <small class="nota-campo texto-suave" id="notaprecio"></small>
                     <small class="error" data-error="tbarreglofloralprecio"></small>
                 </label>
                 <div class="resumen-costo">
                     <span>Costo de productos: <strong id="costoarreglo">₡0,00</strong></span>
+                    <span>Precio sugerido: <strong id="sugeridoarreglo">₡0,00</strong></span>
                     <span>Ganancia: <strong id="gananciaarreglo">₡0,00</strong></span>
                 </div>
             </div>
@@ -104,6 +122,7 @@
                     <tr>
                         <th>Producto</th>
                         <th>Unidades</th>
+                        <th>En inventario</th>
                         <th>Costo unidad</th>
                         <th>Subtotal</th>
                         <th><span class="solo-lector">Quitar</span></th>
@@ -115,7 +134,7 @@
         <small class="error" data-error="detalles"></small>
 
         <div class="pie-lineas">
-            <button type="button" class="boton" id="botonagregarlinea">+ Agregar producto</button>
+            <button type="button" class="boton" id="botonagregarlinea">+ Agregar productos</button>
         </div>
 
         <p class="nota nota-temporada">✿ En temporada (San Valentín, Día de la Madre…) el precio del arreglo se calcula solo:
@@ -126,6 +145,23 @@
             <button type="submit" class="boton boton-principal" id="botonguardar">Guardar arreglo</button>
         </div>
     </form>
+</dialog>
+
+<dialog id="dialogoproductos" class="dialogo dialogo-ancho" aria-labelledby="tituloproductos">
+    <h2 id="tituloproductos">Agregar productos al arreglo</h2>
+    <p class="nota">Busque el producto o filtre por categoría y toque "Agregar". Se muestra cuántas unidades hay en inventario.</p>
+    <div class="buscador-productos">
+        <label class="campo campo-busqueda">
+            <span>Buscar</span>
+            <input type="search" id="buscarproducto" placeholder="Rosa, papel, base…" autocomplete="off">
+        </label>
+        <div class="chips-categoria" id="chipscategoria" role="group" aria-label="Categoría"></div>
+    </div>
+    <ul class="lista-productos" id="listaproductos" aria-live="polite"></ul>
+    <div class="acciones-dialogo">
+        <span class="texto-suave" id="resumenproductos"></span>
+        <button type="button" class="boton boton-principal" id="botonlistoproductos">Listo</button>
+    </div>
 </dialog>
 
 <dialog id="dialogodetalle" class="dialogo dialogo-ancho">

@@ -15,9 +15,10 @@ class valoracionrepositorio
     // [idproducto => ['tipo' => 'Flor' o 'Follaje', 'color' => 'Rojo'], ...] de las flores activas
     public function flores()
     {
-        $sql = 'SELECT f.tbinventarioid, f.tbinventariocategoriaflortipo AS tipo, f.tbinventariocategoriaflorcolor AS color
+        $sql = 'SELECT f.tbinventarioid, f.tbinventariocategoriaflortipo AS tipo, c.tbcolornombre AS color
                 FROM tbinventariocategoriaflor f
                 INNER JOIN tbinventario i ON i.tbinventarioid = f.tbinventarioid
+                LEFT JOIN tbcolor c ON c.tbcolorid = f.tbcolorid
                 WHERE i.tbinventarioestado = 1';
         $lista = [];
         foreach ($this->conexion->query($sql)->fetchAll() as $fila) {
@@ -30,9 +31,10 @@ class valoracionrepositorio
     // [idproducto => ['clase' => 'Papel' o 'Cinta', 'color' => 'Negro'], ...] de las envolturas activas
     public function envolturas()
     {
-        $sql = 'SELECT e.tbinventarioid, e.tbinventariocategoriaenvolturaclase AS clase, e.tbinventariocategoriaenvolturacolor AS color
+        $sql = 'SELECT e.tbinventarioid, e.tbinventariocategoriaenvolturaclase AS clase, c.tbcolornombre AS color
                 FROM tbinventariocategoriaenvoltura e
                 INNER JOIN tbinventario i ON i.tbinventarioid = e.tbinventarioid
+                LEFT JOIN tbcolor c ON c.tbcolorid = e.tbcolorid
                 WHERE i.tbinventarioestado = 1';
         $lista = [];
         foreach ($this->conexion->query($sql)->fetchAll() as $fila) {
