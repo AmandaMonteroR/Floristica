@@ -140,6 +140,7 @@ Floristica/
 | Temporada alta: precios del proveedor, encenderla y apagarla | ✓ | |
 | Ventas y ganancias | ✓ | |
 | Cuentas por cobrar y por pagar (abonos) | ✓ | |
+| Gastos del negocio y reportes (ganancia neta, trazabilidad) | ✓ | |
 | Proveedores, inventario, pedidos y empleados | ✓ | |
 
 ## Módulos
@@ -322,12 +323,27 @@ Si sobra dinero, la propuesta lo dice, avisa si fue porque no hay más de alguna
 
 ### Cuentas por cobrar y por pagar
 
-En **Ventas → Cuentas por cobrar y por pagar** (solo el propietario), con dos pestañas:
+En **Finanzas → Cuentas por cobrar y por pagar** (solo el propietario), con dos pestañas:
 
 - **Por cobrar (clientas):** cada solicitud que no está cancelada tiene un saldo: total − lo que ha abonado la clienta (`tbsolicitudencargoabono`). Si dejó un adelanto dice "Con adelanto"; si se entregó sin pagar completa es una **venta a crédito** ("Entregada sin pagar") y sale de primera. En **Ver** de la solicitud dice cuánto ha pagado y cuánto falta. Si ya pagó, la solicitud no se puede editar para que el total quede por debajo de lo pagado.
 - **Por pagar (proveedores):** los pedidos que se confirmaron **a crédito**. Saldo = monto de la compra − abonos (`tbpedidoabono`). Vence en la fecha de confirmación + el plazo; dice "Por vencer" en los últimos 7 días y "Vencido" después. Los de contado se pagan al confirmar y no aparecen.
 - **Tarjetas:** lo que deben las clientas por arreglos entregados, lo que falta de las solicitudes abiertas y lo que se les debe a los proveedores (en rojo si hay algo vencido).
 - **Abonar:** monto (no más que el saldo; el botón "Todo el saldo" lo llena), fecha (no futura ni anterior a la compra o a la solicitud), cómo se pagó (efectivo, SINPE Móvil, transferencia o tarjeta) y una nota opcional. Cada abono guarda quién lo registró. Con "Mostrar también las que ya están pagadas" se ven las cuentas canceladas por completo.
+
+### Gastos del negocio
+
+En **Finanzas → Gastos** (solo el propietario). Son los pagos que no son mercadería: alquiler, electricidad, agua, internet y teléfono, salarios, transporte, mantenimiento, publicidad u otros (tabla `tbgasto`).
+
+- **Registrar y editar:** categoría (de la lista), descripción (3 a 100 caracteres, con letras), monto (mayor que 0, máximo 2 decimales) y fecha del pago (no futura ni de hace más de 2 años). No deja registrar dos veces el mismo gasto (misma categoría, descripción, monto y fecha).
+- **Anular:** un gasto mal registrado no se borra: se anula, deja de sumar y queda en el historial. Se puede "volver a contar" si no hay otro igual.
+- **Lista:** por período (este mes, mes pasado, este año, todo o fechas), categoría y estado, con el total y una barra por categoría.
+
+### Reportes
+
+En **Finanzas → Reportes** (solo el propietario), con dos pestañas y un botón **Imprimir**:
+
+- **Ganancia neta:** para el período elegido, vendido (solicitudes terminadas) − costo de las flores y productos = ganancia bruta; − gastos del negocio (con el detalle por categoría) = **ganancia neta**, en verde si es positiva o en rojo si hubo pérdida, con el % de lo vendido. Al lado, una tabla con los últimos 6 meses para comparar.
+- **Trazabilidad:** se elige una solicitud de arreglo o un pedido al proveedor y se ve todo lo que pasó, en orden, con fecha, hora y **responsable**: registro, asignación, cuándo empezó a prepararse, cuándo se terminó (y qué salió del inventario), cancelación, cada pago de la clienta; en los pedidos, cuándo se pidió, se confirmó (contado o crédito), se recibió (qué entró al inventario) y cada abono al proveedor. Arriba dice cuánto tardó de principio a fin. El enlace se puede compartir (`index.php?modulo=reporte&ver=trazabilidad&tipo=solicitud&id=17`).
 
 ### Empleados
 
@@ -374,6 +390,7 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 | Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
 | Clientes | Nombre, teléfono, dirección y estado |
 | Zonas de entrega | Nombre, precio y estado |
+| Gastos | Categoría, descripción, monto, fecha y estado (cuenta o anulado) |
 | Temporada alta | Cuándo se encendió y se apagó |
 
 ### Solicitudes de pedido de arreglo

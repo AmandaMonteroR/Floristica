@@ -1642,6 +1642,85 @@ $r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idp
 prueba('…y ya no se le puede bajar la cantidad para que cueste menos de lo que pagó', tieneerror($r, 'tbsolicitudencargocantidad'), mensaje($r));
 
 /* =====================================================================
+ * 21. Gastos y reportes (Parte 18)
+ * =================================================================== */
+seccion('21. Gastos y reportes');
+
+prueba('Un empleado no puede ver los gastos (403)', $lorena->get('gasto', 'listar')['codigo'] === 403);
+prueba('…ni los reportes (403)', $carlos->get('reporte', 'ganancia')['codigo'] === 403);
+
+$octubre = datos($propietario->get('gasto', 'listar', ['desde' => '2026-10-01', 'hasta' => '2026-10-31']));
+prueba('En octubre hay 9 gastos registrados (1 anulado) y suman ₡127 100',
+    count($octubre['gastos'] ?? []) === 9 && ($octubre['anulados'] ?? 0) === 1 && (float) ($octubre['total'] ?? 0) === 127100.0,
+    json_encode(['n' => count($octubre['gastos'] ?? []), 'total' => $octubre['total'] ?? null], JSON_UNESCAPED_UNICODE));
+prueba('…con el total de cada categoría (el alquiler es el mayor)', array_key_first($octubre['porcategoria'] ?? []) === 'Alquiler'
+    && (float) ($octubre['porcategoria']['Mantenimiento'] ?? 0) === 6500.0);
+$soloagua = datos($propietario->get('gasto', 'listar', ['desde' => '2026-10-01', 'hasta' => '2026-10-31', 'categoria' => 'Agua']));
+prueba('Se pueden ver solo los de una categoría', count($soloagua['gastos'] ?? []) === 1);
+
+$gasto = ['tbgastocategoria' => 'Electricidad', 'tbgastodescripcion' => 'Recibo de luz de prueba', 'tbgastomonto' => '15250.50', 'tbgastofecha' => $hoy];
+$r = $propietario->post('gasto', 'crear', ['tbgastocategoria' => 'Fiesta'] + $gasto);
+prueba('La categoría tiene que ser una de la lista', tieneerror($r, 'tbgastocategoria'));
+$r = $propietario->post('gasto', 'crear', ['tbgastodescripcion' => '12'] + $gasto);
+prueba('La descripción necesita letras', tieneerror($r, 'tbgastodescripcion'));
+$r = $propietario->post('gasto', 'crear', ['tbgastomonto' => '0'] + $gasto);
+prueba('El monto tiene que ser mayor que 0', tieneerror($r, 'tbgastomonto'));
+$r = $propietario->post('gasto', 'crear', ['tbgastomonto' => '10.555'] + $gasto);
+prueba('…con máximo 2 decimales', tieneerror($r, 'tbgastomonto'));
+$r = $propietario->post('gasto', 'crear', ['tbgastofecha' => $manana] + $gasto);
+prueba('La fecha no puede ser futura', tieneerror($r, 'tbgastofecha'));
+$r = $propietario->post('gasto', 'crear', ['tbgastofecha' => date('Y-m-d', strtotime('-3 years'))] + $gasto);
+prueba('…ni de hace más de 2 años', tieneerror($r, 'tbgastofecha'));
+
+$r = $propietario->post('gasto', 'crear', $gasto);
+$idgasto = datos($r)['tbgastoid'] ?? 0;
+prueba('Registra un gasto', exito($r) && $idgasto > 0, mensaje($r));
+$r = $propietario->post('gasto', 'crear', $gasto);
+prueba('No deja registrar el mismo gasto dos veces', tieneerror($r, 'tbgastodescripcion'), mensaje($r));
+$r = $propietario->post('gasto', 'actualizar', ['tbgastoid' => $idgasto, 'tbgastomonto' => '16000'] + $gasto);
+prueba('Edita el monto', exito($r) && (float) datos($propietario->get('gasto', 'obtener', ['id' => $idgasto]))['tbgastomonto'] === 16000.0, mensaje($r));
+$cambios = array_values(array_filter(datos($propietario->get('gasto', 'historial', ['id' => $idgasto])) ?? [], function ($c) {
+    return $c['campo'] === 'monto' && $c['anterior'] !== null;
+}));
+prueba('…y el cambio queda en el historial', count($cambios) === 1 && $cambios[0]['nuevo'] === '₡16 000,00', json_encode($cambios, JSON_UNESCAPED_UNICODE));
+
+$antes = datos($propietario->get('reporte', 'ganancia', ['desde' => $hoy, 'hasta' => $hoy]));
+prueba('Anular un gasto…', exito($propietario->post('gasto', 'inactivar', ['id' => $idgasto])));
+$despues = datos($propietario->get('reporte', 'ganancia', ['desde' => $hoy, 'hasta' => $hoy]));
+prueba('…lo saca de la ganancia neta', round($despues['gastos'] - $antes['gastos'], 2) === -16000.0
+    && round($despues['neta'] - $antes['neta'], 2) === 16000.0, json_encode([$antes['gastos'] ?? null, $despues['gastos'] ?? null]));
+prueba('Un gasto anulado no se puede editar', !exito($propietario->post('gasto', 'actualizar', ['tbgastoid' => $idgasto] + $gasto)));
+prueba('…pero puede volver a contar', exito($propietario->post('gasto', 'reactivar', ['id' => $idgasto])));
+prueba('El gasto anulado de los datos de prueba no puede volver a contar porque ya hay uno igual',
+    !exito($propietario->post('gasto', 'reactivar', ['id' => 11])));
+
+// Ganancia neta de octubre: vendido 191 210 - costo 55 950,24 - gastos 127 100
+$ganancia = datos($propietario->get('reporte', 'ganancia', ['desde' => '2026-10-01', 'hasta' => '2026-10-31']));
+prueba('Ganancia neta de octubre = vendido − costo − gastos',
+    (float) ($ganancia['vendido'] ?? 0) === 191210.0 && (float) ($ganancia['gastos'] ?? 0) === 127100.0
+    && abs(($ganancia['neta'] ?? 0) - round(191210 - $ganancia['costo'] - 127100, 2)) < 0.01 && ($ganancia['neta'] ?? 0) > 0,
+    json_encode($ganancia ? array_intersect_key($ganancia, array_flip(['vendido', 'costo', 'gastos', 'neta'])) : null));
+prueba('…y trae los 6 meses hasta octubre para comparar', count($ganancia['meses'] ?? []) === 6
+    && ($ganancia['meses'][5]['mes'] ?? '') === '2026-10' && (float) $ganancia['meses'][4]['gastos'] === 61800.0);
+
+// Trazabilidad
+$traza = datos($propietario->get('reporte', 'trazabilidad', ['tipo' => 'solicitud', 'id' => 17]));
+$textos = array_column($traza['eventos'] ?? [], 'texto');
+prueba('Trazabilidad de la solicitud N.º 17: registro, asignación, preparación, entrega y pago',
+    in_array('Se registró la solicitud', $textos, true) && in_array('Se asignó a Carlos Jiménez Rojas', $textos, true)
+    && in_array('Se terminó y se entregó', $textos, true) && count(array_filter($textos, function ($t) { return strpos($t, 'La clienta pagó') === 0; })) >= 1,
+    implode(' | ', $textos));
+$terminado = array_values(array_filter($traza['eventos'] ?? [], function ($e) { return $e['tipo'] === 'fin'; }))[0] ?? [];
+prueba('…cada paso con su responsable, y la entrega dice qué salió del inventario',
+    ($terminado['responsable'] ?? '') === 'Carlos Jiménez Rojas' && strpos($terminado['detalle'] ?? '', 'Rosa rosada') !== false);
+prueba('…y cuánto tardó de principio a fin', ($traza['duracion'] ?? '') === '3 horas y 20 minutos', $traza['duracion'] ?? '');
+$traza = datos($propietario->get('reporte', 'trazabilidad', ['tipo' => 'pedido', 'id' => 1]));
+prueba('Trazabilidad del pedido N.º 1: se pidió, se confirmó de contado y se recibió',
+    array_column($traza['eventos'] ?? [], 'texto') === ['Se hizo el pedido a Flores del Valle', 'El proveedor confirmó la compra', 'Se recibió la mercadería']
+    && strpos($traza['eventos'][2]['detalle'] ?? '', '24 Rosa roja') !== false, json_encode($traza['eventos'] ?? [], JSON_UNESCAPED_UNICODE));
+prueba('Una solicitud que no existe da error', !exito($propietario->get('reporte', 'trazabilidad', ['tipo' => 'solicitud', 'id' => 9999])));
+
+/* =====================================================================
  * Resumen
  * =================================================================== */
 $bien = $total - count($fallas);

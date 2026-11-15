@@ -11,6 +11,8 @@ require_once __DIR__ . '/../Aplicacion/Controlador/zonaentregacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/temporadacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/ventacontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/creditocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/gastocontrolador.php';
+require_once __DIR__ . '/../Aplicacion/Controlador/reportecontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/busquedafotocontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/valoracioncontrolador.php';
 require_once __DIR__ . '/../Aplicacion/Controlador/asistentecontrolador.php';
@@ -103,6 +105,8 @@ if ($accion === '') {
         'temporada'  => 'temporadavista.php',
         'venta'      => 'ventavista.php',
         'credito'    => 'creditovista.php',
+        'gasto'      => 'gastovista.php',
+        'reporte'    => 'reportevista.php',
     ];
 
     if (!isset($vistas[$modulo]) || !is_file(__DIR__ . '/../Aplicacion/Vista/' . $vistas[$modulo])) {
@@ -427,6 +431,56 @@ try {
             switch ($accion) {
                 case 'resumen':
                     $respuesta = $controlador->resumen($_GET['desde'] ?? '', $_GET['hasta'] ?? '');
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        // Gastos del negocio (alquiler, luz, salarios...)
+        case 'gasto':
+            $controlador = new gastocontrolador();
+
+            switch ($accion) {
+                case 'listar':
+                    $respuesta = $controlador->listar($_GET['desde'] ?? '', $_GET['hasta'] ?? '', $_GET['categoria'] ?? '', $_GET['estado'] ?? '');
+                    break;
+                case 'obtener':
+                    $respuesta = $controlador->obtener($_GET['id'] ?? 0);
+                    break;
+                case 'historial':
+                    $respuesta = $controlador->historial($_GET['id'] ?? 0);
+                    break;
+                case 'crear':
+                    $respuesta = $controlador->crear($_POST, $usuarioactual);
+                    break;
+                case 'actualizar':
+                    $respuesta = $controlador->actualizar($_POST, $usuarioactual);
+                    break;
+                case 'inactivar':
+                    $respuesta = $controlador->inactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'reactivar':
+                    $respuesta = $controlador->reactivar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                default:
+                    $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
+            }
+            break;
+
+        // Reportes: ganancia neta y trazabilidad de solicitudes y pedidos
+        case 'reporte':
+            $controlador = new reportecontrolador();
+
+            switch ($accion) {
+                case 'ganancia':
+                    $respuesta = $controlador->ganancia($_GET['desde'] ?? '', $_GET['hasta'] ?? '');
+                    break;
+                case 'opciones':
+                    $respuesta = $controlador->opciones();
+                    break;
+                case 'trazabilidad':
+                    $respuesta = $controlador->trazabilidad($_GET['tipo'] ?? '', $_GET['id'] ?? 0);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

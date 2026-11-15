@@ -22,8 +22,15 @@ $opcionesmenu = [
         ['texto' => 'Solicitudes de pedido de arreglo', 'modulo' => 'encargo'],
         ['texto' => 'Zonas de entrega (express)', 'modulo' => 'zonaentrega'],
         ['texto' => 'Temporada alta', 'modulo' => 'temporada'],
+    ]],
+    ['texto' => 'Finanzas', 'hijos' => [
         ['texto' => 'Ventas y ganancias', 'modulo' => 'venta'],
         ['texto' => 'Cuentas por cobrar y por pagar', 'modulo' => 'credito'],
+        ['texto' => 'Gastos', 'hijos' => [
+            ['texto' => 'Registrar un gasto', 'modulo' => 'gasto', 'nuevo' => true],
+            ['texto' => 'Lista de gastos', 'modulo' => 'gasto'],
+        ]],
+        ['texto' => 'Reportes', 'modulo' => 'reporte'],
     ]],
     ['texto' => 'Compras', 'hijos' => [
         ['texto' => 'Proveedores', 'hijos' => [

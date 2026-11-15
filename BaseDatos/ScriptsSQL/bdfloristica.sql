@@ -303,6 +303,63 @@ CREATE TABLE tbsolicitudencargoabono (
     PRIMARY KEY (tbsolicitudencargoabonoid)
 );
 
+-- ---------- Gastos del negocio ----------
+-- Lo que se paga para que la floristería funcione y no es mercadería: alquiler, luz, agua, internet,
+-- salarios, transporte, mantenimiento, publicidad u otros. Ganancia neta = ventas - costo de lo vendido - gastos.
+-- Estado: 1 cuenta, 0 anulado (no se borra: queda en el historial).
+CREATE TABLE tbgasto (
+    tbgastoid INT,
+    tbgastocategoria VARCHAR(30),
+    tbgastodescripcion VARCHAR(100),
+    tbgastomonto DECIMAL(10,2),
+    tbgastofecha DATE,
+    tbempleadoid INT,
+    tbgastoestado TINYINT(1),
+    PRIMARY KEY (tbgastoid)
+);
+
+-- Históricos de los gastos
+CREATE TABLE tbgastocategoriahistorico (
+    tbgastocategoriahistoricoid INT,
+    tbgastoid INT,
+    tbgastocategoriahistoricovalor VARCHAR(30),
+    tbempleadoid INT,
+    tbgastocategoriahistoricofecha DATETIME,
+    PRIMARY KEY (tbgastocategoriahistoricoid)
+);
+CREATE TABLE tbgastodescripcionhistorico (
+    tbgastodescripcionhistoricoid INT,
+    tbgastoid INT,
+    tbgastodescripcionhistoricovalor VARCHAR(100),
+    tbempleadoid INT,
+    tbgastodescripcionhistoricofecha DATETIME,
+    PRIMARY KEY (tbgastodescripcionhistoricoid)
+);
+CREATE TABLE tbgastomontohistorico (
+    tbgastomontohistoricoid INT,
+    tbgastoid INT,
+    tbgastomontohistoricovalor VARCHAR(20),
+    tbempleadoid INT,
+    tbgastomontohistoricofecha DATETIME,
+    PRIMARY KEY (tbgastomontohistoricoid)
+);
+CREATE TABLE tbgastofechahistorico (
+    tbgastofechahistoricoid INT,
+    tbgastoid INT,
+    tbgastofechahistoricovalor VARCHAR(10),
+    tbempleadoid INT,
+    tbgastofechahistoricofecha DATETIME,
+    PRIMARY KEY (tbgastofechahistoricoid)
+);
+CREATE TABLE tbgastoestadohistorico (
+    tbgastoestadohistoricoid INT,
+    tbgastoid INT,
+    tbgastoestadohistoricovalor VARCHAR(1),
+    tbempleadoid INT,
+    tbgastoestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbgastoestadohistoricoid)
+);
+
 CREATE TABLE tbarreglofloral (
     tbarreglofloralid INT,
     tbarreglofloralnombre VARCHAR(100),

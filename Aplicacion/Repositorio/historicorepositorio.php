@@ -19,6 +19,7 @@ class historicorepositorio
         'solicitudencargo' => ['fechaentrega', 'total', 'foto', 'referencia'],
         'cliente'       => ['nombre', 'telefono', 'direccion', 'estado'],
         'zonaentrega'   => ['nombre', 'precio', 'estado'],
+        'gasto'         => ['categoria', 'descripcion', 'monto', 'fecha', 'estado'],
     ];
 
     public function __construct()

@@ -3742,3 +3742,232 @@ img[data-lupa] {
         grid-template-columns: 1fr;
     }
 }
+
+/* Parte 18: gastos y reportes */
+.resumen-gastos {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.barras-categoria {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.barras-categoria li {
+    display: grid;
+    grid-template-columns: 9rem minmax(0, 1fr) 6rem;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.tarjeta-dato .barras-categoria span {
+    color: var(--texto);
+}
+
+.barras-categoria .barra {
+    height: 0.6rem;
+    background: var(--rosa-claro);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.barras-categoria .barra span {
+    display: block;
+    height: 100%;
+    background: var(--principal);
+    border-radius: 999px;
+}
+
+.barras-categoria .monto-barra {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.tabla-gastos .numero,
+.tabla-meses .numero {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.reporte-ganancia {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.estado-resultados,
+.meses-ganancia,
+.traza {
+    padding: 1rem 1.25rem;
+    background: var(--superficie);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio);
+}
+
+.estado-resultados h2,
+.meses-ganancia h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+}
+
+.lineas-resultado {
+    margin: 0;
+}
+
+.linea-resultado {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--borde);
+}
+
+.linea-resultado dt {
+    display: flex;
+    flex-direction: column;
+}
+
+.linea-resultado dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.linea-resultado.linea-detalle {
+    padding: 0.2rem 0 0.2rem 1rem;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+    border-bottom: none;
+}
+
+.linea-resultado.linea-subtotal {
+    font-weight: 600;
+}
+
+.linea-resultado.linea-total {
+    margin-top: 0.25rem;
+    padding: 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radio);
+}
+
+.linea-resultado.linea-total.positiva {
+    color: var(--verde);
+    background: var(--verde-fondo);
+}
+
+.linea-resultado.linea-total.negativa {
+    color: var(--peligro);
+    background: var(--peligro-fondo);
+}
+
+.linea-resultado.linea-total small {
+    font-weight: 400;
+}
+
+.traza h2 {
+    margin: 0 0 0.75rem;
+}
+
+.duracion-traza {
+    margin: 0.75rem 0 0;
+}
+
+.linea-tiempo {
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.linea-tiempo .evento {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0 0 1rem 1.6rem;
+    border-left: 2px solid var(--borde);
+    margin-left: 0.4rem;
+}
+
+.linea-tiempo .evento:last-child {
+    border-left-color: transparent;
+}
+
+.linea-tiempo .evento::before {
+    content: '';
+    position: absolute;
+    left: -0.45rem;
+    top: 0.15rem;
+    width: 0.8rem;
+    height: 0.8rem;
+    background: var(--superficie);
+    border: 2px solid var(--principal);
+    border-radius: 50%;
+}
+
+.linea-tiempo .evento-inicio::before {
+    background: var(--principal);
+}
+
+.linea-tiempo .evento-fin::before {
+    background: var(--verde);
+    border-color: var(--verde);
+}
+
+.linea-tiempo .evento-cancelado::before {
+    background: var(--peligro);
+    border-color: var(--peligro);
+}
+
+.linea-tiempo .evento-pago::before {
+    border-color: var(--verde);
+}
+
+.linea-tiempo time,
+.linea-tiempo .responsable {
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+}
+
+.linea-tiempo .detalle-evento {
+    font-size: 0.9rem;
+}
+
+@media (max-width: 860px) {
+    .reporte-ganancia,
+    .resumen-gastos {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .barras-categoria li {
+        grid-template-columns: 7rem minmax(0, 1fr) 5rem;
+    }
+}
+
+@media print {
+    .barra-superior,
+    .menu-lateral,
+    .encabezado .boton,
+    .pestanas,
+    .filtros,
+    .aviso {
+        display: none !important;
+    }
+
+    .estado-resultados,
+    .meses-ganancia,
+    .traza {
+        border: none;
+        padding: 0;
+    }
+}
