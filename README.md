@@ -145,7 +145,7 @@ Cada paso tiene el color de quién lo hace: un empleado o el propietario, solo e
 | Crear y editar arreglos (con el costo de los productos y el precio sugerido) | ✓ | ✓ |
 | Inactivar o reactivar arreglos | ✓ | |
 | Registrar, editar e inactivar clientes | ✓ | ✓ |
-| Registrar solicitudes de pedido de arreglo | ✓ | ✓ (sin asignar o para sí mismo) |
+| Registrar solicitudes de pedido de arreglo (y asignarlas a cualquiera desde el formulario) | ✓ | ✓ |
 | Asignar o reasignar solicitudes a cualquiera | ✓ | |
 | Asignar una solicitud sin asignar, o pasarle la suya a otra persona | ✓ | ✓ |
 | Asignarse una solicitud libre | ✓ | ✓ |

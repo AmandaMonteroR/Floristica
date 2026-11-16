@@ -599,7 +599,13 @@ $r = $propietario->post('encargo', 'crear', ['tbempleadoid' => 5] + $predefinida
 prueba('No deja asignarla a una empleada inactiva', tieneerror($r, 'tbempleadoid'));
 
 $r = $lorena->post('encargo', 'crear', ['tbempleadoid' => 3] + $predefinida);
-prueba('Un empleado no puede crear una solicitud asignada a otro', tieneerror($r, 'tbempleadoid'));
+$idasignadaotro = datos($r)['tbsolicitudencargoid'] ?? 0;
+$asignadaotro = datos($propietario->get('encargo', 'obtener', ['id' => $idasignadaotro]));
+prueba('Un empleado puede registrar una solicitud y asignársela a otro empleado desde el formulario',
+    exito($r) && (int) ($asignadaotro['tbempleadoid'] ?? 0) === 3, mensaje($r));
+prueba('…y el historial dice que la asignó ella', ($asignadaotro['historial'][1]['hechopor'] ?? '') === 'Lorena Bermúdez Badilla',
+    json_encode($asignadaotro['historial'] ?? [], JSON_UNESCAPED_UNICODE));
+$propietario->post('encargo', 'cancelar', ['id' => $idasignadaotro]);
 
 $r = $propietario->post('encargo', 'crear', ['tbsolicitudencargoexpress' => '1'] + $predefinida);
 prueba('Con express pide la zona y la dirección', tieneerror($r, 'tbzonaentregaid') && tieneerror($r, 'tbsolicitudencargodireccionentrega'));

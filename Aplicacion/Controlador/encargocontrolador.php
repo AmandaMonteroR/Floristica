@@ -224,11 +224,8 @@ class encargocontrolador
     {
         $datos = $this->limpiar($datos);
 
-        // Un empleado solo puede dejarla sin asignar o asignársela a sí mismo
-        if ($usuario['rol'] !== 'Propietario' && !in_array($datos['tbempleadoid'], ['', (string) $usuario['id']], true)) {
-            return $this->respuesta(false, 'Revise los datos ingresados.',
-                ['errores' => ['tbempleadoid' => 'Solo puede asignarse la solicitud a usted mismo.']]);
-        }
+        // Al registrarla, el propietario o un empleado la puede dejar sin asignar o asignársela a cualquier
+        // persona activa (validar() revisa que exista y esté activa), igual que con "Asignar" en la lista
 
         $errores = $this->validar($datos, null);
         $vigente = $this->temporadas->vigente();

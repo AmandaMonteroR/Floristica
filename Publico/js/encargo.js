@@ -232,15 +232,6 @@ async function cargaropciones() {
     llenarselect(formulario.elements.tbempleadoid, 'Sin asignar por ahora', opciones.empleados, 'tbempleadoid', nombreempleado);
     llenarselect(formularioasignar.elements.tbempleadoid, 'Seleccione…', opciones.empleados, 'tbempleadoid', nombreempleado);
 
-    // Un empleado solo puede dejar la solicitud libre o asignársela a sí mismo
-    if (!espropietario) {
-        Array.from(formulario.elements.tbempleadoid.options).forEach((opcion) => {
-            if (opcion.value !== '' && opcion.value !== String(usuarioactual.id)) {
-                opcion.remove();
-            }
-        });
-    }
-
     filtroempleado.innerHTML = '<option value="">Todos</option><option value="sinasignar">Sin asignar</option>';
     opciones.empleados.forEach((empleado) => {
         filtroempleado.add(new Option(nombreempleado(empleado), empleado.tbempleadoid));
