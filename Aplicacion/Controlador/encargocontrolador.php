@@ -85,6 +85,20 @@ class encargocontrolador
         return $flores;
     }
 
+    // Lo que lleva un arreglo del catálogo, sin precios: [['nombre' => 'Rosa blanca', 'cantidad' => 12], …]
+    private function llevaarreglo($idarreglo)
+    {
+        $lleva = [];
+        foreach ($this->arreglos->listardetalles($idarreglo) as $detalle) {
+            $producto = $this->inventario->obtenerporid($detalle->getTbinventarioid());
+            if ($producto) {
+                $lleva[] = ['nombre' => $producto->getTbinventarionombre(), 'cantidad' => (int) $detalle->getTbarreglofloralinsumocantidad()];
+            }
+        }
+
+        return $lleva;
+    }
+
     // Pinturas florales activas, con lo que se cobra por cada flor pintada
     private function pinturas()
     {
@@ -137,6 +151,7 @@ class encargocontrolador
                 'precioalto'            => $this->temporadas->arreglo($arreglo, $idalta)['precio'],
                 'tbarreglofloralfoto'   => $arreglo->getTbarreglofloralfoto(),
                 'flores'                => $this->floresdearreglo($arreglo->getTbarreglofloralid()),
+                'lleva'                 => $this->llevaarreglo($arreglo->getTbarreglofloralid()),
             ];
         }
 

@@ -20,7 +20,7 @@
     </header>
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
-        <a href="index.php?modulo=catalogo">Arreglos</a>
+        <a href="index.php?modulo=catalogo">Catálogo</a>
         <a href="index.php?modulo=encargo" class="activa" aria-current="page">Solicitudes de pedido de arreglo</a>
     </nav>
 
@@ -128,6 +128,13 @@
                         <button type="button" class="boton-contador" data-paso="1" aria-label="Agregar un arreglo">+</button>
                     </div>
                     <small class="error" data-error="tbsolicitudencargocantidad"></small>
+                </div>
+            </div>
+            <div class="lleva-arreglo" id="llevaarreglo" hidden>
+                <img id="fotollevaarreglo" alt="">
+                <div>
+                    <strong id="titulollevaarreglo">Lleva</strong>
+                    <ul id="listallevaarreglo"></ul>
                 </div>
             </div>
         </fieldset>
@@ -383,6 +390,7 @@
         </table>
     </div>
     <div class="acciones-dialogo">
+        <div class="acciones-detalle" id="accionesdetalle"></div>
         <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
     </div>
 </dialog>

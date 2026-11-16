@@ -23,7 +23,7 @@
     </header>
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
-        <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Arreglos</a>
+        <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Catálogo</a>
         <a href="index.php?modulo=encargo">Solicitudes de pedido de arreglo</a>
     </nav>
 

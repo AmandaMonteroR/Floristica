@@ -574,7 +574,27 @@ function revisarpintura(cuentas) {
     return cuentas;
 }
 
+// Debajo del arreglo elegido: su foto y lo que lleva (para saber qué se va a preparar)
+function mostrarlleva() {
+    const caja = document.getElementById('llevaarreglo');
+    const arreglo = formulario.elements.tbsolicitudencargotipo.value === 'Predefinido'
+        ? buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value) : null;
+    caja.hidden = !arreglo;
+    if (!arreglo) {
+        return;
+    }
+    const cantidad = parseInt(formulario.elements.tbsolicitudencargocantidad.value, 10) || 1;
+    const foto = document.getElementById('fotollevaarreglo');
+    foto.hidden = !arreglo.tbarreglofloralfoto;
+    foto.src = arreglo.tbarreglofloralfoto || '';
+    foto.alt = arreglo.tbarreglofloralnombre;
+    document.getElementById('titulollevaarreglo').textContent = cantidad > 1 ? 'Cada arreglo lleva' : 'Lleva';
+    document.getElementById('listallevaarreglo').innerHTML = (arreglo.lleva ?? [])
+        .map((item) => `<li>${item.cantidad} × ${escapar(item.nombre)}</li>`).join('');
+}
+
 function actualizarresumen() {
+    mostrarlleva();
     // Primero las flores pintadas se ajustan al tope, para que las cuentas salgan bien
     const topepintura = topeflores();
     const campopintadas = formulario.elements.tbsolicitudencargoflorespintadas;
@@ -642,43 +662,81 @@ function actualizarresumen() {
     }
 }
 
-// Texto para pegar en WhatsApp con el detalle y el total
+// Lo que se cobra aparte del ramo en un personalizado (en un predefinido, todo lo agregado es adicional)
+const categoriasadicionales = ['Chocolate', 'Peluche', 'Tarjeta'];
+
+// Texto para pegar en WhatsApp. A la clienta no se le dice cuánto cuesta cada flor o cada cosa del ramo:
+// lo que lleva va sin precio, con el precio del ramo; debajo, lo que se cobra aparte y al final el total
 function textocotizacion() {
     const cuentas = calcular();
     const cliente = buscar(opciones.clientes, 'tbclienteid', formulario.elements.tbclienteid.value);
-    const lineastexto = [];
+    const texto = [];
+    const conproducto = lineas.filter((linea) => linea.tbinventarioid).map((linea) => ({
+        linea, producto: buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid),
+    }));
+    const nombrede = (item) => (item.producto ? item.producto.tbinventarionombre : item.linea.nombre);
+    let adicionales = conproducto;
+    let lineaprecioramo = -1;
 
-    lineastexto.push(`Hola${cliente ? ' ' + cliente.tbclientenombre.split(' ')[0] : ''}, esta es la cotización de su arreglo:`);
+    texto.push(`Hola${cliente ? ' ' + cliente.tbclientenombre.split(' ')[0] : ''}, esta es la cotización de su arreglo:`);
 
     if (cuentas.tipo === 'Predefinido') {
         const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value);
         if (arreglo) {
-            lineastexto.push(`- ${cuentas.cantidad} × ${arreglo.tbarreglofloralnombre}: ${montocorto(cuentas.arreglo)}`);
+            const lleva = arreglo.lleva ?? [];
+            texto.push('');
+            texto.push(`${cuentas.cantidad} × ${arreglo.tbarreglofloralnombre}${lleva.length ? (cuentas.cantidad > 1 ? ', cada uno lleva:' : ', lleva:') : ''}`);
+            lleva.forEach((item) => texto.push(`- ${item.cantidad} × ${item.nombre}`));
+            texto.push(`Precio ${cuentas.cantidad > 1 ? 'de los arreglos' : 'del arreglo'}: ${montocorto(cuentas.arreglo)}`);
+        }
+    } else if (cuentas.tipo === 'Personalizado') {
+        const esadicional = (item) => Boolean(item.producto) && categoriasadicionales.includes(item.producto.tbinventariocategoria);
+        const ramo = conproducto.filter((item) => !esadicional(item));
+        adicionales = conproducto.filter(esadicional);
+        if (ramo.length > 0) {
+            texto.push('');
+            texto.push('Su ramo lleva:');
+            ramo.forEach((item) => texto.push(`- ${item.linea.cantidad} × ${nombrede(item)}`));
+            lineaprecioramo = texto.push('') - 1;
         }
     }
 
-    lineas.filter((linea) => linea.tbinventarioid).forEach((linea) => {
-        const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
-        lineastexto.push(`- ${linea.cantidad} × ${producto ? producto.tbinventarionombre : linea.nombre}: ${montocorto(subtotallinea(linea))}`);
-    });
-
-    if (cuentas.pintadas > 0) {
-        lineastexto.push(`- ${cuentas.pintadas} ${cuentas.pintadas === 1 ? 'flor pintada' : 'flores pintadas'}: ${montocorto(cuentas.pintura)}`);
+    // Lo que se cobra aparte, redondeado a colones como se muestra; el precio del ramo es lo que queda del
+    // total, así las cuentas que ve la clienta siempre suman exacto
+    const aparte = [];
+    let sumaaparte = 0;
+    const cobrar = (etiqueta, monto) => {
+        const redondeado = Math.round(monto);
+        sumaaparte += redondeado;
+        aparte.push(`${etiqueta}: ${montocorto(redondeado)}`);
+    };
+    if (adicionales.length > 0) {
+        aparte.push('Adicionales:');
+        adicionales.forEach((item) => cobrar(`- ${item.linea.cantidad} × ${nombrede(item)}`, subtotallinea(item.linea)));
     }
-
+    if (cuentas.pintadas > 0) {
+        cobrar(cuentas.pintadas === 1 ? 'Flor pintada' : `Flores pintadas (${cuentas.pintadas})`, cuentas.pintura);
+    }
     if (casillaexpress.checked) {
         const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
-        lineastexto.push(`- Servicio express${zona ? ' a ' + zona.tbzonaentreganombre : ''}: ${montocorto(cuentas.express)}`);
+        cobrar(`Servicio express${zona ? ' a ' + zona.tbzonaentreganombre : ''}`, cuentas.express);
+    }
+    if (lineaprecioramo >= 0) {
+        texto[lineaprecioramo] = `Precio del ramo: ${montocorto(Math.round(cuentas.total) - sumaaparte)}`;
+    }
+    if (aparte.length > 0) {
+        texto.push('', ...aparte);
     }
 
-    lineastexto.push(`Total: ${montocorto(cuentas.total)}`);
+    texto.push('');
+    texto.push(`*Total a cobrar: ${montocorto(Math.round(cuentas.total))}*`);
 
     const fecha = formulario.elements.tbsolicitudencargofechaentrega.value;
     if (fecha) {
-        lineastexto.push(`Entrega: ${formatearfecha(fecha)}`);
+        texto.push(`Entrega: ${formatearfecha(fecha)}`);
     }
 
-    return lineastexto.join('\n');
+    return texto.join('\n');
 }
 
 /* ---------- Borrador ---------- */
@@ -1062,6 +1120,12 @@ async function verdetalle(id) {
     fotoreferenciadetalle.src = referencia || '';
     columnafoto.hidden = !foto && !puedefoto && !referencia;
     titulodetalle.textContent = `Solicitud N.º ${encargo.tbsolicitudencargoid}: ${encargo.descripcion}`;
+    // Los mismos botones que en la lista (Asignármela, Iniciar, Terminar…), para hacerlo desde aquí
+    accionesdetalle.innerHTML = accionesencargo(encargo) ?? '';
+    accionesdetalle.querySelectorAll('[data-accion="ver"]').forEach((elemento) => elemento.remove());
+    accionesdetalle.querySelectorAll('button').forEach((elemento) => {
+        elemento.className = elemento.classList.contains('enlace-peligro') ? 'boton boton-peligro' : 'boton';
+    });
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
         .join('');
@@ -1475,15 +1539,10 @@ document.getElementById('botonasignarme').addEventListener('click', async () => 
     avisoasignar.hidden = false;
 });
 
-cuerpotabla.addEventListener('click', (evento) => {
-    const elemento = evento.target.closest('button[data-accion]');
-    if (!elemento) {
-        return;
-    }
+const accionesdetalle = document.getElementById('accionesdetalle');
 
-    const id = elemento.dataset.id;
-
-    switch (elemento.dataset.accion) {
+function hacer(accion, id) {
+    switch (accion) {
         case 'ver':
             verdetalle(id);
             break;
@@ -1497,8 +1556,23 @@ cuerpotabla.addEventListener('click', (evento) => {
         case 'iniciar':
         case 'terminar':
         case 'cancelar':
-            ejecutar(elemento.dataset.accion, id);
+            ejecutar(accion, id);
             break;
+    }
+}
+
+cuerpotabla.addEventListener('click', (evento) => {
+    const elemento = evento.target.closest('button[data-accion]');
+    if (elemento) {
+        hacer(elemento.dataset.accion, elemento.dataset.id);
+    }
+});
+
+accionesdetalle.addEventListener('click', (evento) => {
+    const elemento = evento.target.closest('button[data-accion]');
+    if (elemento) {
+        dialogodetalle.close();
+        hacer(elemento.dataset.accion, elemento.dataset.id);
     }
 });
 
@@ -1532,5 +1606,14 @@ const opcioneslistas = cargaropciones();
 opcioneslistas.finally(() => {
     filtrosdesdeurl({ estado: filtroestado, tipo: filtrotipo, empleado: filtroempleado });
     cargarencargos();
+
+    // Desde el inicio: abre directamente la solicitud en la que se hizo clic
+    const parametros = new URLSearchParams(window.location.search);
+    const idver = parametros.get('ver');
+    if (idver && /^\d+$/.test(idver)) {
+        parametros.delete('ver');
+        window.history.replaceState(null, '', `${window.location.pathname}?${parametros}`);
+        verdetalle(idver);
+    }
 });
 abrirformulariosipide(abrirnuevo);

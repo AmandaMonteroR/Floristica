@@ -5,7 +5,8 @@ const ver = document.querySelector('main').dataset.ver;
 
 const aviso = document.getElementById('aviso');
 const cuerpotabla = document.getElementById('cuerpotabla');
-const filtrotodas = document.getElementById('filtrotodas');
+const filtrotexto = document.getElementById('filtrotexto');
+const filtroestado = document.getElementById('filtroestado');
 const dialogocuenta = document.getElementById('dialogocuenta');
 const titulocuenta = document.getElementById('titulocuenta');
 const listacuenta = document.getElementById('listacuenta');
@@ -21,6 +22,7 @@ const botonanular = document.getElementById('botonanular');
 
 let temporizadoraviso;
 let cuentaactual = null;
+let cuentas = { porpagar: [], porcobrar: [] };
 let abonoaanular = null;
 
 // Color de la etiqueta de cada estado de la cuenta
@@ -125,8 +127,36 @@ function filapagar(cuenta) {
         </tr>`;
 }
 
+// Mayúsculas y tildes no cuentan al buscar
+function sintildes(texto) {
+    return String(texto ?? '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+}
+
+// La lista con los filtros: estado (por defecto, solo las que deben algo) y lo que se escribió en Buscar
+function mostrarlista() {
+    const estado = filtroestado.value;
+    const texto = sintildes(filtrotexto.value.trim());
+    const lista = (ver === 'pagar' ? cuentas.porpagar : cuentas.porcobrar).filter((cuenta) => {
+        if (estado === 'pendientes' ? cuenta.saldo <= 0 : estado !== '' && cuenta.estadocuenta !== estado) {
+            return false;
+        }
+        return texto === '' || sintildes(`${cuenta.nombre} ${cuenta.telefono ?? ''} ${cuenta.id} n.º ${cuenta.id}`).includes(texto);
+    });
+    const filtrado = estado !== 'pendientes' || texto !== '';
+
+    if (ver === 'pagar') {
+        cuerpotabla.innerHTML = lista.length
+            ? lista.map(filapagar).join('')
+            : `<tr><td colspan="9" class="vacio">${filtrado ? 'No hay cuentas con esos filtros.' : 'No se le debe nada a los proveedores. Los pedidos a crédito aparecen aquí al confirmarlos.'}</td></tr>`;
+    } else {
+        cuerpotabla.innerHTML = lista.length
+            ? lista.map(filacobrar).join('')
+            : `<tr><td colspan="8" class="vacio">${filtrado ? 'No hay cuentas con esos filtros.' : 'Las clientas no deben nada.'}</td></tr>`;
+    }
+}
+
 async function cargar() {
-    const respuesta = await peticion('listar', {}, filtrotodas.checked ? { todas: 1 } : {});
+    const respuesta = await peticion('listar', {}, { todas: 1 });
     if (!respuesta.exito) {
         mostraraviso(respuesta.mensaje, 'error');
         return;
@@ -141,15 +171,8 @@ async function cargar() {
         : 'Nada vencido';
     document.getElementById('tarjetapagar').classList.toggle('tarjeta-alerta', totales.cuentasvencidas > 0);
 
-    if (ver === 'pagar') {
-        cuerpotabla.innerHTML = respuesta.datos.porpagar.length
-            ? respuesta.datos.porpagar.map(filapagar).join('')
-            : '<tr><td colspan="9" class="vacio">No se le debe nada a los proveedores. Los pedidos a crédito aparecen aquí al confirmarlos.</td></tr>';
-    } else {
-        cuerpotabla.innerHTML = respuesta.datos.porcobrar.length
-            ? respuesta.datos.porcobrar.map(filacobrar).join('')
-            : '<tr><td colspan="8" class="vacio">Las clientas no deben nada.</td></tr>';
-    }
+    cuentas = { porpagar: respuesta.datos.porpagar, porcobrar: respuesta.datos.porcobrar };
+    mostrarlista();
 }
 
 function limpiarerrores() {
@@ -363,6 +386,8 @@ formularioanular.addEventListener('submit', async (evento) => {
     avisoanular.textContent = respuesta.mensaje;
     avisoanular.hidden = false;
 });
-filtrotodas.addEventListener('change', cargar);
+filtroestado.addEventListener('change', mostrarlista);
+filtrotexto.addEventListener('input', mostrarlista);
+filtrosdesdeurl({ estado: filtroestado });
 
 cargar();

@@ -1496,6 +1496,23 @@ $r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color',
 prueba('No deja repetir un color', tieneerror($r, 'nombre'), mensaje($r));
 $r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'Carro 2']);
 prueba('El nombre del color solo lleva letras', tieneerror($r, 'nombre'), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'carro']);
+prueba('"Carro" no es un color', tieneerror($r, 'nombre') && strpos(mensaje($r), 'no es un color') !== false, mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'Casa']);
+prueba('"Casa" tampoco', tieneerror($r, 'nombre'), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'Azul claro casa']);
+prueba('Un color con una palabra que no es de color tampoco ("Azul claro casa")', tieneerror($r, 'nombre'), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'claro']);
+prueba('Solo "claro" no es un color', tieneerror($r, 'nombre'), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'palo de rosa']);
+prueba('Sí acepta colores de dos o más palabras ("Palo de rosa")', exito($r), mensaje($r));
+$r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'color', 'nombre' => 'Salmón']);
+prueba('Sí acepta colores con tilde ("Salmón")', exito($r), mensaje($r));
+require_once __DIR__ . '/../Aplicacion/Controlador/inventariocontrolador.php';
+$todosloscolores = array_column(datos($propietario->get('inventario', 'catalogos'))['colores'] ?? [], 'nombre');
+prueba('Todos los colores de los datos de prueba pasan la regla', count($todosloscolores) > 20
+    && count(array_filter($todosloscolores, function ($color) { return !inventariocontrolador::escolor($color); })) === 0,
+    implode(', ', array_filter($todosloscolores, function ($color) { return !inventariocontrolador::escolor($color); })));
 $r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'tipoflor', 'nombre' => 'Orquídea', 'clase' => 'Flor']);
 prueba('Se agrega un tipo de flor nuevo', exito($r), mensaje($r));
 $r = $propietario->post('inventario', 'guardarcatalogo', ['catalogo' => 'tipoflor', 'nombre' => 'Bromelia', 'clase' => 'Árbol']);

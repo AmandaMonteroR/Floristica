@@ -131,6 +131,8 @@ class inventariocontrolador
             $errores['nombre'] = 'El nombre debe tener entre 3 y ' . $maximo . ' letras.';
         } elseif (!preg_match('/^[\p{L}]+( [\p{L}]+)*$/u', $nombre)) {
             $errores['nombre'] = 'El nombre solo puede contener letras y espacios.';
+        } elseif ($catalogo === 'color' && !self::escolor($nombre)) {
+            $errores['nombre'] = '"' . $nombre . '" no es un color. Escriba un color, por ejemplo "Turquesa", "Verde lima" o "Azul oscuro".';
         } elseif ($repositorio->existenombre($nombre, $id)) {
             $errores['nombre'] = $catalogo === 'color' ? 'Ya existe un color con ese nombre.' : 'Ya existe un tipo de flor con ese nombre.';
         }
@@ -821,6 +823,42 @@ class inventariocontrolador
         }
 
         return $limpios;
+    }
+
+    // Palabras que son un color por sí solas
+    const PALABRASCOLOR = ['rojo', 'roja', 'rojizo', 'rojiza', 'azul', 'azulado', 'azulada', 'verde', 'verdoso', 'verdosa',
+        'amarillo', 'amarilla', 'naranja', 'anaranjado', 'anaranjada', 'morado', 'morada', 'violeta', 'lila', 'rosado', 'rosada',
+        'rosa', 'fucsia', 'blanco', 'blanca', 'negro', 'negra', 'gris', 'grisaceo', 'cafe', 'marron', 'beige', 'crema', 'dorado',
+        'dorada', 'plateado', 'plateada', 'plata', 'oro', 'celeste', 'turquesa', 'vino', 'tinto', 'borgona', 'burdeos', 'granate',
+        'coral', 'salmon', 'durazno', 'melocoton', 'lavanda', 'magenta', 'purpura', 'terracota', 'ocre', 'mostaza', 'champan',
+        'champagne', 'marfil', 'perla', 'hueso', 'cobre', 'cobrizo', 'bronce', 'ambar', 'aguamarina', 'cian', 'indigo', 'ciruela',
+        'berenjena', 'carmesi', 'escarlata', 'cereza', 'frambuesa', 'fresa', 'oliva', 'menta', 'lima', 'esmeralda', 'jade', 'caqui',
+        'kaki', 'arena', 'chocolate', 'canela', 'miel', 'mandarina', 'limon', 'uva', 'mora', 'natural', 'surtido', 'surtida',
+        'transparente', 'multicolor', 'tornasol', 'tornasolado', 'nude', 'tierra', 'grafito', 'plomo', 'ceniza', 'petroleo'];
+    // Palabras que acompañan a un color: "Verde lima", "Azul oscuro", "Palo de rosa", "Rosado pastel"
+    const PALABRASMATIZ = ['claro', 'clara', 'oscuro', 'oscura', 'pastel', 'fuerte', 'suave', 'intenso', 'intensa', 'palido',
+        'palida', 'brillante', 'mate', 'metalico', 'metalica', 'metalizado', 'metalizada', 'agua', 'cielo', 'rey', 'marino',
+        'bebe', 'chicle', 'viejo', 'vieja', 'palo', 'de', 'y', 'con', 'neon', 'electrico', 'electrica', 'militar', 'botella',
+        'musgo', 'acero', 'humo', 'vivo', 'viva', 'profundo', 'profunda', 'quemado', 'quemada', 'perlado', 'perlada', 'nacarado',
+        'nacarada', 'empolvado', 'empolvada', 'tenue', 'medio', 'media', 'satinado', 'satinada'];
+
+    // ¿El nombre es un color? Todas sus palabras tienen que ser de color o de matiz, y al menos una de color
+    // ("Carro" o "Casa" no son colores)
+    public static function escolor($nombre)
+    {
+        $texto = mb_strtolower(trim((string) $nombre));
+        $texto = strtr($texto, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
+        $palabras = preg_split('/\s+/u', $texto, -1, PREG_SPLIT_NO_EMPTY);
+        $tienecolor = false;
+        foreach ($palabras as $palabra) {
+            if (in_array($palabra, self::PALABRASCOLOR, true)) {
+                $tienecolor = true;
+            } elseif (!in_array($palabra, self::PALABRASMATIZ, true)) {
+                return false;
+            }
+        }
+
+        return $tienecolor;
     }
 
     private function limpiartexto($valor)

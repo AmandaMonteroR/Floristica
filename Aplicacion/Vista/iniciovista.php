@@ -119,6 +119,7 @@ $accesos = [
                     <?php foreach (array_slice($listaencargos, 0, 6) as $encargo): ?>
                         <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
                         <li>
+                            <a class="enlace-inicio" href="<?= e($enlaces['abiertos'] . '&ver=' . (int) $encargo['tbsolicitudencargoid']) ?>">
                             <span>
                                 <strong><?= e($encargo['descripcion']) ?></strong>
                                 <small class="texto-suave">
@@ -130,6 +131,7 @@ $accesos = [
                                 </small>
                             </span>
                             <span class="estado <?= $claseentrega ?>"><?= e($entrega) ?></span>
+                            </a>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -149,8 +151,13 @@ $accesos = [
                         <?php foreach (array_slice($resumen['sinasignar'], 0, 6) as $encargo): ?>
                             <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
                             <li>
-                                <strong><?= (int) $encargo['tbsolicitudencargocantidad'] ?> × <?= e($encargo['tbarreglofloralnombre']) ?></strong>
-                                <span class="estado <?= $claseentrega ?>"><?= e($entrega) ?></span>
+                                <a class="enlace-inicio" href="<?= e($enlaces['sinasignar'] . '&ver=' . (int) $encargo['tbsolicitudencargoid']) ?>">
+                                    <span>
+                                        <strong><?= e($encargo['descripcion']) ?></strong>
+                                        <small class="texto-suave"><?= e($encargo['tbclientenombre']) ?> · <?= e($encargo['tbsolicitudencargoestado']) ?></small>
+                                    </span>
+                                    <span class="estado <?= $claseentrega ?>"><?= e($entrega) ?></span>
+                                </a>
                             </li>
                         <?php endforeach; ?>
                     </ul>

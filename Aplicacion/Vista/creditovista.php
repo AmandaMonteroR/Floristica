@@ -49,9 +49,26 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
     </section>
 
     <section class="filtros">
-        <label class="campo campo-casilla">
-            <input type="checkbox" id="filtrotodas">
-            <span>Mostrar también las que ya están pagadas</span>
+        <label class="campo campo-busqueda">
+            <span>Buscar</span>
+            <input type="search" id="filtrotexto" placeholder="<?= $vercuentas === 'pagar' ? 'Proveedor o N.º de pedido' : 'Clienta, teléfono o N.º de solicitud' ?>">
+        </label>
+        <label class="campo">
+            <span>Estado</span>
+            <select id="filtroestado">
+                <option value="pendientes">Con saldo pendiente</option>
+                <?php if ($vercuentas === 'pagar'): ?>
+                    <option value="Vencido">Vencidas</option>
+                    <option value="Por vencer">Por vencer</option>
+                    <option value="Al día">Al día</option>
+                <?php else: ?>
+                    <option value="Entregada sin pagar">Entregadas sin pagar</option>
+                    <option value="Con adelanto">Con adelanto</option>
+                    <option value="Sin pagar">Sin pagar</option>
+                <?php endif; ?>
+                <option value="Pagado">Pagadas</option>
+                <option value="">Todas</option>
+            </select>
         </label>
     </section>
 

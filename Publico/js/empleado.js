@@ -36,6 +36,12 @@ function formateartelefono(valor) {
     return digitos.length > 4 ? `${digitos.slice(0, 4)}-${digitos.slice(4)}` : digitos;
 }
 
+// Enlace para escribirle por WhatsApp (Costa Rica: 506)
+function enlacewhatsapp(telefono) {
+    const digitos = String(telefono ?? '').replace(/\D/g, '');
+    return `https://wa.me/506${digitos}`;
+}
+
 function normalizar(campo, valor) {
     return campo === 'tbempleadotelefono' ? formateartelefono(valor) : String(valor ?? '');
 }
@@ -212,7 +218,7 @@ async function cargarempleados() {
         return `
             <tr class="${activo ? '' : 'fila-inactiva'}">
                 <td>${escapar(empleado.tbempleadonombre)}</td>
-                <td>${escapar(formateartelefono(empleado.tbempleadotelefono))}</td>
+                <td><a class="enlace-telefono" href="${enlacewhatsapp(empleado.tbempleadotelefono)}" target="_blank" rel="noopener" title="Escribirle por WhatsApp">${escapar(formateartelefono(empleado.tbempleadotelefono))}</a></td>
                 <td>${rol}</td>
                 <td>${empleado.tienecuenta ? escapar(empleado.tbempleadousuario) : '<span class="texto-peligro">Sin acceso</span>'}</td>
                 <td>${empleado.encargosabiertos}</td>
