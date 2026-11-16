@@ -1419,6 +1419,10 @@ INSERT INTO `tbgastofechahistorico` VALUES (13,13,'2026-11-06',1,'2026-11-06 09:
 INSERT INTO `tbgastoestadohistorico` VALUES (14,13,'1',1,'2026-11-06 09:00:00');
 
 -- Stock reservado: lo que piden las solicitudes pendientes y en proceso queda apartado
+-- MySQL Workbench trae el "modo seguro", que no deja hacer un UPDATE de toda la tabla:
+-- se apaga solo para esta instrucción y después se deja como estaba.
+SET @modoseguro = @@SQL_SAFE_UPDATES;
+SET SQL_SAFE_UPDATES = 0;
 UPDATE tbinventario i SET tbinventariostockreservado = COALESCE((
     SELECT SUM(x.cantidad) FROM (
         SELECT d.tbinventarioid, d.tbarreglofloralinsumocantidad * s.tbsolicitudencargocantidad AS cantidad
@@ -1431,3 +1435,4 @@ UPDATE tbinventario i SET tbinventariostockreservado = COALESCE((
         INNER JOIN tbsolicitudencargoinsumo n ON n.tbsolicitudencargoid = s.tbsolicitudencargoid
         WHERE s.tbsolicitudencargoestado IN ('Pendiente', 'En proceso')
     ) x WHERE x.tbinventarioid = i.tbinventarioid), 0);
+SET SQL_SAFE_UPDATES = @modoseguro;
