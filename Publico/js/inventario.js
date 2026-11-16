@@ -221,9 +221,14 @@ async function cargarproveedores() {
     }
 
     proveedoresactivos = respuesta.datos;
+    llenarproveedores();
+}
+
+// Todos los proveedores activos (al registrar o editar un insumo)
+function llenarproveedores() {
     selectproveedor.innerHTML = '';
     selectproveedor.add(new Option('Seleccione…', ''));
-    respuesta.datos.forEach((proveedor) => {
+    proveedoresactivos.forEach((proveedor) => {
         selectproveedor.add(new Option(proveedor.tbproveedornombreempresa, proveedor.tbproveedorid));
     });
 }
@@ -392,6 +397,9 @@ function leerformulario() {
 }
 
 function guardarborrador() {
+    if (existente) {
+        return;
+    }
     try {
         localStorage.setItem(claveborrador(), JSON.stringify(leerformulario()));
     } catch (error) {
@@ -615,6 +623,7 @@ async function abrirnuevo() {
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
+    salirexistente();
     modostock(null);
     tituloformulario.textContent = 'Nuevo insumo';
     botonguardar.textContent = 'Guardar insumo';
@@ -635,6 +644,7 @@ async function abrireditar(id) {
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
+    salirexistente();
     modostock(datosservidor);
     tituloformulario.textContent = 'Editar insumo';
     botonguardar.textContent = 'Guardar cambios';
@@ -725,6 +735,7 @@ async function verdetalle(id) {
             : `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`))
         .join('');
     document.getElementById('botonstockdetalle').hidden = producto.tbinventarioestado !== 1;
+    document.getElementById('botondanadasdetalle').hidden = producto.tbinventarioestado !== 1 || producto.tbinventariostock === 0;
 
     cuerpomovimientos.innerHTML = producto.movimientos.length === 0
         ? '<tr><td colspan="5" class="vacio">Este producto todavía no tiene movimientos registrados.</td></tr>'
@@ -851,6 +862,11 @@ formulario.elements.tbinventarioprecioventa.addEventListener('input', calcularpr
 formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
 
+    if (existente) {
+        guardarcompra();
+        return;
+    }
+
     const esedicion = formulario.elements.tbinventarioid.value !== '';
 
     if (esedicion) {
@@ -891,18 +907,10 @@ formulario.addEventListener('submit', async (evento) => {
     avisoformulario.textContent = respuesta.mensaje;
     avisoformulario.hidden = false;
 
-    // Ya existe un insumo con ese nombre: se ofrece sumarle lo que se compró
-    const existente = respuesta.datos && respuesta.datos.existente;
-    if (existente) {
-        const boton = document.createElement('button');
-        boton.type = 'button';
-        boton.className = 'enlace';
-        boton.textContent = `Sumarle stock a ${existente.tbinventarionombre}`;
-        boton.addEventListener('click', () => {
-            dialogoformulario.close();
-            abrirstock(existente.tbinventarioid);
-        });
-        avisoformulario.append(' ', boton);
+    // Ya existe un insumo con ese nombre: el formulario pasa a sumarle lo que se compró
+    if (respuesta.datos && respuesta.datos.existente) {
+        avisoformulario.hidden = true;
+        entrarexistente(respuesta.datos.existente.tbinventarioid);
     }
 });
 
@@ -961,43 +969,195 @@ formulario.elements.tbinventariocategoriasprayfechavencimiento.min = vencimiento
 /* ---------- Nuevo insumo con un nombre que ya existe ---------- */
 
 // Mayúsculas y tildes no cuentan (igual que en el servidor)
-const normalizar = (texto) => String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+const normalizar = (texto) => String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+const avisoexistente = document.getElementById('avisoexistente');
+const campopaquetes = document.getElementById('campopaquetes');
+const resultadocompra = document.getElementById('resultadocompra');
+let existente = null;
 
-// Al registrar, apenas termina de escribir el nombre: si ese insumo ya existe, se avisa y se ofrece
-// sumarle el stock, en vez de llenar todo el formulario y registrarlo dos veces
+// Proveedores que venden el insumo: el principal y los de "Otros proveedores", cada uno con su precio del paquete
+function vendedores(producto) {
+    return [
+        { id: String(producto.tbproveedorid), nombre: producto.tbproveedornombreempresa, precio: Number(producto.tbinventariopreciopaquete), principal: true },
+        ...(producto.otrosproveedores ?? []).filter((otro) => otro.activo).map((otro) => ({
+            id: String(otro.tbproveedorid), nombre: otro.tbproveedornombreempresa, precio: Number(otro.preciopaquete), principal: false,
+        })),
+    ];
+}
+
+function llenarvendedores(select, producto) {
+    select.innerHTML = '';
+    vendedores(producto).forEach((vendedor) => {
+        select.add(new Option(`${vendedor.nombre}${vendedor.principal ? ' (principal)' : ''} · ${formatearmonto(vendedor.precio)} el paquete`, vendedor.id));
+    });
+}
+
+// Al registrar, si el nombre ya existe: el formulario se llena con ese insumo, todo queda sin poder cambiarse,
+// y solo se elige a qué proveedor se le compró y cuántos paquetes; eso se suma al stock que ya tiene
+async function entrarexistente(id) {
+    const respuesta = await consultar('obtener', { id });
+    if (!respuesta.exito) {
+        return;
+    }
+    const producto = respuesta.datos;
+    if (producto.tbinventarioestado !== 1) {
+        const error = formulario.querySelector('[data-error="tbinventarionombre"]');
+        error.textContent = `Ya existe "${producto.tbinventarionombre}", pero está inactivo. Reactívelo en la lista para volver a usarlo.`;
+        formulario.elements.tbinventarionombre.setAttribute('aria-invalid', 'true');
+        return;
+    }
+
+    borrarborrador();
+    existente = producto;
+    llenarformulario(producto);
+    modostock(producto);
+    formulario.elements.tbinventarioid.value = '';
+    limpiarerrores();
+
+    Array.from(formulario.elements).forEach((campo) => {
+        const libre = ['tbinventarionombre', 'tbproveedorid', 'paquetescompra'].includes(campo.name)
+            || campo.dataset.pasopaquete !== undefined || ['botoncancelar', 'botonguardar', 'botonotroinsumo'].includes(campo.id);
+        if (!libre) {
+            campo.disabled = true;
+            campo.dataset.bloqueadoexistente = '1';
+        }
+    });
+    document.getElementById('botonstockformulario').hidden = true;
+    document.getElementById('etiquetaproveedor').textContent = '¿A qué proveedor se lo compró? *';
+    llenarvendedores(selectproveedor, producto);
+    campopaquetes.hidden = false;
+    resultadocompra.hidden = false;
+    formulario.elements.paquetescompra.value = '1';
+    document.getElementById('textoexistente').textContent = `"${producto.tbinventarionombre}" ya está registrado. Elija a qué proveedor se lo compró `
+        + `y cuántos paquetes de ${producto.tbinventariounidadespaquete} unidades: se suman al stock que ya tiene.`;
+    avisoexistente.hidden = false;
+    tituloformulario.textContent = `Agregar stock a ${producto.tbinventarionombre}`;
+    botonguardar.textContent = 'Sumar al stock';
+    calcularcompra();
+    formulario.elements.paquetescompra.focus();
+    formulario.elements.paquetescompra.select();
+}
+
+// Vuelve al formulario normal de "Nuevo insumo" (sin perder el nombre que se escribió)
+function salirexistente(nombre = null) {
+    Array.from(formulario.elements).forEach((campo) => {
+        if (campo.dataset.bloqueadoexistente) {
+            campo.disabled = false;
+            delete campo.dataset.bloqueadoexistente;
+        }
+    });
+    document.getElementById('botonstockformulario').hidden = false;
+    document.getElementById('etiquetaproveedor').textContent = 'Proveedor *';
+    campopaquetes.hidden = true;
+    resultadocompra.hidden = true;
+    avisoexistente.hidden = true;
+    formulario.querySelector('[data-error="paquetes"]').textContent = '';
+
+    if (!existente) {
+        return;
+    }
+    existente = null;
+    llenarproveedores();
+    llenarformulario({ preciostemporada: datosservidor.preciostemporada ?? [] });
+    modostock(null);
+    formulario.elements.tbinventarionombre.value = nombre ?? '';
+    tituloformulario.textContent = 'Nuevo insumo';
+    botonguardar.textContent = 'Guardar insumo';
+}
+
+// "Se suman 24 unidades: el stock pasa de 96 a 120 · ₡7 500 a Vivero Orosi". El precio del paquete del
+// formulario sigue siendo el del proveedor principal (es el costo del insumo); el de esta compra va aquí.
+function calcularcompra() {
+    if (!existente) {
+        return;
+    }
+    const vendedor = vendedores(existente).find((item) => item.id === selectproveedor.value);
+    const paquetes = parseInt(formulario.elements.paquetescompra.value, 10);
+    if (Number.isNaN(paquetes) || paquetes < 1) {
+        resultadocompra.textContent = '';
+        return;
+    }
+    const unidades = paquetes * existente.tbinventariounidadespaquete;
+    resultadocompra.textContent = `Se suman ${unidades} unidades: el stock pasa de ${existente.tbinventariostock} a ${existente.tbinventariostock + unidades}`
+        + (vendedor ? ` · ${formatearmonto(vendedor.precio * paquetes)} a ${vendedor.nombre}` : '');
+}
+
+async function guardarcompra() {
+    limpiarerrores();
+    const datos = new FormData();
+    datos.append('tbinventarioid', existente.tbinventarioid);
+    datos.append('sentido', 'sumar');
+    datos.append('tbproveedorid', selectproveedor.value);
+    datos.append('paquetes', formulario.elements.paquetescompra.value);
+
+    botonguardar.disabled = true;
+    const respuesta = await enviar('movimientostock', datos);
+    botonguardar.disabled = false;
+
+    if (respuesta.exito) {
+        salirexistente();
+        dialogoformulario.close();
+        mostraraviso(respuesta.mensaje, 'exito');
+        cargarinventario();
+        return;
+    }
+
+    mostrarerrores((respuesta.datos && respuesta.datos.errores) || {});
+    avisoformulario.textContent = respuesta.mensaje;
+    avisoformulario.hidden = false;
+}
+
+// Apenas termina de escribir el nombre, se busca si ya existe
 formulario.elements.tbinventarionombre.addEventListener('change', async () => {
     const campo = formulario.elements.tbinventarionombre;
     const nombre = campo.value.trim();
     if (formulario.elements.tbinventarioid.value !== '' || nombre === '') {
         return;
     }
+    if (existente) {
+        if (normalizar(nombre) !== normalizar(existente.tbinventarionombre)) {
+            salirexistente(campo.value);
+        } else {
+            return;
+        }
+    }
 
     const respuesta = await consultar('listar', { texto: nombre, estado: '' });
     const igual = respuesta.exito
         ? respuesta.datos.find((producto) => normalizar(producto.tbinventarionombre) === normalizar(nombre))
         : null;
-    if (!igual || campo.value.trim() !== nombre) {
-        return;
-    }
-
-    const error = formulario.querySelector('[data-error="tbinventarionombre"]');
-    error.textContent = `Ya existe "${igual.tbinventarionombre}" (de ${igual.tbproveedornombreempresa}${igual.tbinventarioestado === 1 ? '' : ', inactivo'}). `
-        + 'Si compró más, súmele el stock; si otro proveedor también lo vende, agréguelo en "Otros proveedores" de ese insumo.';
-    campo.setAttribute('aria-invalid', 'true');
-    if (igual.tbinventarioestado === 1) {
-        const boton = document.createElement('button');
-        boton.type = 'button';
-        boton.className = 'enlace';
-        boton.textContent = `Sumarle stock a ${igual.tbinventarionombre}`;
-        boton.addEventListener('click', () => {
-            dialogoformulario.close();
-            abrirstock(igual.tbinventarioid);
-        });
-        error.append(' ', boton);
+    if (igual && campo.value.trim() === nombre && formulario.elements.tbinventarioid.value === '') {
+        entrarexistente(igual.tbinventarioid);
     }
 });
 
-/* ---------- Sumar o restar stock ---------- */
+selectproveedor.addEventListener('change', calcularcompra);
+formulario.elements.paquetescompra.addEventListener('input', (evento) => {
+    evento.target.value = evento.target.value.replace(/\D/g, '').slice(0, 4);
+    formulario.querySelector('[data-error="paquetes"]').textContent = '';
+    calcularcompra();
+});
+formulario.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-pasopaquete]');
+    if (!boton) {
+        return;
+    }
+    const campo = formulario.elements.paquetescompra;
+    const actual = parseInt(campo.value, 10);
+    campo.value = String(Math.min(9999, Math.max(1, (Number.isNaN(actual) ? 0 : actual) + Number(boton.dataset.pasopaquete))));
+    campo.dispatchEvent(new Event('input', { bubbles: true }));
+});
+document.getElementById('botonotroinsumo').addEventListener('click', () => {
+    salirexistente('');
+    formulario.elements.tbinventarionombre.focus();
+});
+dialogoformulario.addEventListener('close', () => {
+    if (existente) {
+        salirexistente();
+    }
+});
+
+/* ---------- Ventana de stock: agregar (compra sin pedido) o rebajar las dañadas ---------- */
 
 const dialogostock = document.getElementById('dialogostock');
 const formulariostock = document.getElementById('formulariostock');
@@ -1005,10 +1165,6 @@ const avisostock = document.getElementById('avisostock');
 const resumenstock = document.getElementById('resumenstock');
 const resultadostock = document.getElementById('resultadostock');
 const botonguardarstock = document.getElementById('botonguardarstock');
-const motivosstock = {
-    sumar: [['Compra', 'Compra sin pedido'], ['Devolución', 'Devolución (no se usó)'], ['Corrección suma', 'Corrección del conteo']],
-    restar: [['Dañado', 'Se dañó o se marchitó'], ['Pérdida', 'Se perdió'], ['Corrección resta', 'Corrección del conteo']],
-};
 let productostock = null;
 
 function limpiarerroresstock() {
@@ -1019,36 +1175,37 @@ function limpiarerroresstock() {
     avisostock.hidden = true;
 }
 
-function llenarmotivos() {
-    const sentido = formulariostock.elements.sentido.value;
-    formulariostock.elements.motivo.innerHTML = motivosstock[sentido]
-        .map(([valor, texto]) => `<option value="${escapar(valor)}">${escapar(texto)}</option>`).join('');
-}
+const sumando = () => formulariostock.elements.sentido.value === 'sumar';
 
-// "Quedará en…": el stock nuevo, y si lo apartado para solicitudes ya no alcanza
 function calcularresultadostock() {
     if (!productostock) {
         return;
     }
-    const cantidad = parseInt(formulariostock.elements.cantidad.value, 10);
-    if (Number.isNaN(cantidad) || cantidad < 1) {
+    const vendedor = vendedores(productostock).find((item) => item.id === formulariostock.elements.tbproveedorid.value);
+    document.getElementById('preciocompra').textContent = sumando() && vendedor
+        ? `${formatearmonto(vendedor.precio)} el paquete de ${productostock.tbinventariounidadespaquete} unidades` : '';
+
+    const numero = parseInt(sumando() ? formulariostock.elements.paquetes.value : formulariostock.elements.cantidad.value, 10);
+    if (Number.isNaN(numero) || numero < 1) {
         resultadostock.textContent = '';
         return;
     }
-    const suma = formulariostock.elements.sentido.value === 'sumar';
-    const nuevo = productostock.tbinventariostock + (suma ? cantidad : -cantidad);
+    const cambio = sumando() ? numero * productostock.tbinventariounidadespaquete : -numero;
+    const nuevo = productostock.tbinventariostock + cambio;
     if (nuevo < 0) {
         resultadostock.textContent = `Solo hay ${productostock.tbinventariostock} en stock.`;
         resultadostock.className = 'resultado-stock texto-peligro';
         return;
     }
     const falta = productostock.tbinventariostockreservado > nuevo
-        ? ` · No alcanza para las solicitudes abiertas (tienen ${productostock.tbinventariostockreservado} apartadas)` : '';
-    resultadostock.textContent = `Pasa de ${productostock.tbinventariostock} a ${nuevo} ${nuevo === 1 ? 'unidad' : 'unidades'}${falta}`;
+        ? ` · Ya no alcanza para las solicitudes abiertas (tienen ${productostock.tbinventariostockreservado} apartadas)` : '';
+    resultadostock.textContent = `${sumando() ? `Se suman ${cambio} unidades` : `Se rebajan ${-cambio}`}: pasa de `
+        + `${productostock.tbinventariostock} a ${nuevo}${falta}`;
     resultadostock.className = `resultado-stock${falta ? ' texto-peligro' : ''}`;
 }
 
-async function abrirstock(id) {
+// sentido: 'sumar' (compra sin pedido) o 'restar' (se dañaron o se marchitaron)
+async function abrirstock(id, sentido = 'sumar') {
     const respuesta = await consultar('obtener', { id });
     if (!respuesta.exito) {
         mostraraviso(respuesta.mensaje, 'error');
@@ -1058,29 +1215,35 @@ async function abrirstock(id) {
     productostock = respuesta.datos;
     formulariostock.reset();
     limpiarerroresstock();
+    const suma = sentido === 'sumar';
     formulariostock.elements.tbinventarioid.value = productostock.tbinventarioid;
-    document.getElementById('titulostock').textContent = `Stock de ${productostock.tbinventarionombre}`;
+    formulariostock.elements.sentido.value = sentido;
+    document.getElementById('camposcompra').hidden = !suma;
+    document.getElementById('camposdanadas').hidden = suma;
+    document.getElementById('titulostock').textContent = suma
+        ? `Agregar stock a ${productostock.tbinventarionombre}` : `Rebajar ${productostock.tbinventarionombre} dañadas`;
     resumenstock.textContent = `Hay ${productostock.tbinventariostock} en stock · ${productostock.tbinventariostockreservado} apartadas `
-        + `para solicitudes · ${productostock.tbinventariodisponible} disponibles. Paquete de ${productostock.tbinventariounidadespaquete} unidades.`;
-    llenarmotivos();
+        + `para solicitudes · ${productostock.tbinventariodisponible} disponibles.`;
+    document.getElementById('notastock').textContent = suma
+        ? 'Si lo compró con un pedido al proveedor, no lo sume aquí: se suma solo al marcar el pedido como Recibido.'
+        : 'Solo las que se dañaron o se marchitaron. Las que se usan en los arreglos se rebajan solas al terminar la solicitud.';
+    botonguardarstock.textContent = suma ? 'Sumar al stock' : 'Rebajar del stock';
+    botonguardarstock.classList.toggle('boton-peligro', !suma);
+    llenarvendedores(formulariostock.elements.tbproveedorid, productostock);
+    formulariostock.elements.paquetes.value = suma ? '1' : '';
     calcularresultadostock();
     dialogostock.showModal();
-    formulariostock.elements.cantidad.focus();
+    (suma ? formulariostock.elements.paquetes : formulariostock.elements.cantidad).focus();
 }
 
-formulariostock.addEventListener('change', (evento) => {
-    if (evento.target.name === 'sentido') {
-        llenarmotivos();
-    }
-    calcularresultadostock();
-});
+formulariostock.addEventListener('change', calcularresultadostock);
 
 formulariostock.addEventListener('input', (evento) => {
-    if (evento.target.name === 'cantidad') {
-        evento.target.value = evento.target.value.replace(/\D/g, '').slice(0, 6);
-        const error = formulariostock.querySelector('[data-error="cantidad"]');
-        error.textContent = '';
-        evento.target.removeAttribute('aria-invalid');
+    const campo = evento.target;
+    if (campo.name === 'paquetes' || campo.name === 'cantidad') {
+        campo.value = campo.value.replace(/\D/g, '').slice(0, campo.name === 'paquetes' ? 4 : 6);
+        formulariostock.querySelector(`[data-error="${campo.name}"]`).textContent = '';
+        campo.removeAttribute('aria-invalid');
     }
     calcularresultadostock();
 });
@@ -1090,10 +1253,10 @@ formulariostock.addEventListener('click', (evento) => {
     if (!boton) {
         return;
     }
-    const campo = formulariostock.elements.cantidad;
+    const campo = formulariostock.elements[boton.dataset.camposstock];
     const actual = parseInt(campo.value, 10);
-    const nuevo = Number.isNaN(actual) ? 1 : actual + Number(boton.dataset.pasostock);
-    campo.value = String(Math.min(999999, Math.max(1, nuevo)));
+    const maximo = campo.name === 'paquetes' ? 9999 : 999999;
+    campo.value = String(Math.min(maximo, Math.max(1, (Number.isNaN(actual) ? 0 : actual) + Number(boton.dataset.pasostock))));
     campo.dispatchEvent(new Event('input', { bubbles: true }));
 });
 
@@ -1102,7 +1265,8 @@ formulariostock.addEventListener('submit', async (evento) => {
     limpiarerroresstock();
     botonguardarstock.disabled = true;
 
-    const respuesta = await enviar('movimientostock', new FormData(formulariostock));
+    const datos = new FormData(formulariostock);
+    const respuesta = await enviar('movimientostock', datos);
     botonguardarstock.disabled = false;
 
     if (respuesta.exito) {
@@ -1131,11 +1295,12 @@ formulariostock.addEventListener('submit', async (evento) => {
 });
 
 document.getElementById('botoncancelarstock').addEventListener('click', () => dialogostock.close());
-document.getElementById('botonstockdetalle').addEventListener('click', () => abrirstock(iddetalle));
+document.getElementById('botonstockdetalle').addEventListener('click', () => abrirstock(iddetalle, 'sumar'));
+document.getElementById('botondanadasdetalle').addEventListener('click', () => abrirstock(iddetalle, 'restar'));
 document.getElementById('botonstockformulario').addEventListener('click', () => {
     const id = formulario.elements.tbinventarioid.value;
     dialogoformulario.close();
-    abrirstock(id);
+    abrirstock(id, 'sumar');
 });
 
 /* ---------- Colores y tipos de flor (tablas catálogo) ---------- */
