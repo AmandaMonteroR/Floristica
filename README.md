@@ -1,6 +1,6 @@
 # Florística
 
-Sistema web para la gestión de una floristería ubicada en El Humo de Roxana, Cariari (Limón): proveedores, inventario, pedidos de compra, catálogo de arreglos florales, clientes, solicitudes de pedido de arreglo (con servicio express por zonas) y empleados, con inicio de sesión por roles. Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
+Sistema web para la gestión de una floristería ubicada en El Humo de Roxana, Cariari (Limón): proveedores, inventario de insumos (con stock apartado y alertas), pedidos de compra, catálogo de arreglos florales (con búsqueda y valoración por foto), clientes, solicitudes de pedido de arreglo (con servicio express por zonas), cuentas por cobrar y por pagar, gastos, reportes y empleados, con inicio de sesión por roles. El ciclo completo está en el [diagrama de flujo](#diagrama-de-flujo). Desarrollado en PHP (sin framework, patrón MVC) con base de datos MySQL o MariaDB.
 
 ## Requisitos
 
@@ -79,7 +79,11 @@ Los datos de prueba también traen:
 - 4 pedidos y 8 clientes;
 - 6 zonas de entrega, de El Humo de Roxana (₡1 000) a Limón centro (₡6 000);
 - 22 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express. 11 están terminadas (son las ventas de setiembre y octubre);
-- la temporada alta, apagada, con los precios reales del proveedor en temporada alta (por ejemplo, 24 rosas pasan de ₡7 000 a ₡14 000).
+- la temporada alta, apagada, con los precios reales del proveedor en temporada alta (por ejemplo, 24 rosas pasan de ₡7 000 a ₡14 000);
+- 21 colores y 37 tipos de flor y follaje en sus tablas catálogo;
+- 6 insumos que también se le compran a otros proveedores (por ejemplo, la rosa roja a Vivero Orosi y a Floricultura Liberia);
+- abonos: un pedido a crédito con un abono; de las solicitudes, 9 pagadas completas, 3 con adelanto y 2 ventas a crédito con saldo;
+- 13 gastos de setiembre a noviembre (alquiler, luz, agua, internet, transporte, publicidad, un ayudante y mantenimiento), uno anulado.
 
 ## Configuración
 
@@ -109,12 +113,22 @@ Floristica/
 │   ├── ScriptsSQL/     # bdfloristica.sql (estructura)
 │   └── DatosIniciales/ # datosprueba.sql y ubicaciones de Costa Rica
 ├── Configuracion/    # Conexión, países y seguridad (sesión y permisos)
-├── Documentacion/
+├── Documentacion/    # diagramaflujo.html (diagrama de flujo del ciclo) y su PDF
 ├── Pruebas/          # pruebasbackend.php (pruebas automáticas del backend)
 └── Publico/          # index.php (punto de entrada), css, js e imágenes
 ```
 
 `Publico/index.php` recibe todo: `?modulo=X` muestra la página del módulo y `?modulo=X&accion=Y` responde en JSON. Las acciones que modifican datos solo aceptan POST.
+
+## Diagrama de flujo
+
+`Documentacion/diagramaflujo.html` tiene el diagrama de flujo del ciclo del negocio, en tres páginas:
+
+1. **El ciclo completo:** inventario → catálogo → solicitud → preparación → venta y cobro → reportes → compras → recepción, y otra vez al inventario; con los estados de cada cosa y sus tablas.
+2. **Una solicitud de pedido de arreglo:** desde que la clienta pide (con o sin foto) hasta que se entrega y se cobra, con cada decisión: si hay inventario disponible, si deja adelanto, si cancela, si pagó todo.
+3. **Una compra al proveedor:** desde la alerta de stock bajo hasta que la mercadería entra al inventario, de contado o a crédito.
+
+Cada paso tiene el color de quién lo hace: un empleado o el propietario, solo el propietario, o el sistema solo. Se abre con doble clic en el navegador; para el PDF, **Ctrl + P → Guardar como PDF** (`Documentacion/diagramaflujo.pdf`).
 
 ## Inicio de sesión y roles
 
@@ -149,7 +163,7 @@ Floristica/
 
 Resumen según el rol:
 
-- **Propietario:** solicitudes abiertas y atrasadas, productos con stock bajo y pedidos sin recibir.
+- **Propietario:** solicitudes abiertas y atrasadas, insumos con poco disponible (y cuántos faltan para las solicitudes abiertas) y pedidos sin recibir.
 - **Empleado:** sus solicitudes y las que puede tomar.
 
 ### Proveedores
