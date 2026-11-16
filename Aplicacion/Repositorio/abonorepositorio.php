@@ -35,35 +35,91 @@ class abonorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    // Abonos de un pedido o de una solicitud, del más viejo al más nuevo, como arreglos simples
+    // Abonos de un pedido o de una solicitud, del más viejo al más nuevo, como arreglos simples.
+    // Trae también los anulados (estado 0), con el motivo y cuándo y quién los anuló.
     public function listar($tipo, $idregistro)
     {
         $t = $this->tipo($tipo);
-        $sentencia = $this->conexion->prepare("SELECT * FROM {$t['tabla']} WHERE {$t['id']} = ?
-                ORDER BY {$t['tabla']}fecha, {$t['tabla']}id");
+        $tabla = $t['tabla'];
+        $historico = $tabla . 'estadohistorico';
+        $sentencia = $this->conexion->prepare("SELECT a.*, h.{$historico}fecha AS fechaanulacion, h.tbempleadoid AS anuladopor
+                FROM {$tabla} a
+                LEFT JOIN {$historico} h ON h.{$historico}id = (
+                    SELECT MAX(h2.{$historico}id) FROM {$historico} h2
+                    WHERE h2.{$tabla}id = a.{$tabla}id AND h2.{$historico}valor = 0)
+                WHERE a.{$t['id']} = ?
+                ORDER BY a.{$tabla}fecha, a.{$tabla}id");
         $sentencia->execute([(int) $idregistro]);
 
         $abonos = [];
         foreach ($sentencia->fetchAll() as $fila) {
             $abono = new $t['clase']($fila);
+            $prefijo = 'get' . ucfirst($tabla);
             $abonos[] = [
-                'fecha'        => $abono->{'get' . ucfirst($t['tabla']) . 'fecha'}(),
-                'monto'        => (float) $abono->{'get' . ucfirst($t['tabla']) . 'monto'}(),
-                'metodo'       => $abono->{'get' . ucfirst($t['tabla']) . 'metodo'}(),
-                'nota'         => (string) $abono->{'get' . ucfirst($t['tabla']) . 'nota'}(),
-                'tbempleadoid' => (int) $abono->getTbempleadoid(),
+                'id'             => (int) $abono->{$prefijo . 'id'}(),
+                'fecha'          => $abono->{$prefijo . 'fecha'}(),
+                'monto'          => (float) $abono->{$prefijo . 'monto'}(),
+                'metodo'         => $abono->{$prefijo . 'metodo'}(),
+                'nota'           => (string) $abono->{$prefijo . 'nota'}(),
+                'tbempleadoid'   => (int) $abono->getTbempleadoid(),
+                'estado'         => (int) $abono->{$prefijo . 'estado'}(),
+                'motivo'         => (string) $abono->{$prefijo . 'motivoanulacion'}(),
+                'fechaanulacion' => $fila['fechaanulacion'],
+                'anuladopor'     => (int) $fila['anuladopor'],
             ];
         }
 
         return $abonos;
     }
 
-    // Lo abonado a cada registro: [id del pedido o de la solicitud => total abonado]
+    // Un abono por su id, con el pedido o la solicitud a la que pertenece
+    public function obtener($tipo, $idabono)
+    {
+        $t = $this->tipo($tipo);
+        $sentencia = $this->conexion->prepare("SELECT * FROM {$t['tabla']} WHERE {$t['tabla']}id = ?");
+        $sentencia->execute([(int) $idabono]);
+        $fila = $sentencia->fetch();
+
+        return $fila ? new $t['clase']($fila) : null;
+    }
+
+    // Anula un abono: deja de sumar, guarda el motivo y registra en el histórico quién y cuándo
+    public function anular($tipo, $idabono, $motivo, $idempleado)
+    {
+        $t = $this->tipo($tipo);
+        $tabla = $t['tabla'];
+        $historico = $tabla . 'estadohistorico';
+
+        $this->conexion->beginTransaction();
+        try {
+            $sentencia = $this->conexion->prepare("UPDATE {$tabla} SET {$tabla}estado = 0, {$tabla}motivoanulacion = ?
+                    WHERE {$tabla}id = ? AND {$tabla}estado = 1");
+            $sentencia->execute([$motivo, (int) $idabono]);
+            if ($sentencia->rowCount() !== 1) {
+                $this->conexion->rollBack();
+                return false;
+            }
+
+            $sentencia = $this->conexion->prepare("INSERT INTO {$historico}
+                    ({$historico}id, {$tabla}id, {$historico}valor, tbempleadoid, {$historico}fecha)
+                    VALUES (?, ?, 0, ?, ?)");
+            $sentencia->execute([$this->siguienteid($historico), (int) $idabono, (int) $idempleado, date('Y-m-d H:i:s')]);
+
+            $this->conexion->commit();
+            return true;
+        } catch (Throwable $error) {
+            $this->conexion->rollBack();
+            throw $error;
+        }
+    }
+
+    // Lo abonado a cada registro: [id del pedido o de la solicitud => total abonado]. Los anulados no cuentan.
     public function totales($tipo)
     {
         $t = $this->tipo($tipo);
         $totales = [];
-        $sql = "SELECT {$t['id']} AS id, SUM({$t['tabla']}monto) AS total FROM {$t['tabla']} GROUP BY {$t['id']}";
+        $sql = "SELECT {$t['id']} AS id, SUM({$t['tabla']}monto) AS total FROM {$t['tabla']}
+                WHERE {$t['tabla']}estado = 1 GROUP BY {$t['id']}";
         foreach ($this->conexion->query($sql) as $fila) {
             $totales[(int) $fila['id']] = (float) $fila['total'];
         }
@@ -74,7 +130,8 @@ class abonorepositorio
     public function totalde($tipo, $idregistro)
     {
         $t = $this->tipo($tipo);
-        $sentencia = $this->conexion->prepare("SELECT IFNULL(SUM({$t['tabla']}monto), 0) AS total FROM {$t['tabla']} WHERE {$t['id']} = ?");
+        $sentencia = $this->conexion->prepare("SELECT IFNULL(SUM({$t['tabla']}monto), 0) AS total FROM {$t['tabla']}
+                WHERE {$t['id']} = ? AND {$t['tabla']}estado = 1");
         $sentencia->execute([(int) $idregistro]);
 
         return (float) $sentencia->fetch()['total'];

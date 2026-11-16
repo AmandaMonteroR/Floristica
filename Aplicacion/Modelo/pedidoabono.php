@@ -10,6 +10,8 @@ class Pedidoabono
     private $tbpedidoabonometodo;
     private $tbpedidoabononota;
     private $tbempleadoid;
+    private $tbpedidoabonoestado;
+    private $tbpedidoabonomotivoanulacion;
 
     public function __construct($datos = [])
     {
@@ -20,6 +22,8 @@ class Pedidoabono
         $this->tbpedidoabonometodo = $datos['tbpedidoabonometodo'] ?? '';
         $this->tbpedidoabononota   = $datos['tbpedidoabononota'] ?? '';
         $this->tbempleadoid        = $datos['tbempleadoid'] ?? 0;
+        $this->tbpedidoabonoestado = $datos['tbpedidoabonoestado'] ?? 1;
+        $this->tbpedidoabonomotivoanulacion = $datos['tbpedidoabonomotivoanulacion'] ?? '';
     }
 
     public function getTbpedidoabonoid() {
@@ -63,4 +67,16 @@ class Pedidoabono
 
     public function setTbempleadoid($valor) {
         $this->tbempleadoid = $valor; }
+
+    public function getTbpedidoabonoestado() {
+        return $this->tbpedidoabonoestado; }
+
+    public function setTbpedidoabonoestado($valor) {
+        $this->tbpedidoabonoestado = $valor; }
+
+    public function getTbpedidoabonomotivoanulacion() {
+        return $this->tbpedidoabonomotivoanulacion; }
+
+    public function setTbpedidoabonomotivoanulacion($valor) {
+        $this->tbpedidoabonomotivoanulacion = $valor; }
 }

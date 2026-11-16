@@ -78,11 +78,12 @@ Los datos de prueba también traen:
 - 18 arreglos del catálogo real de una floristería de la zona, con su foto (en `Publico/imagenes/catalogo/`) y sus precios;
 - 4 pedidos y 8 clientes;
 - 6 zonas de entrega, de El Humo de Roxana (₡1 000) a Limón centro (₡6 000);
-- 22 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express. 11 están terminadas (son las ventas de setiembre y octubre);
+- 22 solicitudes de pedido de arreglo en distintos estados: predefinidas con adicionales, personalizadas con presupuesto y libres, con y sin express. 11 están terminadas (son las ventas de setiembre y octubre). Las 10 abiertas se entregan a partir del día en que se carga la base: una hoy, una atrasada un día (para ver la marca roja) y las demás en la próxima semana, así que nunca salen todas atrasadas;
 - la temporada alta, apagada, con los precios reales del proveedor en temporada alta (por ejemplo, 24 rosas pasan de ₡7 000 a ₡14 000);
 - 21 colores y 37 tipos de flor y follaje en sus tablas catálogo;
 - 6 insumos que también se le compran a otros proveedores (por ejemplo, la rosa roja a Vivero Orosi y a Floricultura Liberia);
 - abonos: un pedido a crédito con un abono; de las solicitudes, 9 pagadas completas, 3 con adelanto y 2 ventas a crédito con saldo;
+- el stock alcanza para todo lo apartado: ningún insumo tiene más apartado que en inventario (el Lirio rosado tiene 27 y 24 apartados, y sale en rojo por quedar debajo del mínimo);
 - 13 gastos de setiembre a noviembre (alquiler, luz, agua, internet, transporte, publicidad, un ayudante y mantenimiento), uno anulado.
 
 ## Configuración
@@ -343,6 +344,7 @@ En **Finanzas → Cuentas por cobrar y por pagar** (solo el propietario), con do
 - **Por pagar (proveedores):** los pedidos que se confirmaron **a crédito**. Saldo = monto de la compra − abonos (`tbpedidoabono`). Vence en la fecha de confirmación + el plazo; dice "Por vencer" en los últimos 7 días y "Vencido" después. Los de contado se pagan al confirmar y no aparecen.
 - **Tarjetas:** lo que deben las clientas por arreglos entregados, lo que falta de las solicitudes abiertas y lo que se les debe a los proveedores (en rojo si hay algo vencido).
 - **Abonar:** monto (no más que el saldo; el botón "Todo el saldo" lo llena), fecha (no futura ni anterior a la compra o a la solicitud), cómo se pagó (efectivo, SINPE Móvil, transferencia o tarjeta) y una nota opcional. Cada abono guarda quién lo registró. Con "Mostrar también las que ya están pagadas" se ven las cuentas canceladas por completo.
+- **Anular un abono:** si un abono se registró mal (monto equivocado, en la cuenta equivocada o dos veces), en la ventana de la cuenta se toca **Anular** y se escribe el motivo (5 a 100 caracteres). No se borra: queda en la lista tachado, con el motivo, quién lo anuló y cuándo; deja de sumar y el saldo vuelve a subir. Si el monto estaba mal, se anula y se registra el abono correcto. Un abono anulado no se puede volver a anular, y la trazabilidad de la solicitud o del pedido muestra la anulación con su responsable. Con esto las cuentas por cobrar y por pagar tienen su CRUD: registrar, consultar, corregir (anular y registrar de nuevo) e historial.
 
 ### Gastos del negocio
 
@@ -357,7 +359,7 @@ En **Finanzas → Gastos** (solo el propietario). Son los pagos que no son merca
 En **Finanzas → Reportes** (solo el propietario), con dos pestañas y un botón **Imprimir**:
 
 - **Ganancia neta:** para el período elegido, vendido (solicitudes terminadas) − costo de las flores y productos = ganancia bruta; − gastos del negocio (con el detalle por categoría) = **ganancia neta**, en verde si es positiva o en rojo si hubo pérdida, con el % de lo vendido. Al lado, una tabla con los últimos 6 meses para comparar.
-- **Trazabilidad:** se elige una solicitud de arreglo o un pedido al proveedor y se ve todo lo que pasó, en orden, con fecha, hora y **responsable**: registro, asignación, cuándo empezó a prepararse, cuándo se terminó (y qué salió del inventario), cancelación, cada pago de la clienta; en los pedidos, cuándo se pidió, se confirmó (contado o crédito), se recibió (qué entró al inventario) y cada abono al proveedor. Arriba dice cuánto tardó de principio a fin. El enlace se puede compartir (`index.php?modulo=reporte&ver=trazabilidad&tipo=solicitud&id=17`).
+- **Trazabilidad:** se elige una solicitud de arreglo o un pedido al proveedor y se ve todo lo que pasó, en orden, con fecha, hora y **responsable**: registro, asignación, cuándo empezó a prepararse, cuándo se terminó (y qué salió del inventario), cancelación, cada pago de la clienta; en los pedidos, cuándo se pidió, se confirmó (contado o crédito), se recibió (qué entró al inventario) y cada abono al proveedor. Si se anuló un abono, aparece cuándo, quién y por qué. Arriba dice cuánto tardó de principio a fin. El enlace se puede compartir (`index.php?modulo=reporte&ver=trazabilidad&tipo=solicitud&id=17`).
 
 ### Empleados
 
@@ -405,6 +407,7 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 | Clientes | Nombre, teléfono, dirección y estado |
 | Zonas de entrega | Nombre, precio y estado |
 | Gastos | Categoría, descripción, monto, fecha y estado (cuenta o anulado) |
+| Abonos (por cobrar y por pagar) | Cuándo y quién anuló cada abono (`tbsolicitudencargoabonoestadohistorico`, `tbpedidoabonoestadohistorico`); el motivo queda en el abono |
 | Temporada alta | Cuándo se encendió y se apagó |
 
 ### Solicitudes de pedido de arreglo

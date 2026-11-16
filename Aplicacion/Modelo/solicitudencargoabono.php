@@ -10,6 +10,8 @@ class Solicitudencargoabono
     private $tbsolicitudencargoabonometodo;
     private $tbsolicitudencargoabononota;
     private $tbempleadoid;
+    private $tbsolicitudencargoabonoestado;
+    private $tbsolicitudencargoabonomotivoanulacion;
 
     public function __construct($datos = [])
     {
@@ -20,6 +22,8 @@ class Solicitudencargoabono
         $this->tbsolicitudencargoabonometodo = $datos['tbsolicitudencargoabonometodo'] ?? '';
         $this->tbsolicitudencargoabononota   = $datos['tbsolicitudencargoabononota'] ?? '';
         $this->tbempleadoid                  = $datos['tbempleadoid'] ?? 0;
+        $this->tbsolicitudencargoabonoestado = $datos['tbsolicitudencargoabonoestado'] ?? 1;
+        $this->tbsolicitudencargoabonomotivoanulacion = $datos['tbsolicitudencargoabonomotivoanulacion'] ?? '';
     }
 
     public function getTbsolicitudencargoabonoid() {
@@ -63,4 +67,16 @@ class Solicitudencargoabono
 
     public function setTbempleadoid($valor) {
         $this->tbempleadoid = $valor; }
+
+    public function getTbsolicitudencargoabonoestado() {
+        return $this->tbsolicitudencargoabonoestado; }
+
+    public function setTbsolicitudencargoabonoestado($valor) {
+        $this->tbsolicitudencargoabonoestado = $valor; }
+
+    public function getTbsolicitudencargoabonomotivoanulacion() {
+        return $this->tbsolicitudencargoabonomotivoanulacion; }
+
+    public function setTbsolicitudencargoabonomotivoanulacion($valor) {
+        $this->tbsolicitudencargoabonomotivoanulacion = $valor; }
 }

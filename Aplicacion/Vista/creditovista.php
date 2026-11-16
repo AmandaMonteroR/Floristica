@@ -104,6 +104,7 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
                     <th>Cómo se pagó</th>
                     <th>Nota</th>
                     <th>Registrado por</th>
+                    <th><span class="solo-lector">Acciones</span></th>
                 </tr>
             </thead>
             <tbody id="cuerpoabonos"></tbody>
@@ -146,6 +147,25 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
         <button type="button" class="boton" id="botoncerrarcuenta">Cerrar</button>
         <button type="submit" class="boton boton-principal" id="botonabonar" form="formularioabono">Registrar abono</button>
     </div>
+</dialog>
+
+<!-- Anular un abono mal registrado: pide el motivo -->
+<dialog id="dialogoanular" class="dialogo dialogo-confirmacion peligro" aria-labelledby="tituloanular">
+    <form id="formularioanular" novalidate>
+        <div class="icono-confirmacion" aria-hidden="true">!</div>
+        <h2 id="tituloanular">¿Anular el abono?</h2>
+        <p id="mensajeanular" class="mensaje-confirmacion"></p>
+        <p id="avisoanular" class="aviso aviso-error" role="alert" hidden></p>
+        <label class="campo">
+            <span>Motivo *</span>
+            <input type="text" name="motivo" maxlength="100" placeholder="Se registró dos veces, monto equivocado…" autocomplete="off">
+            <small class="error" data-error="motivo"></small>
+        </label>
+        <div class="acciones-dialogo acciones-centradas">
+            <button type="button" class="boton" id="botoncancelaranular">Cancelar</button>
+            <button type="submit" class="boton boton-peligro" id="botonanular">Anular abono</button>
+        </div>
+    </form>
 </dialog>
 
 <script src="js/menu.js"></script>

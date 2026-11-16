@@ -279,6 +279,7 @@ CREATE TABLE tbconfirmacioncompra (
 -- Abonos a un pedido comprado a crédito (cuenta por pagar al proveedor).
 -- Saldo del pedido = monto de la confirmación de compra - lo abonado. Vence: fecha de confirmación + plazo.
 -- Método: Efectivo, SINPE Móvil, Transferencia o Tarjeta.
+-- Estado: 1 cuenta, 0 anulado (un abono mal registrado no se borra: se anula con su motivo y deja de sumar).
 CREATE TABLE tbpedidoabono (
     tbpedidoabonoid INT,
     tbpedidoid INT,
@@ -287,11 +288,14 @@ CREATE TABLE tbpedidoabono (
     tbpedidoabonometodo VARCHAR(20),
     tbpedidoabononota VARCHAR(100),
     tbempleadoid INT,
+    tbpedidoabonoestado TINYINT(1) DEFAULT 1,
+    tbpedidoabonomotivoanulacion VARCHAR(100),
     PRIMARY KEY (tbpedidoabonoid)
 );
 
 -- Abonos de la clienta a una solicitud (cuenta por cobrar). Saldo = total de la solicitud - lo abonado.
 -- Puede pagar un adelanto al pedir y el resto después; si se entrega sin pagar todo, es una venta a crédito.
+-- Estado y motivo de anulación: igual que en tbpedidoabono.
 CREATE TABLE tbsolicitudencargoabono (
     tbsolicitudencargoabonoid INT,
     tbsolicitudencargoid INT,
@@ -300,7 +304,28 @@ CREATE TABLE tbsolicitudencargoabono (
     tbsolicitudencargoabonometodo VARCHAR(20),
     tbsolicitudencargoabononota VARCHAR(100),
     tbempleadoid INT,
+    tbsolicitudencargoabonoestado TINYINT(1) DEFAULT 1,
+    tbsolicitudencargoabonomotivoanulacion VARCHAR(100),
     PRIMARY KEY (tbsolicitudencargoabonoid)
+);
+
+-- Históricos de los abonos: cuándo y quién anuló cada uno (el valor es el estado: 0 anulado)
+CREATE TABLE tbpedidoabonoestadohistorico (
+    tbpedidoabonoestadohistoricoid INT,
+    tbpedidoabonoid INT,
+    tbpedidoabonoestadohistoricovalor TINYINT(1),
+    tbempleadoid INT,
+    tbpedidoabonoestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbpedidoabonoestadohistoricoid)
+);
+
+CREATE TABLE tbsolicitudencargoabonoestadohistorico (
+    tbsolicitudencargoabonoestadohistoricoid INT,
+    tbsolicitudencargoabonoid INT,
+    tbsolicitudencargoabonoestadohistoricovalor TINYINT(1),
+    tbempleadoid INT,
+    tbsolicitudencargoabonoestadohistoricofecha DATETIME,
+    PRIMARY KEY (tbsolicitudencargoabonoestadohistoricoid)
 );
 
 -- ---------- Gastos del negocio ----------

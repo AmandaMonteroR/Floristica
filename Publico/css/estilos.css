@@ -3721,6 +3721,33 @@ img[data-lupa] {
     display: none;
 }
 
+/* Abono anulado: queda en la lista, tachado y más suave */
+.fila-anulada td {
+    color: var(--texto-suave);
+}
+
+.tachado {
+    text-decoration: line-through;
+}
+
+.motivo-anulacion {
+    display: block;
+    max-width: 280px;
+    margin-top: 0.15rem;
+    white-space: normal;
+}
+
+/* Ventana para anular un abono: el campo del motivo va alineado a la izquierda */
+#formularioanular .campo {
+    margin-top: 1rem;
+    text-align: left;
+}
+
+#formularioanular .aviso {
+    margin-top: 1rem;
+    text-align: left;
+}
+
 .monto-abono {
     display: flex;
     gap: 0.5rem;

@@ -97,6 +97,7 @@ class creditocontrolador
         }
         $cuenta['abonos'] = array_map(function ($abono) use ($nombres) {
             $abono['hechopor'] = $nombres[$abono['tbempleadoid']] ?? '';
+            $abono['anuladopor'] = $abono['anuladopor'] ? ($nombres[$abono['anuladopor']] ?? '') : '';
             return $abono;
         }, $this->abonos->listar($tipo, $id));
         $cuenta['metodos'] = $this->metodos;
@@ -162,6 +163,52 @@ class creditocontrolador
             ? 'Abono registrado. Queda un saldo de ' . historicocontrolador::monto($saldo) . '.'
             : ($tipo === 'pagar' ? 'Abono registrado. El pedido quedó pagado.' : 'Abono registrado. La solicitud quedó pagada.'),
             ['saldo' => $saldo]);
+    }
+
+    // Anula un abono mal registrado (monto o cuenta equivocada, registrado dos veces...).
+    // No se borra: deja de sumar, el saldo vuelve a subir y queda el motivo, quién y cuándo.
+    // Si el abono quedó mal, se anula y se registra otro correcto.
+    public function anular($datos, $usuario)
+    {
+        $tipo = trim((string) ($datos['tipo'] ?? ''));
+        $id = (int) ($datos['id'] ?? 0);
+        $idabono = (int) ($datos['idabono'] ?? 0);
+        $motivo = trim(preg_replace('/\s+/u', ' ', (string) ($datos['motivo'] ?? '')));
+
+        $cuenta = $this->buscar($tipo, $id);
+        if (!$cuenta) {
+            return $this->respuesta(false, 'La cuenta no existe.');
+        }
+
+        $abono = $this->abonos->obtener($tipo, $idabono);
+        $prefijo = $tipo === 'pagar' ? 'getTbpedidoabono' : 'getTbsolicitudencargoabono';
+        $registro = $tipo === 'pagar' ? $abono?->getTbpedidoid() : $abono?->getTbsolicitudencargoid();
+        if (!$abono || (int) $registro !== $id) {
+            return $this->respuesta(false, 'Ese abono no pertenece a esta cuenta.');
+        }
+        if ((int) $abono->{$prefijo . 'estado'}() !== 1) {
+            return $this->respuesta(false, 'Ese abono ya está anulado.');
+        }
+
+        if ($motivo === '') {
+            return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => ['motivo' => 'Escriba por qué se anula el abono.']]);
+        }
+        if (mb_strlen($motivo) < 5 || mb_strlen($motivo) > 100 || !preg_match('/\p{L}/u', $motivo)) {
+            return $this->respuesta(false, 'Revise los datos ingresados.',
+                ['errores' => ['motivo' => 'El motivo debe tener de 5 a 100 caracteres, con letras.']]);
+        }
+
+        if (!$this->abonos->anular($tipo, $idabono, $motivo, $usuario['id'])) {
+            return $this->respuesta(false, 'Ese abono ya está anulado.');
+        }
+
+        $monto = (float) $abono->{$prefijo . 'monto'}();
+        $saldo = round($cuenta['saldo'] + $monto, 2);
+        // Si el abono era más de lo que faltaba (no debería pasar), el saldo no puede pasar del total
+        $saldo = min($saldo, round($cuenta['monto'], 2));
+
+        return $this->respuesta(true, 'Abono de ' . historicocontrolador::monto($monto) . ' anulado. El saldo ahora es '
+            . historicocontrolador::monto($saldo) . '.', ['saldo' => $saldo]);
     }
 
     private function buscar($tipo, $id)

@@ -124,7 +124,7 @@ header('Content-Type: application/json; charset=utf-8');
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
     'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar',
-    'guardarcatalogo', 'estadocatalogo', 'abonar'];
+    'guardarcatalogo', 'estadocatalogo', 'abonar', 'anularabono'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -500,6 +500,9 @@ try {
                     break;
                 case 'abonar':
                     $respuesta = $controlador->abonar($_POST, $usuarioactual);
+                    break;
+                case 'anularabono':
+                    $respuesta = $controlador->anular($_POST, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

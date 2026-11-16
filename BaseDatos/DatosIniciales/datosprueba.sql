@@ -133,7 +133,7 @@ INSERT INTO `tbinventario` VALUES (6,1,'Clavel blanco','Flor',4500.00,24,187.50,
 INSERT INTO `tbinventario` VALUES (7,5,'Dalia rosada','Flor',7000.00,10,700.00,1400.00,8,10,0,1);
 INSERT INTO `tbinventario` VALUES (8,5,'Margarita blanca','Flor',1750.00,10,175.00,400.00,45,15,0,1);
 INSERT INTO `tbinventario` VALUES (9,5,'Peonía fucsia','Flor',15000.00,10,1500.00,3000.00,6,5,0,1);
-INSERT INTO `tbinventario` VALUES (10,7,'Lirio rosado','Flor',4000.00,12,333.33,700.00,15,6,0,1);
+INSERT INTO `tbinventario` VALUES (10,7,'Lirio rosado','Flor',4000.00,12,333.33,700.00,27,6,0,1);
 INSERT INTO `tbinventario` VALUES (11,8,'Eucalipto','Flor',2500.00,10,250.00,500.00,38,10,0,1);
 INSERT INTO `tbinventario` VALUES (12,8,'Dusty miller','Flor',5000.00,20,250.00,500.00,25,10,0,1);
 INSERT INTO `tbinventario` VALUES (13,2,'Ramas decorativas','Flor',3000.00,10,300.00,600.00,10,4,0,1);
@@ -440,7 +440,7 @@ INSERT INTO `tbinventariomovimiento` VALUES (6,6,'Inicial',40,40,NULL,NULL,1,'20
 INSERT INTO `tbinventariomovimiento` VALUES (7,7,'Inicial',8,8,NULL,NULL,1,'2026-10-01 08:07:00');
 INSERT INTO `tbinventariomovimiento` VALUES (8,8,'Inicial',45,45,NULL,NULL,1,'2026-10-01 08:08:00');
 INSERT INTO `tbinventariomovimiento` VALUES (9,9,'Inicial',6,6,NULL,NULL,1,'2026-10-01 08:09:00');
-INSERT INTO `tbinventariomovimiento` VALUES (10,10,'Inicial',15,15,NULL,NULL,1,'2026-10-01 08:10:00');
+INSERT INTO `tbinventariomovimiento` VALUES (10,10,'Inicial',27,27,NULL,NULL,1,'2026-10-01 08:10:00');
 INSERT INTO `tbinventariomovimiento` VALUES (11,11,'Inicial',40,40,NULL,NULL,1,'2026-10-01 08:11:00');
 INSERT INTO `tbinventariomovimiento` VALUES (12,12,'Inicial',25,25,NULL,NULL,1,'2026-10-01 08:12:00');
 INSERT INTO `tbinventariomovimiento` VALUES (13,13,'Inicial',10,10,NULL,NULL,1,'2026-10-01 08:13:00');
@@ -1319,23 +1319,23 @@ INSERT INTO `tbinventariootroproveedorhistorico` VALUES (5,11,'1|2700.00',1,'202
 INSERT INTO `tbinventariootroproveedorhistorico` VALUES (6,19,'6|4500.00',1,'2026-10-08 09:05:00');
 
 -- Parte 17: abonos. Al proveedor: el pedido N.º 2 (a crédito, ₡15 000 a 30 días) lleva ₡5 000 pagados.
-INSERT INTO `tbpedidoabono` VALUES (1,2,'2026-10-20',5000.00,'Transferencia','Primer abono',1);
+INSERT INTO `tbpedidoabono` VALUES (1,2,'2026-10-20',5000.00,'Transferencia','Primer abono',1,1,NULL);
 -- De las clientas: las terminadas se pagaron, menos la N.º 17 y la N.º 20 (ventas a crédito);
 -- algunas pendientes dejaron un adelanto.
-INSERT INTO `tbsolicitudencargoabono` VALUES (1,7,'2026-10-11',12000.00,'SINPE Móvil','',3);
-INSERT INTO `tbsolicitudencargoabono` VALUES (2,13,'2026-10-02',24000.00,'Efectivo','',2);
-INSERT INTO `tbsolicitudencargoabono` VALUES (3,14,'2026-10-03',10500.00,'SINPE Móvil','',2);
-INSERT INTO `tbsolicitudencargoabono` VALUES (4,15,'2026-10-05',4710.00,'Efectivo','',3);
-INSERT INTO `tbsolicitudencargoabono` VALUES (5,16,'2026-10-07',7500.00,'Tarjeta','',1);
-INSERT INTO `tbsolicitudencargoabono` VALUES (6,17,'2026-10-08',12000.00,'SINPE Móvil','Adelanto',1);
-INSERT INTO `tbsolicitudencargoabono` VALUES (7,18,'2026-10-10',40000.00,'Transferencia','',1);
-INSERT INTO `tbsolicitudencargoabono` VALUES (8,19,'2026-10-14',13000.00,'SINPE Móvil','',2);
-INSERT INTO `tbsolicitudencargoabono` VALUES (9,20,'2026-10-16',20000.00,'Efectivo','Adelanto',3);
-INSERT INTO `tbsolicitudencargoabono` VALUES (10,21,'2026-09-20',6500.00,'Efectivo','',2);
-INSERT INTO `tbsolicitudencargoabono` VALUES (11,22,'2026-09-27',25000.00,'Tarjeta','',1);
-INSERT INTO `tbsolicitudencargoabono` VALUES (12,1,'2026-10-11',14000.00,'SINPE Móvil','Adelanto del 50%',2);
-INSERT INTO `tbsolicitudencargoabono` VALUES (13,4,'2026-10-11',20000.00,'Transferencia','Adelanto',3);
-INSERT INTO `tbsolicitudencargoabono` VALUES (14,12,'2026-10-14',18750.00,'SINPE Móvil','Adelanto del 50%',1);
+INSERT INTO `tbsolicitudencargoabono` VALUES (1,7,'2026-10-11',12000.00,'SINPE Móvil','',3,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (2,13,'2026-10-02',24000.00,'Efectivo','',2,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (3,14,'2026-10-03',10500.00,'SINPE Móvil','',2,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (4,15,'2026-10-05',4710.00,'Efectivo','',3,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (5,16,'2026-10-07',7500.00,'Tarjeta','',1,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (6,17,'2026-10-08',12000.00,'SINPE Móvil','Adelanto',1,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (7,18,'2026-10-10',40000.00,'Transferencia','',1,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (8,19,'2026-10-14',13000.00,'SINPE Móvil','',2,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (9,20,'2026-10-16',20000.00,'Efectivo','Adelanto',3,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (10,21,'2026-09-20',6500.00,'Efectivo','',2,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (11,22,'2026-09-27',25000.00,'Tarjeta','',1,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (12,1,'2026-10-11',14000.00,'SINPE Móvil','Adelanto del 50%',2,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (13,4,'2026-10-11',20000.00,'Transferencia','Adelanto',3,1,NULL);
+INSERT INTO `tbsolicitudencargoabono` VALUES (14,12,'2026-10-14',18750.00,'SINPE Móvil','Adelanto del 50%',1,1,NULL);
 
 -- Parte 18: gastos del negocio (alquiler, luz, agua, salarios...). El N.º 11 se anuló porque se registró dos veces.
 INSERT INTO `tbgasto` VALUES (1,'Alquiler','Alquiler del local, septiembre',45000.00,'2026-09-01',1,1);
@@ -1417,6 +1417,30 @@ INSERT INTO `tbgastodescripcionhistorico` VALUES (13,13,'Recibo de luz de noviem
 INSERT INTO `tbgastomontohistorico` VALUES (13,13,'17900.00',1,'2026-11-06 09:00:00');
 INSERT INTO `tbgastofechahistorico` VALUES (13,13,'2026-11-06',1,'2026-11-06 09:00:00');
 INSERT INTO `tbgastoestadohistorico` VALUES (14,13,'1',1,'2026-11-06 09:00:00');
+
+-- Fechas de entrega de las solicitudes abiertas (pendientes y en proceso), contadas desde el día en que se carga la base.
+-- Así nunca salen todas atrasadas: la N.º 3 se entrega hoy, la N.º 9 queda atrasada un día (para ver la marca roja)
+-- y las demás se entregan en la próxima semana. El histórico de la fecha de entrega queda con la misma fecha.
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 1 DAY) WHERE tbsolicitudencargoid = 1;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 2 DAY) WHERE tbsolicitudencargoid = 2;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 0 DAY) WHERE tbsolicitudencargoid = 3;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 5 DAY) WHERE tbsolicitudencargoid = 4;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 3 DAY) WHERE tbsolicitudencargoid = 5;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 1 DAY) WHERE tbsolicitudencargoid = 6;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL -1 DAY) WHERE tbsolicitudencargoid = 9;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 4 DAY) WHERE tbsolicitudencargoid = 10;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 6 DAY) WHERE tbsolicitudencargoid = 11;
+UPDATE tbsolicitudencargo SET tbsolicitudencargofechaentrega = DATE_ADD(CURDATE(), INTERVAL 7 DAY) WHERE tbsolicitudencargoid = 12;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 1 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 1;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 2 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 2;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 0 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 3;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 5 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 4;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 3 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 5;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 1 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 6;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL -1 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 9;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 4 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 10;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 6 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 11;
+UPDATE tbsolicitudencargofechaentregahistorico SET tbsolicitudencargofechaentregahistoricovalor = DATE_ADD(CURDATE(), INTERVAL 7 DAY) WHERE tbsolicitudencargofechaentregahistoricoid = 12;
 
 -- Stock reservado: lo que piden las solicitudes pendientes y en proceso queda apartado
 -- MySQL Workbench trae el "modo seguro", que no deja hacer un UPDATE de toda la tabla:

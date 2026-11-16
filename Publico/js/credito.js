@@ -1,4 +1,5 @@
-// Cuentas por cobrar (clientas) y por pagar (proveedores): lista con el saldo de cada una y ventana para abonar
+// Cuentas por cobrar (clientas) y por pagar (proveedores): lista con el saldo de cada una, ventana para abonar
+// y anular un abono mal registrado (no se borra: deja de sumar y queda con su motivo)
 const rutabase = 'index.php?modulo=credito';
 const ver = document.querySelector('main').dataset.ver;
 
@@ -12,9 +13,15 @@ const cuerpoabonos = document.getElementById('cuerpoabonos');
 const formularioabono = document.getElementById('formularioabono');
 const avisoabono = document.getElementById('avisoabono');
 const botonabonar = document.getElementById('botonabonar');
+const dialogoanular = document.getElementById('dialogoanular');
+const formularioanular = document.getElementById('formularioanular');
+const mensajeanular = document.getElementById('mensajeanular');
+const avisoanular = document.getElementById('avisoanular');
+const botonanular = document.getElementById('botonanular');
 
 let temporizadoraviso;
 let cuentaactual = null;
+let abonoaanular = null;
 
 // Color de la etiqueta de cada estado de la cuenta
 const clasesestado = {
@@ -153,6 +160,26 @@ function limpiarerrores() {
     avisoabono.hidden = true;
 }
 
+// Un abono: los anulados salen tachados, con el motivo y quién lo anuló
+function filaabono(abono) {
+    const anulado = abono.estado === 0;
+    const accion = anulado
+        ? `<span class="estado estado-inactivo">Anulado</span>`
+        : `<button type="button" class="enlace enlace-peligro" data-anular="${abono.id}">Anular</button>`;
+    const motivo = anulado
+        ? `<small class="texto-peligro motivo-anulacion">Anulado${abono.anuladopor ? ` por ${escapar(abono.anuladopor)}` : ''}${abono.fechaanulacion ? ` el ${formatearfecha(abono.fechaanulacion)}` : ''}: ${escapar(abono.motivo)}</small>`
+        : '';
+    return `
+        <tr class="${anulado ? 'fila-anulada' : ''}">
+            <td>${formatearfecha(abono.fecha)}</td>
+            <td><span class="${anulado ? 'tachado' : ''}">${formatearmonto(abono.monto)}</span></td>
+            <td>${escapar(abono.metodo)}</td>
+            <td>${abono.nota ? escapar(abono.nota) : '<span class="texto-suave">—</span>'}${motivo}</td>
+            <td>${abono.hechopor ? escapar(abono.hechopor) : '<span class="texto-suave">No registrado</span>'}</td>
+            <td class="columna-acciones">${accion}</td>
+        </tr>`;
+}
+
 async function abrircuenta(tipo, id) {
     const respuesta = await peticion('obtener', {}, { tipo, id });
     if (!respuesta.exito) {
@@ -181,15 +208,8 @@ async function abrircuenta(tipo, id) {
     listacuenta.innerHTML = filas.map(([etiqueta, valor]) => `<dt>${escapar(etiqueta)}</dt><dd>${etiqueta === 'Estado' ? valor : escapar(valor)}</dd>`).join('');
 
     cuerpoabonos.innerHTML = cuenta.abonos.length
-        ? cuenta.abonos.map((abono) => `
-            <tr>
-                <td>${formatearfecha(abono.fecha)}</td>
-                <td>${formatearmonto(abono.monto)}</td>
-                <td>${escapar(abono.metodo)}</td>
-                <td>${abono.nota ? escapar(abono.nota) : '<span class="texto-suave">—</span>'}</td>
-                <td>${abono.hechopor ? escapar(abono.hechopor) : '<span class="texto-suave">No registrado</span>'}</td>
-            </tr>`).join('')
-        : '<tr><td colspan="5" class="vacio">Todavía no hay abonos.</td></tr>';
+        ? cuenta.abonos.map(filaabono).join('')
+        : '<tr><td colspan="6" class="vacio">Todavía no hay abonos.</td></tr>';
 
     // El formulario solo aparece si queda saldo
     formularioabono.reset();
@@ -278,6 +298,71 @@ formularioabono.addEventListener('submit', async (evento) => {
 });
 
 document.getElementById('botoncerrarcuenta').addEventListener('click', () => dialogocuenta.close());
+
+/* ---------- Anular un abono ---------- */
+
+function limpiarerroresanular() {
+    formularioanular.querySelector('[data-error="motivo"]').textContent = '';
+    formularioanular.elements.motivo.removeAttribute('aria-invalid');
+    avisoanular.hidden = true;
+}
+
+cuerpoabonos.addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-anular]');
+    if (!boton || !cuentaactual) {
+        return;
+    }
+    abonoaanular = cuentaactual.abonos.find((abono) => abono.id === Number(boton.dataset.anular));
+    if (!abonoaanular) {
+        return;
+    }
+    formularioanular.reset();
+    limpiarerroresanular();
+    mensajeanular.textContent = `El abono de ${formatearmonto(abonoaanular.monto)} del ${formatearfecha(abonoaanular.fecha)} `
+        + `(${abonoaanular.metodo}) dejará de contar y el saldo subirá ${formatearmonto(abonoaanular.monto)}. `
+        + 'No se borra: queda en la lista con el motivo. Si el monto estaba mal, registre después el abono correcto.';
+    dialogoanular.showModal();
+    formularioanular.elements.motivo.focus();
+});
+
+document.getElementById('botoncancelaranular').addEventListener('click', () => dialogoanular.close());
+
+formularioanular.elements.motivo.addEventListener('input', limpiarerroresanular);
+
+formularioanular.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    if (!cuentaactual || !abonoaanular) {
+        return;
+    }
+    limpiarerroresanular();
+    botonanular.disabled = true;
+
+    const datos = new FormData(formularioanular);
+    datos.append('tipo', cuentaactual.tipo);
+    datos.append('id', cuentaactual.id);
+    datos.append('idabono', abonoaanular.id);
+    const respuesta = await peticion('anularabono', { method: 'POST', body: datos });
+    botonanular.disabled = false;
+
+    if (respuesta.exito) {
+        dialogoanular.close();
+        mostraraviso(respuesta.mensaje, 'exito');
+        // Se vuelve a abrir la cuenta con el saldo nuevo y el abono tachado
+        dialogocuenta.close();
+        await abrircuenta(cuentaactual.tipo, cuentaactual.id);
+        cargar();
+        return;
+    }
+
+    const error = respuesta.datos && respuesta.datos.errores && respuesta.datos.errores.motivo;
+    if (error) {
+        formularioanular.querySelector('[data-error="motivo"]').textContent = error;
+        formularioanular.elements.motivo.setAttribute('aria-invalid', 'true');
+        formularioanular.elements.motivo.focus();
+    }
+    avisoanular.textContent = respuesta.mensaje;
+    avisoanular.hidden = false;
+});
 filtrotodas.addEventListener('change', cargar);
 
 cargar();

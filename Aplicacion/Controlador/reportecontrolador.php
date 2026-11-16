@@ -183,6 +183,16 @@ class reportecontrolador
                 'responsable' => $abono['hechopor'],
                 'tipo'        => 'pago',
             ];
+            // Un abono anulado sigue en la trazabilidad, y aparte cuándo y quién lo anuló
+            if ($abono['estado'] === 0) {
+                $eventos[] = [
+                    'fecha'       => $abono['fechaanulacion'] ?: $abono['fecha'] . ' 00:00:00',
+                    'texto'       => 'Se anuló el abono de ' . historicocontrolador::monto($abono['monto']) . ' del ' . date('d/m/Y', strtotime($abono['fecha'])),
+                    'detalle'     => 'Motivo: ' . $abono['motivo'],
+                    'responsable' => $abono['anuladopor'],
+                    'tipo'        => 'cancelado',
+                ];
+            }
         }
         $eventos = $this->ordenar($eventos);
 
@@ -267,6 +277,16 @@ class reportecontrolador
                 'responsable' => $abono['hechopor'],
                 'tipo'        => 'pago',
             ];
+            // Un abono anulado sigue en la trazabilidad, y aparte cuándo y quién lo anuló
+            if ($abono['estado'] === 0) {
+                $eventos[] = [
+                    'fecha'       => $abono['fechaanulacion'] ?: $abono['fecha'] . ' 00:00:00',
+                    'texto'       => 'Se anuló el abono de ' . historicocontrolador::monto($abono['monto']) . ' del ' . date('d/m/Y', strtotime($abono['fecha'])),
+                    'detalle'     => 'Motivo: ' . $abono['motivo'],
+                    'responsable' => $abono['anuladopor'],
+                    'tipo'        => 'cancelado',
+                ];
+            }
         }
         $eventos = $this->ordenar($eventos);
 
@@ -317,6 +337,7 @@ class reportecontrolador
 
         return array_map(function ($abono) use ($nombres) {
             $abono['hechopor'] = $nombres[$abono['tbempleadoid']] ?? '';
+            $abono['anuladopor'] = $abono['anuladopor'] ? ($nombres[$abono['anuladopor']] ?? '') : '';
             return $abono;
         }, $this->abonos->listar($tipo, $id));
     }

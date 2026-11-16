@@ -715,7 +715,14 @@ $stockrosa = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1])
 prueba('El propietario termina la personalizada', exito($propietario->post('encargo', 'terminar', ['id' => $idpersonalizada])));
 prueba('…y descuenta las 8 rosas que eligió el cliente', (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'] === $stockrosa - 8);
 
-// Solicitud N.º 4 de los datos de prueba: 3 ramos de lirios con frase (18 lirios) y hay 15 → no alcanza
+// Solicitud N.º 4 de los datos de prueba: 3 ramos de lirios con frase (18 lirios). Hay 27 lirios, pero se dañan 12
+// y el propietario corrige el stock a 15 (ajuste): ya no alcanza para terminarla
+$lirio = datos($propietario->get('inventario', 'obtener', ['id' => 10]));
+$ajustelirio = array_intersect_key($lirio, array_flip(['tbinventarioid', 'tbproveedorid', 'tbinventarionombre', 'tbinventariocategoria',
+    'tbinventariopreciopaquete', 'tbinventariounidadespaquete', 'tbinventarioprecioventa', 'tbinventariostockminimo']))
+    + ($lirio['categoria'] ?? []) + ['tbinventariostock' => 15];
+$r = $propietario->post('inventario', 'actualizar', $ajustelirio);
+prueba('Se corrige a mano el stock de lirios (se dañaron 12)', exito($r), mensaje($r));
 $stocklirio = (int) datos($propietario->get('inventario', 'obtener', ['id' => 10]))['tbinventariostock'];
 $carlos->post('encargo', 'iniciar', ['id' => 4]);
 $r = $carlos->post('encargo', 'terminar', ['id' => 4]);
@@ -1509,7 +1516,7 @@ prueba('Al terminar una solicitud se descuenta del stock y ya no queda apartada'
     && (int) $final['tbinventariostockreservado'] === (int) $antes['tbinventariostockreservado'],
     mensaje($r) . ' ' . json_encode($final, JSON_UNESCAPED_UNICODE));
 
-// Solicitudes viejas que piden más de lo que hay (Lirio rosado: 15 en inventario y 24 apartados)
+// Por el ajuste de arriba, las solicitudes abiertas piden más lirios de los que hay (15 en inventario y 24 apartados)
 $lirio = datos($propietario->get('inventario', 'obtener', ['id' => 10]));
 prueba('Si lo apartado pasa del stock, el inventario dice cuántos faltan', (int) ($lirio['tbinventariofaltante'] ?? 0) > 0
     && (int) $lirio['tbinventariodisponible'] === 0, json_encode($lirio, JSON_UNESCAPED_UNICODE));
@@ -1640,6 +1647,51 @@ $r = $propietario->post('credito', 'abonar', ['tipo' => 'cobrar', 'id' => $idpag
 prueba('Se paga completa una solicitud nueva', $idpagada > 0 && exito($r) && strpos(mensaje($r), 'pagada') !== false, mensaje($r));
 $r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idpagada, 'tbsolicitudencargocantidad' => 1] + $pagada);
 prueba('…y ya no se le puede bajar la cantidad para que cueste menos de lo que pagó', tieneerror($r, 'tbsolicitudencargocantidad'), mensaje($r));
+
+// Anular un abono mal registrado: no se borra, deja de sumar y queda con el motivo, quién y cuándo
+$cuenta = datos($propietario->get('credito', 'obtener', ['tipo' => 'pagar', 'id' => 2]));
+$idsegundo = (int) ($cuenta['abonos'][1]['id'] ?? 0);
+$anular = ['tipo' => 'pagar', 'id' => 2, 'idabono' => $idsegundo, 'motivo' => 'El monto se digitó mal'];
+$r = $propietario->get('credito', 'anularabono');
+prueba('Anular un abono solo acepta POST (405)', $r['codigo'] === 405, 'HTTP ' . $r['codigo']);
+prueba('Un empleado no puede anular abonos (403)', $lorena->post('credito', 'anularabono', $anular)['codigo'] === 403);
+prueba('Pide el motivo', tieneerror($propietario->post('credito', 'anularabono', ['motivo' => ''] + $anular), 'motivo'));
+prueba('El motivo tiene que tener al menos 5 caracteres con letras',
+    tieneerror($propietario->post('credito', 'anularabono', ['motivo' => '1234'] + $anular), 'motivo')
+    && tieneerror($propietario->post('credito', 'anularabono', ['motivo' => '12345'] + $anular), 'motivo'));
+$r = $propietario->post('credito', 'anularabono', ['idabono' => 9999] + $anular);
+prueba('No deja anular un abono de otra cuenta', !exito($r) && strpos(mensaje($r), 'no pertenece') !== false, mensaje($r));
+$r = $propietario->post('credito', 'anularabono', $anular);
+prueba('Anula el abono de ₡4 000 y el pedido vuelve a deber ₡4 000', exito($r) && (float) (datos($r)['saldo'] ?? -1) === 4000.0, mensaje($r));
+$cuenta = datos($propietario->get('credito', 'obtener', ['tipo' => 'pagar', 'id' => 2]));
+$anulado = $cuenta['abonos'][1] ?? [];
+prueba('…el abono sigue en la lista, anulado, con el motivo y quién lo anuló',
+    count($cuenta['abonos'] ?? []) === 3 && ($anulado['estado'] ?? 1) === 0 && ($anulado['motivo'] ?? '') === 'El monto se digitó mal'
+    && ($anulado['anuladopor'] ?? '') === 'Patricia Mora Solano' && !empty($anulado['fechaanulacion']),
+    json_encode($anulado, JSON_UNESCAPED_UNICODE));
+prueba('…ya no suma: lo pagado baja a ₡11 000 y el pedido vuelve a la lista por pagar',
+    (float) ($cuenta['abonado'] ?? 0) === 11000.0 && ($cuenta['estadocuenta'] ?? '') !== 'Pagado'
+    && in_array(2, array_column(datos($propietario->get('credito', 'listar'))['porpagar'] ?? [], 'id'), true));
+prueba('No se puede anular dos veces el mismo abono', !exito($propietario->post('credito', 'anularabono', $anular)));
+$traza = datos($propietario->get('reporte', 'trazabilidad', ['tipo' => 'pedido', 'id' => 2]));
+$eventoanulado = array_values(array_filter($traza['eventos'] ?? [], function ($evento) {
+    return strpos($evento['texto'], 'Se anuló el abono') === 0;
+}))[0] ?? [];
+prueba('La trazabilidad del pedido dice quién anuló el abono y por qué',
+    ($eventoanulado['responsable'] ?? '') === 'Patricia Mora Solano' && strpos($eventoanulado['detalle'] ?? '', 'El monto se digitó mal') !== false,
+    json_encode($eventoanulado, JSON_UNESCAPED_UNICODE));
+$r = $propietario->post('credito', 'abonar', $abono);
+prueba('Se registra el abono correcto y el pedido queda pagado otra vez', exito($r) && strpos(mensaje($r), 'pagado') !== false, mensaje($r));
+
+// Si se anula el pago de la clienta, la solicitud vuelve a deber y ya se puede bajar la cantidad
+$cuentapagada = datos($propietario->get('credito', 'obtener', ['tipo' => 'cobrar', 'id' => $idpagada]));
+$r = $propietario->post('credito', 'anularabono', ['tipo' => 'cobrar', 'id' => $idpagada,
+    'idabono' => $cuentapagada['abonos'][0]['id'] ?? 0, 'motivo' => 'Se registró en la solicitud equivocada']);
+$solicitudpagada = datos($propietario->get('encargo', 'obtener', ['id' => $idpagada]));
+prueba('Anula el pago de una clienta y la solicitud vuelve a deber todo',
+    exito($r) && (float) ($solicitudpagada['abonado'] ?? -1) === 0.0 && (float) ($solicitudpagada['saldo'] ?? 0) === $totalpagada, mensaje($r));
+$r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idpagada, 'tbsolicitudencargocantidad' => 1] + $pagada);
+prueba('…y el abono anulado ya no impide bajar la cantidad', exito($r), mensaje($r));
 
 /* =====================================================================
  * 21. Gastos y reportes (Parte 18)
