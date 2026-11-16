@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ingresar | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body class="pagina-login">
 
@@ -56,7 +56,7 @@
         <h1>Ingresar</h1>
         <p class="nota">Use el usuario y la contraseña que le dio el propietario de la floristería.</p>
 
-        <form id="formulario" data-accion="ingresar" novalidate>
+        <form id="formulario" data-accion="ingresar" data-espera="<?= (int) ($espera ?? 0) ?>" novalidate>
             <p id="avisoformulario" class="aviso aviso-error" role="alert" hidden></p>
 
             <label class="campo">
@@ -75,6 +75,6 @@
     <?php endif; ?>
 </main>
 
-<script src="js/login.js"></script>
+<script src="<?= recurso('js/login.js') ?>"></script>
 </body>
 </html>

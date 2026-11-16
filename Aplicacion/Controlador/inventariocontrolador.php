@@ -26,6 +26,8 @@ class inventariocontrolador
     // Atributos de la categoría que tiene el producto que se está editando (un color o tipo de flor
     // que se inactivó después se puede dejar como estaba)
     private $actuales = [];
+    // Al registrar: el insumo activo que ya tiene ese nombre, para ofrecer sumarle el stock
+    private $existente = null;
     private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray', 'Accesorio'];
 
     // Opciones de las listas de cada categoría. La vista las usa para llenar los select
@@ -254,7 +256,9 @@ class inventariocontrolador
         $errores += $this->validarotros($otros, $datos);
 
         if ($errores) {
-            return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
+            // Si el nombre ya existe, la pantalla ofrece sumarle el stock a ese insumo
+            return $this->respuesta(false, 'Revise los datos ingresados.',
+                ['errores' => $errores] + ($this->existente ? ['existente' => $this->existente] : []));
         }
 
         $datos['tbinventariopreciounidad'] = $this->calcularpreciounidad($datos);
@@ -295,7 +299,6 @@ class inventariocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
-        $stockanterior = (int) $inventario->getTbinventariostock();
         $anteriores = $this->datoshistorico($inventario);
 
         $inventario->setTbproveedorid($datos['tbproveedorid']);
@@ -305,25 +308,106 @@ class inventariocontrolador
         $inventario->setTbinventariounidadespaquete($datos['tbinventariounidadespaquete']);
         $inventario->setTbinventariopreciounidad($this->calcularpreciounidad($datos));
         $inventario->setTbinventarioprecioventa($datos['tbinventarioprecioventa']);
-        $inventario->setTbinventariostock($datos['tbinventariostock']);
+        // El stock no se escribe al editar: se suma o se resta con movimientostock()
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
-        $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $otros, $id, $stockanterior, $anteriores, $usuario) {
+        $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $otros, $id, $anteriores, $usuario) {
             $this->repositorio->actualizar($inventario);
             $this->temporadas->guardar('inventario', $id, $preciostemporada, $usuario['id']);
             $this->guardarotros($id, $otros, $usuario['id']);
             $this->historico->registrar('inventario', $id, $anteriores, $this->datoshistorico($inventario), $usuario['id']);
             $this->atributos->eliminar($id);
             $this->atributos->insertar($datos['tbinventariocategoria'], $id, $datos);
-
-            // Si se corrigió el stock a mano, queda como ajuste
-            $diferencia = (int) $datos['tbinventariostock'] - $stockanterior;
-            if ($diferencia !== 0) {
-                $this->movimientos->registrar($id, 'Ajuste', $diferencia, $usuario['id']);
-            }
         });
 
         return $this->respuesta(true, 'Insumo actualizado correctamente.');
+    }
+
+    /* ---------- Agregar stock o rebajar las dañadas ---------- */
+
+    // Al agregar stock se le compra a un proveedor: lo que llega con un pedido se suma solo al recibirlo,
+    // y lo que se compra sin pedido se suma aquí, por paquetes. Al rebajar, solo las que se dañaron o se
+    // marchitaron (las que salen en los arreglos se rebajan solas al terminar la solicitud).
+    const TIPOCOMPRA = 'Compra';
+    const TIPODANADO = 'Dañado';
+
+    public function movimientostock($datos, $usuario)
+    {
+        $id = (int) ($datos['tbinventarioid'] ?? 0);
+        $inventario = $this->repositorio->obtenerporid($id);
+
+        if (!$inventario) {
+            return $this->respuesta(false, 'El producto no existe.');
+        }
+        if (!$inventario->estaActivo()) {
+            return $this->respuesta(false, 'El producto está inactivo. Reactívelo para cambiarle el stock.');
+        }
+
+        $sentido = (string) ($datos['sentido'] ?? '');
+        $stock = (int) $inventario->getTbinventariostock();
+        $unidadespaquete = max(1, (int) $inventario->getTbinventariounidadespaquete());
+        $errores = [];
+        $idproveedor = null;
+        $paquetes = 0;
+
+        if ($sentido === 'sumar') {
+            // A quién se le compró: el proveedor principal o uno de "Otros proveedores", que esté activo
+            $idproveedor = (int) ($datos['tbproveedorid'] ?? 0);
+            $permitidos = array_keys($this->otrosproveedores->listarporinsumo($id));
+            $permitidos[] = (int) $inventario->getTbproveedorid();
+            $proveedor = $idproveedor > 0 ? $this->proveedores->obtenerporid($idproveedor) : null;
+            if ($idproveedor <= 0) {
+                $errores['tbproveedorid'] = 'Elija a qué proveedor se lo compró.';
+            } elseif (!in_array($idproveedor, $permitidos, true) || !$proveedor) {
+                $errores['tbproveedorid'] = 'Ese proveedor no vende este insumo. Agréguelo antes en "Otros proveedores".';
+            } elseif (!$proveedor->estaActivo()) {
+                $errores['tbproveedorid'] = 'Ese proveedor está inactivo.';
+            }
+
+            $texto = trim((string) ($datos['paquetes'] ?? ''));
+            if ($texto === '') {
+                $errores['paquetes'] = 'Escriba cuántos paquetes compró.';
+            } elseif (!preg_match('/^\d{1,4}$/', $texto) || (int) $texto < 1) {
+                $errores['paquetes'] = 'Los paquetes deben ser un número entero de 1 a 9999.';
+            } elseif ($stock + (int) $texto * $unidadespaquete > 999999) {
+                $errores['paquetes'] = 'El stock no puede pasar de 999999 unidades.';
+            }
+            $paquetes = (int) $texto;
+            $cantidad = $paquetes * $unidadespaquete;
+        } elseif ($sentido === 'restar') {
+            $texto = trim((string) ($datos['cantidad'] ?? ''));
+            if ($texto === '') {
+                $errores['cantidad'] = 'Escriba cuántas unidades se dañaron.';
+            } elseif (!preg_match('/^\d{1,6}$/', $texto) || (int) $texto < 1) {
+                $errores['cantidad'] = 'La cantidad debe ser un número entero mayor que 0.';
+            } elseif ((int) $texto > $stock) {
+                $errores['cantidad'] = 'No puede rebajar más de lo que hay en stock (' . $stock . ').';
+            }
+            $cantidad = (int) $texto;
+        } else {
+            return $this->respuesta(false, 'Elija si va a agregar stock o rebajar las dañadas.');
+        }
+
+        if ($errores) {
+            return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
+        }
+
+        $this->entransaccion(function () use ($id, $sentido, $cantidad, $idproveedor, $usuario) {
+            if ($sentido === 'sumar') {
+                $this->repositorio->sumarstock($id, $cantidad);
+                $this->movimientos->registrar($id, self::TIPOCOMPRA, $cantidad, $usuario['id'], null, null, $idproveedor);
+            } else {
+                $this->repositorio->restarstock($id, $cantidad);
+                $this->movimientos->registrar($id, self::TIPODANADO, -$cantidad, $usuario['id']);
+            }
+        });
+
+        $nuevo = $sentido === 'sumar' ? $stock + $cantidad : $stock - $cantidad;
+        $mensaje = $sentido === 'sumar'
+            ? 'Se sumaron ' . $paquetes . ($paquetes === 1 ? ' paquete' : ' paquetes') . ' (' . $cantidad . ' unidades). Ahora hay ' . $nuevo . ' en stock.'
+            : 'Se rebajaron ' . $cantidad . ($cantidad === 1 ? ' unidad dañada' : ' unidades dañadas') . '. Ahora hay ' . $nuevo . ' en stock.';
+
+        return $this->respuesta(true, $mensaje, ['stock' => $nuevo]);
     }
 
     public function inactivar($id, $usuario)
@@ -617,7 +701,14 @@ class inventariocontrolador
                 case 'Salida':
                     $motivo = 'Solicitud de pedido de arreglo N.º ' . $fila['tbsolicitudencargoid'] . ' terminada';
                     break;
+                case self::TIPOCOMPRA:
+                    $motivo = 'Compra sin pedido' . (!empty($fila['proveedor']) ? ' a ' . $fila['proveedor'] : '');
+                    break;
+                case self::TIPODANADO:
+                    $motivo = 'Se dañaron o se marchitaron';
+                    break;
                 default:
+                    // "Ajuste" es de antes, cuando el stock se corregía editando el producto
                     $motivo = 'Ajuste manual al editar el producto';
             }
 
@@ -760,9 +851,15 @@ class inventariocontrolador
             $errores['tbinventarionombre'] = 'El nombre del producto debe contener al menos una letra.';
         } elseif (!preg_match("/^[\p{L}\d\s.,'&()-]+$/u", $datos['tbinventarionombre'])) {
             $errores['tbinventarionombre'] = 'El nombre del producto solo puede contener letras, números y los signos . , - \' & ( ).';
-        } elseif (!isset($errores['tbproveedorid'])
-            && $this->repositorio->existenombre($datos['tbinventarionombre'], $datos['tbproveedorid'], $idexcluir)) {
-            $errores['tbinventarionombre'] = 'Este proveedor ya tiene un producto con ese nombre.';
+        } elseif ($igual = $this->repositorio->buscarpornombre($datos['tbinventarionombre'], $idexcluir)) {
+            // Un insumo se registra una sola vez: si se compra más, se le suma el stock, y si
+            // otro proveedor también lo vende, se agrega en "Otros proveedores"
+            $this->existente = $idexcluir === 0 && (int) $igual['tbinventarioestado'] === 1
+                ? ['tbinventarioid' => (int) $igual['tbinventarioid'], 'tbinventarionombre' => $igual['tbinventarionombre']]
+                : null;
+            $errores['tbinventarionombre'] = 'Ya existe "' . $igual['tbinventarionombre'] . '" (de ' . $igual['tbproveedornombreempresa']
+                . ((int) $igual['tbinventarioestado'] === 1 ? '' : ', inactivo') . '). Si compró más, súmele el stock a ese insumo; '
+                . 'si otro proveedor también lo vende, agréguelo en "Otros proveedores".';
         }
 
         if ($datos['tbinventariocategoria'] === '') {
@@ -794,9 +891,12 @@ class inventariocontrolador
                 . historicocontrolador::monto($this->calcularpreciounidad($datos)) . ').';
         }
 
-        $this->validarentero($errores, $datos, 'tbinventariostock', 0, 999999,
-            'El stock es obligatorio.',
-            'El stock debe ser un número entero entre 0 y 999999.');
+        // El stock solo se escribe al registrar el insumo; después se suma o se resta con su motivo
+        if ($idexcluir === 0) {
+            $this->validarentero($errores, $datos, 'tbinventariostock', 0, 999999,
+                'El stock es obligatorio.',
+                'El stock debe ser un número entero entre 0 y 999999.');
+        }
 
         $this->validarentero($errores, $datos, 'tbinventariostockminimo', 0, 999999,
             'El stock mínimo es obligatorio.',
@@ -1003,11 +1103,30 @@ class inventariocontrolador
             $errores['tbinventariocategoriachocolatefechavencimiento'] = 'La fecha de vencimiento es obligatoria.';
         } elseif (!$fecha || $fecha->format('Y-m-d') !== $valor) {
             $errores['tbinventariocategoriachocolatefechavencimiento'] = 'La fecha de vencimiento no es válida.';
-        } elseif ($valor < date('Y-m-d')) {
-            $errores['tbinventariocategoriachocolatefechavencimiento'] = 'La fecha de vencimiento no puede ser anterior a hoy.';
+        } elseif ($error = $this->errorvencimiento($valor, 'tbinventariocategoriachocolatefechavencimiento')) {
+            $errores['tbinventariocategoriachocolatefechavencimiento'] = $error;
         }
 
         return $errores;
+    }
+
+    // Lo que se compra tiene que durar: el vencimiento debe ser al menos DIASVENCIMIENTO días después de hoy.
+    // Al editar, si la fecha no cambió, no se vuelve a revisar (así se pueden editar otros datos).
+    const DIASVENCIMIENTO = 30;
+
+    private function errorvencimiento($valor, $campo)
+    {
+        if ($valor === ($this->actuales[$campo] ?? null)) {
+            return '';
+        }
+
+        $minimo = date('Y-m-d', strtotime('+' . self::DIASVENCIMIENTO . ' days'));
+        if ($valor < $minimo) {
+            return 'La fecha de vencimiento debe ser al menos ' . self::DIASVENCIMIENTO . ' días después de hoy (desde el '
+                . date('d/m/Y', strtotime($minimo)) . ').';
+        }
+
+        return '';
     }
 
     private function validarpeluche($datos)
@@ -1101,8 +1220,8 @@ class inventariocontrolador
             $fecha = DateTime::createFromFormat('Y-m-d', (string) $valor);
             if (!$fecha || $fecha->format('Y-m-d') !== $valor) {
                 $errores['tbinventariocategoriasprayfechavencimiento'] = 'La fecha de vencimiento no es válida.';
-            } elseif ($valor < date('Y-m-d')) {
-                $errores['tbinventariocategoriasprayfechavencimiento'] = 'La fecha de vencimiento no puede ser anterior a hoy.';
+            } elseif ($error = $this->errorvencimiento($valor, 'tbinventariocategoriasprayfechavencimiento')) {
+                $errores['tbinventariocategoriasprayfechavencimiento'] = $error;
             }
         }
 

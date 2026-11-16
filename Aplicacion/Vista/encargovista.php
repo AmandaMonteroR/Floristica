@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Solicitudes de pedido de arreglo | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -171,8 +171,8 @@
             <div class="asistente" id="asistente" hidden>
                 <div class="asistente-encabezado">
                     <div>
-                        <strong><span aria-hidden="true">&#10047;</span> Asistente de presupuesto</strong>
-                        <p class="nota">Propone arreglos que caben en el presupuesto con este % de ganancia, a partir de las recetas del catálogo y del stock. Si ya eligió productos (por ejemplo 5 rosas), se mantienen.</p>
+                        <strong><span aria-hidden="true">&#10047;</span> <span id="tituloasistente">Asistente de presupuesto</span></strong>
+                        <p class="nota" id="explicacionasistente">Propone arreglos que caben en el presupuesto con este % de ganancia, a partir de las recetas del catálogo y del stock. Si ya eligió productos (por ejemplo 5 rosas), se mantienen.</p>
                     </div>
                     <button type="button" class="boton" id="botonsugerir">Sugerir arreglos</button>
                 </div>
@@ -397,9 +397,9 @@
     </div>
 </dialog>
 
-<script src="js/menu.js"></script>
-<script src="js/encargo.js"></script>
-<script src="js/asistente.js"></script>
-<script src="js/lupa.js"></script>
+<script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/encargo.js') ?>"></script>
+<script src="<?= recurso('js/asistente.js') ?>"></script>
+<script src="<?= recurso('js/lupa.js') ?>"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ require_once __DIR__ . '/empleadocontrolador.php';
 class sesioncontrolador
 {
     private $empleados;
-    private $intentosmaximos = 5;
+    private $intentosmaximos = 3;
     private $segundosbloqueo = 60;
 
     public function __construct()
@@ -22,9 +22,9 @@ class sesioncontrolador
 
     public function ingresar($datos)
     {
-        $espera = (int) ($_SESSION['bloqueohasta'] ?? 0) - time();
+        $espera = $this->espera();
         if ($espera > 0) {
-            return $this->respuesta(false, 'Demasiados intentos. Espere ' . $espera . ' segundos e intente de nuevo.');
+            return $this->bloqueado($espera);
         }
 
         $usuario = mb_strtolower(trim((string) ($datos['usuario'] ?? '')));
@@ -49,13 +49,18 @@ class sesioncontrolador
         if (!$correcto) {
             $_SESSION['intentos'] = (int) ($_SESSION['intentos'] ?? 0) + 1;
 
+            // Al tercer intento fallido se bloquea; los 60 segundos cuentan desde ese intento
             if ($_SESSION['intentos'] >= $this->intentosmaximos) {
                 $_SESSION['intentos'] = 0;
                 $_SESSION['bloqueohasta'] = time() + $this->segundosbloqueo;
+                return $this->bloqueado($this->segundosbloqueo);
             }
 
+            $quedan = $this->intentosmaximos - $_SESSION['intentos'];
+
             // El mismo mensaje para usuario o contraseña incorrectos, así no se revela cuál falló
-            return $this->respuesta(false, 'Usuario o contraseña incorrectos.');
+            return $this->respuesta(false, 'Usuario o contraseña incorrectos. '
+                . ($quedan === 1 ? 'Le queda 1 intento.' : 'Le quedan ' . $quedan . ' intentos.'));
         }
 
         if (!$empleado->estaActivo()) {
@@ -66,6 +71,19 @@ class sesioncontrolador
         Seguridad::ingresar($empleado);
 
         return $this->respuesta(true, 'Bienvenida, ' . $empleado->getTbempleadonombre() . '.');
+    }
+
+    // Segundos que faltan para poder intentar de nuevo (0 si no está bloqueado).
+    // La página de ingreso también la usa para seguir la cuenta regresiva si se recarga.
+    public function espera()
+    {
+        return max(0, (int) ($_SESSION['bloqueohasta'] ?? 0) - time());
+    }
+
+    private function bloqueado($espera)
+    {
+        return $this->respuesta(false, 'Demasiados intentos. Espere ' . $espera . ' segundos e intente de nuevo.',
+            ['espera' => $espera]);
     }
 
     public function registrarpropietario($datos)

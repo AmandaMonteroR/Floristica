@@ -2232,8 +2232,11 @@ h1 {
         min-width: 0;
     }
 
-    .tabla-encargos .celda-arreglo img {
-        display: none;
+    /* La foto se achica (antes se escondía y en esta medida no se veía la foto del personalizado) */
+    .tabla-encargos .celda-arreglo img,
+    .tabla-encargos .celda-arreglo .icono-personalizado {
+        width: 34px;
+        height: 34px;
     }
 
     .tabla-encargos td:nth-child(6) small {
@@ -3997,4 +4000,77 @@ img[data-lupa] {
         border: none;
         padding: 0;
     }
+}
+
+
+/* Inventario: "Ver" por secciones (stock, proveedores y precios, datos de la categoría) */
+.detalle .detalle-seccion {
+    grid-column: 1 / -1;
+    margin-top: 0.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--borde);
+    color: var(--principal);
+    font-size: 0.95rem;
+}
+
+.detalle .detalle-seccion:first-child {
+    margin-top: 0;
+}
+
+/* Inventario: al editar, el stock solo se muestra; se cambia con "Sumar o restar stock" */
+.stock-fijo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 0.9rem;
+    min-height: 2.6rem;
+    margin: 0;
+}
+
+/* Ventana para sumar o restar stock */
+.opciones-sentido {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border: 0;
+    padding: 0;
+    margin: 0 0 0.75rem;
+}
+
+.opciones-sentido legend {
+    width: 100%;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+
+.opcion-sentido {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.opcion-sentido:has(input:checked) {
+    border-color: var(--principal);
+    background: var(--rosa-claro);
+    color: var(--principal);
+    font-weight: 600;
+}
+
+.resultado-stock {
+    min-height: 1.4rem;
+    margin: 0.25rem 0 0.5rem;
+    font-weight: 600;
+}
+
+/* Inventario: al agregar stock a un insumo que ya existe, sus datos se ven pero no se pueden cambiar */
+#formulario input:disabled,
+#formulario select:disabled,
+#formulario textarea:disabled {
+    background: var(--rosa-claro);
+    color: var(--texto-suave);
+    cursor: not-allowed;
 }

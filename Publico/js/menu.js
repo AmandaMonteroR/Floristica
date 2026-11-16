@@ -354,19 +354,40 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             }
         }
 
-        // Muestra la página; si aun así queda scroll, quita una fila y prueba de nuevo
-        do {
-            const total = Math.ceil(todos.length / cantidad);
-            pagina = Math.min(Math.max(1, pagina), total);
-            const desde = (pagina - 1) * cantidad;
-            const hasta = Math.min(desde + cantidad, todos.length);
+        // Muestra una página con "cantidad" registros por página
+        const mostrarpagina = (numero, tamano) => {
+            const total = Math.ceil(todos.length / tamano);
+            const desde = (numero - 1) * tamano;
+            const hasta = Math.min(desde + tamano, todos.length);
 
             todos.forEach((registro, indice) => {
                 registro.hidden = indice < desde || indice >= hasta;
             });
             pintarcontroles(total, desde, hasta, todos.length);
+        };
+
+        // Todas las páginas llevan la misma cantidad: si alguna página (por ejemplo, con filas
+        // más altas) hace aparecer scroll, se quita una fila a todas y se prueba de nuevo.
+        // Antes se ajustaba solo la página que se veía y se perdía el número de página pedido,
+        // así que la última página no se podía abrir.
+        const cabentodas = (tamano) => {
+            const total = Math.ceil(todos.length / tamano);
+            for (let numero = 1; numero <= total; numero++) {
+                mostrarpagina(numero, tamano);
+                if (sobrepasa()) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        while (cantidad - medida.porfila >= medida.minimo && !cabentodas(cantidad)) {
             cantidad -= medida.porfila;
-        } while (sobrepasa() && cantidad >= medida.minimo);
+        }
+
+        const total = Math.ceil(todos.length / cantidad);
+        pagina = Math.min(Math.max(1, pagina), total);
+        mostrarpagina(pagina, cantidad);
 
         estirarfotos(medida.porfila);
     }

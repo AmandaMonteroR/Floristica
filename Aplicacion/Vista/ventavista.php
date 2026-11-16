@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ventas y ganancias | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -79,7 +79,7 @@
     </div>
 </main>
 
-<script src="js/menu.js"></script>
-<script src="js/venta.js"></script>
+<script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/venta.js') ?>"></script>
 </body>
 </html>

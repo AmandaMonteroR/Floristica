@@ -32,6 +32,14 @@ function responderjson($respuesta, $codigo = 200)
     exit;
 }
 
+// Ruta de un script o estilo con su versión (la fecha en que se modificó), por ejemplo "js/login.js?v=1763270000".
+// Así, cuando el archivo cambia, el navegador carga el nuevo y no se queda con el que tenía guardado.
+function recurso($ruta)
+{
+    $archivo = __DIR__ . '/' . $ruta;
+    return $ruta . (is_file($archivo) ? '?v=' . filemtime($archivo) : '');
+}
+
 // ---------- Iniciar y cerrar sesión (no requieren estar conectado) ----------
 if ($modulo === 'sesion') {
     if ($accion === 'cerrar') {
@@ -70,7 +78,9 @@ if ($usuarioactual === null) {
         responderjson(['exito' => false, 'mensaje' => 'Su sesión terminó. Vuelva a ingresar.', 'datos' => ['sesion' => false]], 401);
     }
 
-    $primeravez = (new sesioncontrolador())->primeravez();
+    $sesioncontrolador = new sesioncontrolador();
+    $primeravez = $sesioncontrolador->primeravez();
+    $espera = $sesioncontrolador->espera();
     require __DIR__ . '/../Aplicacion/Vista/loginvista.php';
     exit;
 }
@@ -124,7 +134,7 @@ header('Content-Type: application/json; charset=utf-8');
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
     'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar',
-    'guardarcatalogo', 'estadocatalogo', 'abonar', 'anularabono'];
+    'guardarcatalogo', 'estadocatalogo', 'abonar', 'anularabono', 'movimientostock'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -212,6 +222,9 @@ try {
                     break;
                 case 'historial':
                     $respuesta = $controlador->historial($_GET['id'] ?? 0);
+                    break;
+                case 'movimientostock':
+                    $respuesta = $controlador->movimientostock($_POST, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

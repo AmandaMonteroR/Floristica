@@ -19,6 +19,10 @@ require_once __DIR__ . '/encargocontrolador.php';
 // 4. Lo que sobra se completa de a una flor, la que más le falte para mantener la proporción.
 // Al final se ordenan: primero las que aprovechan mejor el presupuesto y las que ya llevan
 // las flores que pidió la clienta.
+//
+// Personalizado libre (sin presupuesto): cada receta se propone de su tamaño original (con
+// las flores que pidió la clienta, nunca menos) y con lo que hay en stock, para cotizar.
+// Se ordenan por cuántas de las flores que pidió lleva la receta y si alcanzó el stock.
 class asistentecontrolador
 {
     const PROPUESTAS = 3;
@@ -41,12 +45,14 @@ class asistentecontrolador
 
     public function sugerir($datos)
     {
+        // Libre: sin presupuesto, para cotizar
+        $libre = ($datos['modalidad'] ?? '') === 'Libre';
         $presupuesto = trim((string) ($datos['presupuesto'] ?? ''));
         $porcentaje = trim((string) ($datos['porcentaje'] ?? ''));
         $reservado = trim((string) ($datos['reservado'] ?? '0'));
         $errores = [];
 
-        if ($presupuesto === '' || !is_numeric($presupuesto) || (float) $presupuesto <= 0 || (float) $presupuesto > 10000000) {
+        if (!$libre && ($presupuesto === '' || !is_numeric($presupuesto) || (float) $presupuesto <= 0 || (float) $presupuesto > 10000000)) {
             $errores['presupuesto'] = 'Escriba el presupuesto de la clienta (mayor que 0).';
         }
         if ($porcentaje === '' || !ctype_digit($porcentaje) || (int) $porcentaje > 500) {
@@ -75,6 +81,27 @@ class asistentecontrolador
             return $this->respuesta(false, 'Revise los datos del asistente.', ['errores' => $errores]);
         }
 
+        if ($libre) {
+            $propuestas = [];
+            foreach ($this->arreglos->listar('', 1) as $arreglo) {
+                $propuesta = $this->usarrecetalibre($arreglo, $productos, $fijos);
+                if ($propuesta !== null) {
+                    $propuestas[] = $propuesta;
+                }
+            }
+            $elegidas = $this->elegir($propuestas);
+
+            if (!$elegidas) {
+                return $this->respuesta(false, 'No hay stock para armar un arreglo con las recetas del catálogo.');
+            }
+
+            return $this->respuesta(true, '', [
+                'libre'      => true,
+                'porcentaje' => (int) $porcentaje,
+                'propuestas' => $elegidas,
+            ]);
+        }
+
         $presupuesto = (float) $presupuesto;
         $disponible = $presupuesto - (float) $reservado;
         foreach ($fijos as $id => $cantidad) {
@@ -94,11 +121,28 @@ class asistentecontrolador
             }
         }
 
+        $elegidas = $this->elegir($propuestas);
+
+        if (!$elegidas) {
+            return $this->respuesta(false, 'Con ese presupuesto no alcanza para armar un arreglo con las recetas del catálogo. '
+                . 'Pruebe con un presupuesto mayor o un % de ganancia menor.');
+        }
+
+        return $this->respuesta(true, '', [
+            'presupuesto' => $presupuesto,
+            'porcentaje'  => (int) $porcentaje,
+            'disponible'  => round($disponible, 2),
+            'propuestas'  => $elegidas,
+        ]);
+    }
+
+    // Las mejores propuestas por puntaje, sin repetir: si dos recetas usan las mismas flores, queda la primera
+    private function elegir($propuestas)
+    {
         usort($propuestas, function ($a, $b) {
             return $b['puntaje'] <=> $a['puntaje'];
         });
 
-        // Sin repetir: si dos recetas usan las mismas flores, queda la primera
         $elegidas = [];
         $vistas = [];
         foreach ($propuestas as $propuesta) {
@@ -121,17 +165,77 @@ class asistentecontrolador
             }
         }
 
-        if (!$elegidas) {
-            return $this->respuesta(false, 'Con ese presupuesto no alcanza para armar un arreglo con las recetas del catálogo. '
-                . 'Pruebe con un presupuesto mayor o un % de ganancia menor.');
+        return $elegidas;
+    }
+
+    // Libre: la receta de su tamaño original, sin pasar del stock. Las flores que pidió la clienta
+    // se mantienen (si pidió más que la receta, van las que pidió).
+    private function usarrecetalibre($arreglo, $productos, $fijos)
+    {
+        $flores = [];
+        $otros = [];
+        foreach ($this->arreglos->listardetalles($arreglo->getTbarreglofloralid()) as $detalle) {
+            $id = (int) $detalle->getTbinventarioid();
+            if (!isset($productos[$id])) {
+                continue;
+            }
+            $cantidad = (int) $detalle->getTbarreglofloralinsumocantidad();
+            if ($productos[$id]['categoria'] === 'Flor') {
+                $flores[$id] = $cantidad;
+            } elseif (!isset($fijos[$id])) {
+                $otros[$id] = $cantidad;
+            }
         }
 
-        return $this->respuesta(true, '', [
-            'presupuesto' => $presupuesto,
-            'porcentaje'  => (int) $porcentaje,
-            'disponible'  => round($disponible, 2),
-            'propuestas'  => $elegidas,
-        ]);
+        if (!$flores) {
+            return null;
+        }
+
+        $agregadas = [];
+        $sinstock = [];
+        $completas = 0;
+        foreach ($flores as $id => $receta) {
+            $pedidas = $fijos[$id] ?? 0;
+            // Las que faltan para llegar a la receta, hasta donde alcance el stock (las pedidas ya cuentan)
+            $faltan = max(0, $receta - $pedidas);
+            $caben = max(0, min($faltan, $productos[$id]['stock'] - $pedidas));
+            if ($caben < $faltan) {
+                $sinstock[] = $productos[$id]['nombre'];
+            } else {
+                $completas++;
+            }
+            if ($caben > 0) {
+                $agregadas[$id] = $caben;
+            }
+        }
+
+        // Si no se puede agregar ni una flor de la receta, no sirve
+        if (!$agregadas) {
+            return null;
+        }
+
+        // Papel, base, cinta y adicionales de la receta, solo los que tienen stock
+        foreach ($otros as $id => $cantidad) {
+            if ($cantidad <= $productos[$id]['stock']) {
+                $agregadas[$id] = $cantidad;
+            }
+        }
+
+        $propuesta = $this->armar($arreglo, $productos, $fijos, $agregadas, 0, 0, 1.0, $sinstock);
+
+        // Cuántos de los tipos de flor que pidió la clienta lleva la receta
+        $pedidasflor = array_filter(array_keys($fijos), function ($id) use ($productos) {
+            return $productos[$id]['categoria'] === 'Flor';
+        });
+        $relacion = $pedidasflor
+            ? count(array_intersect($pedidasflor, array_keys($flores))) / count($pedidasflor)
+            : 0;
+
+        $propuesta['sobra'] = null;
+        $propuesta['extras'] = [];
+        $propuesta['puntaje'] = round(0.7 * $relacion + 0.3 * $completas / count($flores), 4);
+
+        return $propuesta;
     }
 
     // Productos activos (sin spray) con el precio que tendrían en el personalizado

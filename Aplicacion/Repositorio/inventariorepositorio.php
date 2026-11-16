@@ -166,16 +166,34 @@ class inventariorepositorio
         return $productos;
     }
 
-    public function existenombre($nombre, $idproveedor, $idexcluir = 0)
+    // Un insumo se registra una sola vez, sin importar el proveedor (los demás van en "Otros proveedores").
+    // Devuelve el que tiene el mismo nombre (sin distinguir mayúsculas ni tildes), o null.
+    // Se compara en PHP para que funcione igual con cualquier configuración de la base.
+    public function buscarpornombre($nombre, $idexcluir = 0)
     {
-        $sql = 'SELECT COUNT(*) AS total FROM tbinventario
-                WHERE LOWER(TRIM(tbinventarionombre)) = LOWER(TRIM(?))
-                AND tbproveedorid = ?
-                AND tbinventarioid <> ?';
+        $sql = 'SELECT i.tbinventarioid, i.tbinventarionombre, i.tbinventarioestado, p.tbproveedornombreempresa
+                FROM tbinventario i
+                LEFT JOIN tbproveedor p ON p.tbproveedorid = i.tbproveedorid
+                WHERE i.tbinventarioid <> ?
+                ORDER BY i.tbinventarioestado DESC, i.tbinventarioid';
 
         $sentencia = $this->conexion->prepare($sql);
-        $sentencia->execute([$nombre, (int) $idproveedor, (int) $idexcluir]);
+        $sentencia->execute([(int) $idexcluir]);
 
-        return (int) $sentencia->fetch()['total'] > 0;
+        $buscado = self::normalizar($nombre);
+        foreach ($sentencia->fetchAll() as $fila) {
+            if (self::normalizar($fila['tbinventarionombre']) === $buscado) {
+                return $fila;
+            }
+        }
+
+        return null;
+    }
+
+    // "  Rósa  ROJA " -> "rosa roja"
+    public static function normalizar($texto)
+    {
+        $texto = mb_strtolower(trim(preg_replace('/\s+/u', ' ', (string) $texto)), 'UTF-8');
+        return strtr($texto, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'à' => 'a', 'è' => 'e', 'ì' => 'i', 'ò' => 'o', 'ù' => 'u']);
     }
 }

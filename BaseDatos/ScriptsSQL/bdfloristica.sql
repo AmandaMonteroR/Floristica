@@ -521,7 +521,9 @@ CREATE TABLE tbsolicitudencargoempleadohistorico (
 );
 
 -- Cada vez que cambia el stock de un producto y por qué.
--- Tipo: Inicial, Entrada (pedido recibido), Salida (solicitud de encargo terminada) o Ajuste (edición manual).
+-- Tipo: Inicial, Entrada (pedido recibido), Salida (solicitud de encargo terminada), Compra (stock que se
+-- compró sin pedido; tbproveedorid dice a quién) o Dañado (se dañaron o se marchitaron).
+-- Ajuste es de antes, cuando el stock se corregía editando el producto.
 -- La cantidad es positiva si entra y negativa si sale.
 CREATE TABLE tbinventariomovimiento (
     tbinventariomovimientoid INT,
@@ -533,6 +535,7 @@ CREATE TABLE tbinventariomovimiento (
     tbsolicitudencargoid INT,
     tbempleadoid INT,
     tbinventariomovimientofecha DATETIME,
+    tbproveedorid INT,
     PRIMARY KEY (tbinventariomovimientoid)
 );
 

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Zonas de entrega | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -124,8 +124,8 @@
     </div>
 </dialog>
 
-<script src="js/menu.js"></script>
-<script src="js/historial.js"></script>
-<script src="js/zonaentrega.js"></script>
+<script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/historial.js') ?>"></script>
+<script src="<?= recurso('js/zonaentrega.js') ?>"></script>
 </body>
 </html>

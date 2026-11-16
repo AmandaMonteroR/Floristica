@@ -153,6 +153,37 @@ function revisarantesdeenviar() {
     return true;
 }
 
+/* ---------- Bloqueo por intentos fallidos: cuenta regresiva ---------- */
+
+let reloj = null;
+
+// Muestra los segundos que faltan, bajando de uno en uno, y apaga el botón hasta que se pueda intentar de nuevo
+function cuentaregresiva(segundos) {
+    clearInterval(reloj);
+    const termina = Date.now() + segundos * 1000;
+
+    const mostrar = () => {
+        const faltan = Math.ceil((termina - Date.now()) / 1000);
+        if (faltan <= 0) {
+            clearInterval(reloj);
+            botonguardar.disabled = false;
+            avisoformulario.hidden = true;
+            return;
+        }
+        botonguardar.disabled = true;
+        avisoformulario.textContent = `Demasiados intentos. Espere ${faltan} ${faltan === 1 ? 'segundo' : 'segundos'} e intente de nuevo.`;
+        avisoformulario.hidden = false;
+    };
+
+    mostrar();
+    reloj = setInterval(mostrar, 250);
+}
+
+// Si recarga la página mientras está bloqueado, la cuenta sigue donde iba
+if (Number(formulario.dataset.espera) > 0) {
+    cuentaregresiva(Number(formulario.dataset.espera));
+}
+
 formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
 
@@ -189,6 +220,11 @@ formulario.addEventListener('submit', async (evento) => {
     // Por seguridad se borra la contraseña escrita cuando falla el ingreso
     if (formulario.elements.clave) {
         formulario.elements.clave.value = '';
+    }
+
+    if (respuesta.datos && respuesta.datos.espera) {
+        cuentaregresiva(Number(respuesta.datos.espera));
+        return;
     }
 
     avisoformulario.textContent = respuesta.mensaje;

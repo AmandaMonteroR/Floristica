@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Catálogo | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -257,11 +257,11 @@
     </div>
 </dialog>
 
-<script src="js/menu.js"></script>
-<script src="js/historial.js"></script>
-<script src="js/arreglofloral.js"></script>
-<script src="js/buscarfoto.js"></script>
-<script src="js/valorarramo.js"></script>
-<script src="js/lupa.js"></script>
+<script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/historial.js') ?>"></script>
+<script src="<?= recurso('js/arreglofloral.js') ?>"></script>
+<script src="<?= recurso('js/buscarfoto.js') ?>"></script>
+<script src="<?= recurso('js/valorarramo.js') ?>"></script>
+<script src="<?= recurso('js/lupa.js') ?>"></script>
 </body>
 </html>

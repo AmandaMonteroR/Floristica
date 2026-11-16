@@ -1,6 +1,7 @@
-// Asistente de presupuesto (solicitud personalizada con presupuesto).
-// Pide al servidor hasta 3 propuestas que caben en el presupuesto con el % de ganancia,
-// a partir de las recetas del catálogo. Los productos que ya se eligieron se mantienen.
+// Asistente de arreglos (solicitud personalizada).
+// Con presupuesto: pide al servidor hasta 3 propuestas que caben en el presupuesto con el % de ganancia.
+// Libre: pide hasta 3 propuestas del tamaño de las recetas del catálogo, para cotizarlas.
+// En los dos, a partir de las recetas del catálogo; los productos que ya se eligieron se mantienen.
 // Usa formulario, lineas, dibujarlineas(), actualizarsecciones(), calcular(), presupuesto(), porcentaje(),
 // espropietario, escapar(), formatearmonto(), montocorto(), guardarborrador() y enviar() de encargo.js.
 // La foto de cada propuesta se agranda con la lupa (lupa.js) y queda como foto de referencia al usarla.
@@ -10,14 +11,27 @@
     const lista = document.getElementById('propuestas');
     const nota = document.getElementById('notaasistente');
     const campopresupuesto = document.getElementById('campopresupuesto');
+    const seccionpersonalizado = document.getElementById('seccionpersonalizado');
+    const titulo = document.getElementById('tituloasistente');
+    const explicacion = document.getElementById('explicacionasistente');
     let propuestas = [];
+    let modo = '';
 
-    // Se muestra solo cuando el personalizado es "Con presupuesto" (igual que el campo del presupuesto)
+    // Libre si el personalizado no tiene presupuesto
+    const eslibre = () => campopresupuesto.hidden;
+
+    // Se muestra en los personalizados, con presupuesto o libres; si cambia la modalidad, se limpian las propuestas
     function revisarvisible() {
-        caja.hidden = campopresupuesto.hidden;
-        if (caja.hidden) {
+        caja.hidden = seccionpersonalizado.hidden;
+        const nuevo = caja.hidden ? '' : (eslibre() ? 'libre' : 'presupuesto');
+        if (nuevo !== modo) {
             limpiar();
+            modo = nuevo;
         }
+        titulo.textContent = eslibre() ? 'Asistente de arreglos' : 'Asistente de presupuesto';
+        explicacion.textContent = eslibre()
+            ? 'Propone arreglos del tamaño de las recetas del catálogo, con el stock que hay y este % de ganancia, para cotizarle a la clienta. Si ya eligió productos (por ejemplo 5 rosas), se mantienen y van primero las recetas que los llevan.'
+            : 'Propone arreglos que caben en el presupuesto con este % de ganancia, a partir de las recetas del catálogo y del stock. Si ya eligió productos (por ejemplo 5 rosas), se mantienen.';
     }
 
     function limpiar() {
@@ -35,7 +49,10 @@
     function tarjeta(propuesta, indice) {
         const flores = propuesta.lineas.filter((linea) => linea.categoria === 'Flor');
         const otros = propuesta.lineas.filter((linea) => linea.categoria !== 'Flor');
-        const sobra = propuesta.sobra >= 100
+        const sinstock = propuesta.sobra === null && propuesta.sinstock.length
+            ? `<p class="sobra-propuesta">No alcanza el stock para la receta completa de ${escapar(propuesta.sinstock.join(', '))}: van las que hay.</p>`
+            : '';
+        const sobra = propuesta.sobra !== null && propuesta.sobra >= 100
             ? `<p class="sobra-propuesta">Sobran ${formatearmonto(propuesta.sobra)} del presupuesto.`
                 + (propuesta.sinstock.length ? ` No hay más ${escapar(propuesta.sinstock.join(', '))} en inventario.` : '')
                 + (propuesta.extras.length
@@ -57,20 +74,22 @@
                 <ul class="lineas-propuesta">${flores.map(textolinea).join('')}</ul>
                 ${otros.length ? `<p class="subtitulo-propuesta">Presentación y adicionales</p>
                 <ul class="lineas-propuesta">${otros.map(textolinea).join('')}</ul>` : ''}
-                ${sobra}
+                ${sobra}${sinstock}
                 <button type="button" class="boton boton-principal" data-usar="${indice}">Usar esta propuesta</button>
             </article>`;
     }
 
     async function sugerir() {
+        const libre = eslibre();
         const tope = presupuesto();
-        if (tope === null || !(tope > 0)) {
+        if (!libre && (tope === null || !(tope > 0))) {
             nota.textContent = 'Primero escriba el presupuesto de la clienta.';
             return;
         }
 
         const datos = new FormData();
-        datos.append('presupuesto', tope);
+        datos.append('modalidad', libre ? 'Libre' : 'Presupuesto');
+        datos.append('presupuesto', libre ? '' : tope);
         datos.append('porcentaje', porcentaje());
         datos.append('reservado', calcular().pintura);
         lineas.filter((linea) => linea.tbinventarioid && Number(linea.cantidad) > 0).forEach((linea, posicion) => {
@@ -91,8 +110,11 @@
         }
 
         propuestas = respuesta.datos.propuestas;
-        nota.textContent = `Propuestas para ${formatearmonto(respuesta.datos.presupuesto)} con ${respuesta.datos.porcentaje}% de ganancia`
-            + (lineas.some((linea) => linea.tbinventarioid) ? ', con los productos que ya eligió.' : '.');
+        const elegidos = lineas.some((linea) => linea.tbinventarioid);
+        nota.textContent = (respuesta.datos.libre
+            ? `Propuestas del tamaño de las recetas del catálogo, con ${respuesta.datos.porcentaje}% de ganancia`
+            : `Propuestas para ${formatearmonto(respuesta.datos.presupuesto)} con ${respuesta.datos.porcentaje}% de ganancia`)
+            + (elegidos ? ', con los productos que ya eligió.' : '.');
         lista.innerHTML = propuestas.map(tarjeta).join('');
     }
 
@@ -126,7 +148,8 @@
         }
     });
 
-    new MutationObserver(revisarvisible).observe(campopresupuesto, { attributes: true, attributeFilter: ['hidden'] });
+    [campopresupuesto, seccionpersonalizado].forEach((elemento) => new MutationObserver(revisarvisible)
+        .observe(elemento, { attributes: true, attributeFilter: ['hidden'] }));
     document.getElementById('dialogoformulario').addEventListener('close', limpiar);
     revisarvisible();
 

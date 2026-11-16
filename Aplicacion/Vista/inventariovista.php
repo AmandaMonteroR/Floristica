@@ -35,7 +35,7 @@ $categoriasinventario = [
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Inventario | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -127,6 +127,11 @@ $categoriasinventario = [
         </div>
 
         <p id="avisoformulario" class="aviso aviso-error" role="alert" hidden></p>
+        <!-- Si el nombre ya existe, el formulario se llena con ese insumo y solo se eligen el proveedor y los paquetes comprados -->
+        <div id="avisoexistente" class="aviso aviso-info" hidden>
+            <span id="textoexistente"></span>
+            <button type="button" class="enlace" id="botonotroinsumo">Es otro insumo</button>
+        </div>
         <input type="hidden" name="tbinventarioid">
 
         <div class="rejilla">
@@ -136,7 +141,7 @@ $categoriasinventario = [
                 <small class="error" data-error="tbinventarionombre"></small>
             </label>
             <label class="campo">
-                <span>Proveedor *</span>
+                <span id="etiquetaproveedor">Proveedor *</span>
                 <select name="tbproveedorid">
                     <option value="">Seleccione…</option>
                 </select>
@@ -175,12 +180,17 @@ $categoriasinventario = [
             <p class="campo precio-unidad precio-ganancia">Ganancia por unidad: <strong id="gananciaunidad">—</strong><br>
                 <small class="texto-suave">Es lo que se le cobra a la clienta por unidad en un arreglo personalizado o como adicional.</small></p>
             <div class="campo">
-                <span>Stock actual (unidades) *</span>
-                <div class="contador">
+                <span id="etiquetastock">Stock inicial (unidades) *</span>
+                <!-- Al registrar se escribe lo que hay; al editar solo se muestra: se suma o se resta con su motivo -->
+                <div class="contador" id="contadorstock">
                     <button type="button" class="boton-contador" data-paso="-1" data-campo="tbinventariostock" aria-label="Quitar una unidad del stock">−</button>
-                    <input type="text" name="tbinventariostock" inputmode="numeric" maxlength="6" autocomplete="off" data-filtro="entero" aria-label="Stock actual (unidades)">
+                    <input type="text" name="tbinventariostock" inputmode="numeric" maxlength="6" autocomplete="off" data-filtro="entero" aria-labelledby="etiquetastock">
                     <button type="button" class="boton-contador" data-paso="1" data-campo="tbinventariostock" aria-label="Agregar una unidad al stock">+</button>
                 </div>
+                <p class="stock-fijo" id="stockfijo" hidden>
+                    <strong id="stockfijovalor"></strong>
+                    <button type="button" class="enlace" id="botonstockformulario">Agregar stock</button>
+                </p>
                 <small class="error" data-error="tbinventariostock"></small>
             </div>
             <div class="campo">
@@ -192,6 +202,16 @@ $categoriasinventario = [
                 </div>
                 <small class="error" data-error="tbinventariostockminimo"></small>
             </div>
+            <div class="campo" id="campopaquetes" hidden>
+                <span id="etiquetapaquetesformulario">Paquetes comprados *</span>
+                <div class="contador">
+                    <button type="button" class="boton-contador" data-pasopaquete="-1" aria-label="Un paquete menos">−</button>
+                    <input type="text" name="paquetescompra" inputmode="numeric" maxlength="4" autocomplete="off" aria-labelledby="etiquetapaquetesformulario">
+                    <button type="button" class="boton-contador" data-pasopaquete="1" aria-label="Un paquete más">+</button>
+                </div>
+                <small class="error" data-error="paquetes"></small>
+            </div>
+            <p class="campo resultado-stock" id="resultadocompra" aria-live="polite" hidden></p>
         </div>
 
         <fieldset class="seccion-categoria" data-categoria="Flor" hidden>
@@ -604,6 +624,8 @@ $categoriasinventario = [
         </table>
     </div>
     <div class="acciones-dialogo">
+        <button type="button" class="boton" id="botondanadasdetalle">Rebajar dañadas</button>
+        <button type="button" class="boton" id="botonstockdetalle">Agregar stock</button>
         <button type="button" class="boton" id="botonverhistorial">Ver historial</button>
         <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
     </div>
@@ -663,6 +685,53 @@ $categoriasinventario = [
     </div>
 </dialog>
 
+<!-- Agregar stock (lo que se compró sin pedido, por paquetes y a un proveedor) o rebajar las que se dañaron -->
+<dialog id="dialogostock" class="dialogo" aria-labelledby="titulostock">
+    <form id="formulariostock" novalidate>
+        <h2 id="titulostock">Agregar stock</h2>
+        <p class="nota" id="resumenstock"></p>
+        <p id="avisostock" class="aviso aviso-error" role="alert" hidden></p>
+        <input type="hidden" name="tbinventarioid">
+        <input type="hidden" name="sentido" value="sumar">
+
+        <div id="camposcompra">
+            <label class="campo">
+                <span>¿A qué proveedor se lo compró? *</span>
+                <select name="tbproveedorid"></select>
+                <small class="texto-suave" id="preciocompra"></small>
+                <small class="error" data-error="tbproveedorid"></small>
+            </label>
+            <div class="campo">
+                <span id="etiquetapaquetes">Paquetes comprados *</span>
+                <div class="contador">
+                    <button type="button" class="boton-contador" data-pasostock="-1" data-camposstock="paquetes" aria-label="Un paquete menos">−</button>
+                    <input type="text" name="paquetes" inputmode="numeric" maxlength="4" autocomplete="off" aria-labelledby="etiquetapaquetes">
+                    <button type="button" class="boton-contador" data-pasostock="1" data-camposstock="paquetes" aria-label="Un paquete más">+</button>
+                </div>
+                <small class="error" data-error="paquetes"></small>
+            </div>
+        </div>
+
+        <div class="campo" id="camposdanadas" hidden>
+            <span id="etiquetadanadas">Unidades que se dañaron o se marchitaron *</span>
+            <div class="contador">
+                <button type="button" class="boton-contador" data-pasostock="-1" data-camposstock="cantidad" aria-label="Una unidad menos">−</button>
+                <input type="text" name="cantidad" inputmode="numeric" maxlength="6" autocomplete="off" aria-labelledby="etiquetadanadas">
+                <button type="button" class="boton-contador" data-pasostock="1" data-camposstock="cantidad" aria-label="Una unidad más">+</button>
+            </div>
+            <small class="error" data-error="cantidad"></small>
+        </div>
+
+        <p class="resultado-stock" id="resultadostock" aria-live="polite"></p>
+        <p class="nota" id="notastock"></p>
+
+        <div class="acciones-dialogo">
+            <button type="button" class="boton" id="botoncancelarstock">Cancelar</button>
+            <button type="submit" class="boton boton-principal" id="botonguardarstock">Sumar al stock</button>
+        </div>
+    </form>
+</dialog>
+
 <dialog id="dialogoconfirmacion" class="dialogo dialogo-confirmacion">
     <div class="icono-confirmacion" id="iconoconfirmacion" aria-hidden="true"></div>
     <h2 id="tituloconfirmacion"></h2>
@@ -673,9 +742,9 @@ $categoriasinventario = [
     </div>
 </dialog>
 
-<script src="js/menu.js"></script>
-<script src="js/historial.js"></script>
-<script src="js/preciostemporada.js"></script>
-<script src="js/inventario.js"></script>
+<script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/historial.js') ?>"></script>
+<script src="<?= recurso('js/preciostemporada.js') ?>"></script>
+<script src="<?= recurso('js/inventario.js') ?>"></script>
 </body>
 </html>

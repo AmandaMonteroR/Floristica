@@ -9,7 +9,7 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cuentas por cobrar y por pagar | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
-    <link rel="stylesheet" href="css/estilos.css">
+    <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -168,7 +168,7 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
     </form>
 </dialog>
 
-<script src="js/menu.js"></script>
-<script src="js/credito.js"></script>
+<script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/credito.js') ?>"></script>
 </body>
 </html>

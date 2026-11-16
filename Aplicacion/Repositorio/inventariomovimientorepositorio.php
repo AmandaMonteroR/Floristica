@@ -16,7 +16,8 @@ class inventariomovimientorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    public function registrar($idinventario, $tipo, $cantidad, $idempleado, $idpedido = null, $idencargo = null)
+    // $idproveedor: a quién se le compró, cuando se suma stock sin pedido
+    public function registrar($idinventario, $tipo, $cantidad, $idempleado, $idpedido = null, $idencargo = null, $idproveedor = null)
     {
         $consulta = $this->conexion->prepare('SELECT tbinventariostock FROM tbinventario WHERE tbinventarioid = ?');
         $consulta->execute([(int) $idinventario]);
@@ -24,8 +25,8 @@ class inventariomovimientorepositorio
 
         $sql = 'INSERT INTO tbinventariomovimiento (tbinventariomovimientoid, tbinventarioid, tbinventariomovimientotipo,
                 tbinventariomovimientocantidad, tbinventariomovimientostockfinal, tbpedidoid, tbsolicitudencargoid, tbempleadoid,
-                tbinventariomovimientofecha)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                tbinventariomovimientofecha, tbproveedorid)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         return $sentencia->execute([
@@ -38,14 +39,16 @@ class inventariomovimientorepositorio
             $idencargo,
             $idempleado,
             date('Y-m-d H:i:s'),
+            $idproveedor,
         ]);
     }
 
     public function listar($idinventario, $limite = 20)
     {
-        $sql = 'SELECT m.*, e.tbempleadonombre AS hechopor
+        $sql = 'SELECT m.*, e.tbempleadonombre AS hechopor, p.tbproveedornombreempresa AS proveedor
                 FROM tbinventariomovimiento m
                 LEFT JOIN tbempleado e ON e.tbempleadoid = m.tbempleadoid
+                LEFT JOIN tbproveedor p ON p.tbproveedorid = m.tbproveedorid
                 WHERE m.tbinventarioid = ?
                 ORDER BY m.tbinventariomovimientofecha DESC, m.tbinventariomovimientoid DESC
                 LIMIT ' . (int) $limite;

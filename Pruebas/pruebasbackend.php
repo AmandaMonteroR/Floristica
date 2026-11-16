@@ -188,10 +188,10 @@ $r = $anonimo->get('');
 prueba('Sin sesión, la página principal muestra el login', $r['codigo'] === 200 && strpos($r['texto'], 'name="usuario"') !== false);
 
 $r = $anonimo->ingresar('propietario', 'malaclave1');
-prueba('Contraseña incorrecta no deja entrar', !exito($r) && mensaje($r) === 'Usuario o contraseña incorrectos.', mensaje($r));
+prueba('Contraseña incorrecta no deja entrar', !exito($r) && strpos(mensaje($r), 'Usuario o contraseña incorrectos.') === 0, mensaje($r));
 
 $r = $anonimo->ingresar('noexiste', 'cualquiera1');
-prueba('Usuario inexistente da el mismo mensaje (no revela cuál falló)', mensaje($r) === 'Usuario o contraseña incorrectos.', mensaje($r));
+prueba('Usuario inexistente da el mismo mensaje (no revela cuál falló)', strpos(mensaje($r), 'Usuario o contraseña incorrectos.') === 0, mensaje($r));
 
 $r = (new Cliente($servidor))->ingresar('', '');
 prueba('Usuario y contraseña vacíos piden completar', isset(errores($r)['usuario'], errores($r)['clave']), mensaje($r));
@@ -200,11 +200,15 @@ $r = (new Cliente($servidor))->ingresar('empleado4', 'empleado4');
 prueba('Empleada inactiva no puede entrar', !exito($r) && strpos(mensaje($r), 'inactiva') !== false, mensaje($r));
 
 $bloqueo = new Cliente($servidor);
-for ($i = 0; $i < 5; $i++) {
-    $bloqueo->ingresar('propietario', 'otraclave' . $i);
-}
+$r = $bloqueo->ingresar('propietario', 'otraclave1');
+prueba('El primer intento fallido dice cuántos intentos le quedan', strpos(mensaje($r), 'Le quedan 2 intentos') !== false, mensaje($r));
+$bloqueo->ingresar('propietario', 'otraclave2');
+$r = $bloqueo->ingresar('propietario', 'otraclave3');
+prueba('Al tercer intento fallido se bloquea 60 segundos desde ese intento',
+    !exito($r) && strpos(mensaje($r), 'Espere 60 segundos') !== false && (int) (datos($r)['espera'] ?? 0) === 60, mensaje($r));
 $r = $bloqueo->ingresar('propietario', 'propietario1');
-prueba('Después de 5 intentos fallidos se bloquea, aunque la clave sea correcta', !exito($r) && strpos(mensaje($r), 'Demasiados intentos') !== false, mensaje($r));
+prueba('Mientras está bloqueado no entra aunque la clave sea correcta, y devuelve los segundos que faltan',
+    !exito($r) && strpos(mensaje($r), 'Demasiados intentos') !== false && (int) (datos($r)['espera'] ?? 0) > 0, mensaje($r));
 
 $propietario = new Cliente($servidor);
 $r = $propietario->ingresar('propietario', 'propietario1');
@@ -423,15 +427,25 @@ $r = $propietario->post('inventario', 'crear', [
 ]);
 prueba('La medida debe ir en centímetros (ej. 20 x 30)', tieneerror($r, 'tbinventariocategoriabasemedida'));
 
-$r = $propietario->post('inventario', 'crear', [
+$chocolate = [
     'tbproveedorid' => 6, 'tbinventarionombre' => 'Chocolate prueba', 'tbinventariocategoria' => 'Chocolate',
     'tbinventariopreciopaquete' => '5000', 'tbinventariounidadespaquete' => 5, 'tbinventarioprecioventa' => '2000',
     'tbinventariostock' => 5, 'tbinventariostockminimo' => 1,
     'tbinventariocategoriachocolatetipo' => 'Oscuro', 'tbinventariocategoriachocolatemarca' => 'Prueba',
     'tbinventariocategoriachocolatepresentacion' => 'Barra', 'tbinventariocategoriachocolatepeso' => 100,
     'tbinventariocategoriachocolatesabor' => 'Menta', 'tbinventariocategoriachocolatefechavencimiento' => '',
-]);
+];
+$r = $propietario->post('inventario', 'crear', $chocolate);
 prueba('Los chocolates piden fecha de vencimiento', tieneerror($r, 'tbinventariocategoriachocolatefechavencimiento'));
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoriachocolatefechavencimiento' => date('Y-m-d')] + $chocolate);
+prueba('Un chocolate que vence hoy no se acepta', tieneerror($r, 'tbinventariocategoriachocolatefechavencimiento'), mensaje($r));
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoriachocolatefechavencimiento' => date('Y-m-d', strtotime('+29 days'))] + $chocolate);
+prueba('Tiene que vencer al menos 30 días después de hoy (29 no)', tieneerror($r, 'tbinventariocategoriachocolatefechavencimiento'),
+    json_encode(errores($r), JSON_UNESCAPED_UNICODE));
+// (sin precio, para que no se guarde: solo se revisa la fecha)
+$r = $propietario->post('inventario', 'crear', ['tbinventariocategoriachocolatefechavencimiento' => date('Y-m-d', strtotime('+30 days')),
+    'tbinventariopreciopaquete' => ''] + $chocolate);
+prueba('…y a 30 días sí', !tieneerror($r, 'tbinventariocategoriachocolatefechavencimiento'), json_encode(errores($r), JSON_UNESCAPED_UNICODE));
 
 $r = $propietario->post('inventario', 'crear', [
     'tbproveedorid' => 3, 'tbinventarionombre' => 'Tarjeta de prueba', 'tbinventariocategoria' => 'Tarjeta',
@@ -458,12 +472,42 @@ $cambio['tbinventariostock'] = 35;
 $cambio['tbinventariopreciopaquete'] = '12000';
 $cambio['tbinventarioprecioventa'] = '1200';
 $r = $propietario->post('inventario', 'actualizar', $cambio);
-prueba('Actualiza stock y precio', exito($r), mensaje($r));
+prueba('Actualiza el precio', exito($r), mensaje($r));
+prueba('…pero al editar no se escribe el stock: sigue en 40',
+    (int) (datos($propietario->get('inventario', 'obtener', ['id' => $idproducto]))['tbinventariostock'] ?? 0) === 40);
+
+// Lo que se compra sin pedido se suma por paquetes, eligiendo a qué proveedor; las dañadas se rebajan aparte
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => $idproducto, 'sentido' => 'restar', 'cantidad' => '50']);
+prueba('No deja rebajar más de lo que hay en stock', tieneerror($r, 'cantidad'), mensaje($r));
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => $idproducto, 'sentido' => 'sumar', 'tbproveedorid' => 1, 'paquetes' => '0']);
+prueba('Los paquetes tienen que ser al menos 1', tieneerror($r, 'paquetes'), mensaje($r));
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => $idproducto, 'sentido' => 'sumar', 'tbproveedorid' => 3, 'paquetes' => '1']);
+prueba('Solo se le puede comprar a un proveedor que vende el insumo', tieneerror($r, 'tbproveedorid'), mensaje($r));
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => $idproducto, 'sentido' => 'restar', 'cantidad' => '5']);
+prueba('Rebaja 5 que se dañaron (40 − 5 = 35)', exito($r) && (int) (datos($r)['stock'] ?? 0) === 35, mensaje($r));
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => $idproducto, 'sentido' => 'sumar', 'tbproveedorid' => 1, 'paquetes' => '2']);
+prueba('Suma 2 paquetes de 20 comprados sin pedido a lo que ya había (35 + 40 = 75)', exito($r) && (int) (datos($r)['stock'] ?? 0) === 75, mensaje($r));
 
 $producto = datos($propietario->get('inventario', 'obtener', ['id' => $idproducto]));
-$ultimomovimiento = end($producto['movimientos']);
-prueba('Corregir el stock a mano queda como "Ajuste" de −5', ($ultimomovimiento['tipo'] ?? '') === 'Ajuste' && ($ultimomovimiento['cantidad'] ?? 0) === -5 && ($ultimomovimiento['stockfinal'] ?? 0) === 35,
-    json_encode($ultimomovimiento, JSON_UNESCAPED_UNICODE));
+$movimientos = array_slice($producto['movimientos'], -2);
+prueba('Cada movimiento queda con su motivo, el proveedor de la compra, la cantidad, el stock final y quién lo hizo',
+    ($movimientos[0]['motivo'] ?? '') === 'Se dañaron o se marchitaron' && ($movimientos[0]['cantidad'] ?? 0) === -5 && ($movimientos[0]['stockfinal'] ?? 0) === 35
+    && strpos($movimientos[1]['motivo'] ?? '', 'Compra sin pedido a ') === 0 && ($movimientos[1]['cantidad'] ?? 0) === 40
+    && ($movimientos[1]['stockfinal'] ?? 0) === 75 && ($movimientos[1]['hechopor'] ?? '') === 'Patricia Mora Solano', json_encode($movimientos, JSON_UNESCAPED_UNICODE));
+
+// Rosa roja (id 1) también la vende Vivero Orosi (otro proveedor): se le puede comprar a él
+$stockrosa = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => 1, 'sentido' => 'sumar', 'tbproveedorid' => 2, 'paquetes' => '1']);
+$rosa = datos($propietario->get('inventario', 'obtener', ['id' => 1]));
+$ultimo = end($rosa['movimientos']);
+prueba('Se le puede comprar a uno de "Otros proveedores" y el movimiento lo dice (Vivero Orosi)',
+    exito($r) && (int) $rosa['tbinventariostock'] === $stockrosa + 24 && ($ultimo['motivo'] ?? '') === 'Compra sin pedido a Vivero Orosi',
+    mensaje($r) . ' ' . json_encode($ultimo, JSON_UNESCAPED_UNICODE));
+
+// Un insumo se registra una sola vez: si ya existe (aunque sea de otro proveedor o con otras mayúsculas), se ofrece sumarle el stock
+$r = $propietario->post('inventario', 'crear', ['tbinventarionombre' => 'ROSA ROJA', 'tbproveedorid' => 5] + $florvalida);
+prueba('No deja registrar otra vez un insumo que ya existe, aunque sea de otro proveedor',
+    tieneerror($r, 'tbinventarionombre') && (int) (datos($r)['existente']['tbinventarioid'] ?? 0) === 1, mensaje($r) . ' ' . json_encode(datos($r), JSON_UNESCAPED_UNICODE));
 $historial = datos($propietario->get('inventario', 'historial', ['id' => $idproducto]));
 $ultimo = end($historial);
 $camposcambiados = array_column(array_slice($historial, -2), 'campo');
@@ -723,12 +767,8 @@ prueba('…y descuenta las 8 rosas que eligió el cliente', (int) datos($propiet
 
 // Solicitud N.º 4 de los datos de prueba: 3 ramos de lirios con frase (18 lirios). Hay 27 lirios, pero se dañan 12
 // y el propietario corrige el stock a 15 (ajuste): ya no alcanza para terminarla
-$lirio = datos($propietario->get('inventario', 'obtener', ['id' => 10]));
-$ajustelirio = array_intersect_key($lirio, array_flip(['tbinventarioid', 'tbproveedorid', 'tbinventarionombre', 'tbinventariocategoria',
-    'tbinventariopreciopaquete', 'tbinventariounidadespaquete', 'tbinventarioprecioventa', 'tbinventariostockminimo']))
-    + ($lirio['categoria'] ?? []) + ['tbinventariostock' => 15];
-$r = $propietario->post('inventario', 'actualizar', $ajustelirio);
-prueba('Se corrige a mano el stock de lirios (se dañaron 12)', exito($r), mensaje($r));
+$r = $propietario->post('inventario', 'movimientostock', ['tbinventarioid' => 10, 'sentido' => 'restar', 'cantidad' => 12]);
+prueba('Se restan los 12 lirios que se dañaron (quedan 15)', exito($r) && (int) (datos($r)['stock'] ?? 0) === 15, mensaje($r));
 $stocklirio = (int) datos($propietario->get('inventario', 'obtener', ['id' => 10]))['tbinventariostock'];
 $carlos->post('encargo', 'iniciar', ['id' => 4]);
 $r = $carlos->post('encargo', 'terminar', ['id' => 4]);
@@ -1276,6 +1316,27 @@ prueba('Las propuestas no repiten las mismas flores', count(array_unique(array_m
 $r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '12000', 'porcentaje' => '100', 'reservado' => '2000']);
 $maximo = max(array_column(datos($r)['propuestas'] ?? [['total' => 99999]], 'total'));
 prueba('Lo que ya se gastó en flores pintadas se descuenta del presupuesto (12 000 − 2 000)', exito($r) && $maximo <= 10000, mensaje($r) . ' ' . $maximo);
+
+// Personalizado libre: sin presupuesto, propone las recetas de su tamaño original para cotizar
+$r = $lorena->post('encargo', 'sugerir', ['modalidad' => 'Libre', 'presupuesto' => '', 'porcentaje' => '100']);
+prueba('En libre no pide presupuesto y propone de 1 a 3 arreglos', exito($r) && !empty(datos($r)['libre'])
+    && count(datos($r)['propuestas'] ?? []) >= 1 && count(datos($r)['propuestas']) <= 3, mensaje($r));
+$r = $lorena->post('encargo', 'sugerir', ['modalidad' => 'Libre', 'porcentaje' => '100',
+    'insumos' => [['tbinventarioid' => 1, 'cantidad' => 30]]]);
+$propuestas = datos($r)['propuestas'] ?? [];
+$primera = $propuestas[0] ?? ['lineas' => []];
+$rosas = array_values(array_filter($primera['lineas'], function ($linea) { return $linea['tbinventarioid'] === 1; }));
+prueba('En libre, con 30 rosas rojas elegidas, la primera propuesta lleva rosas rojas y mantiene las 30',
+    exito($r) && $rosas && $rosas[0]['cantidad'] >= 30 && $rosas[0]['pedidas'] === 30, mensaje($r) . ' ' . json_encode($primera['lineas'], JSON_UNESCAPED_UNICODE));
+$bien = true;
+foreach ($propuestas as $propuesta) {
+    $suma = array_sum(array_column($propuesta['lineas'], 'subtotal'));
+    foreach ($propuesta['lineas'] as $linea) {
+        $bien = $bien && $linea['cantidad'] <= ($stock[$linea['tbinventarioid']] ?? 0);
+    }
+    $bien = $bien && abs($suma - $propuesta['total']) < 0.01 && $propuesta['sobra'] === null;
+}
+prueba('…ninguna pasa del stock y el total es la suma de sus productos', $bien);
 
 /* =====================================================================
  * 16. Valorar un ramo por foto y foto de referencia (Parte 13)

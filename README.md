@@ -134,7 +134,8 @@ Cada paso tiene el color de quién lo hace: un empleado o el propietario, solo e
 ## Inicio de sesión y roles
 
 - Las contraseñas se guardan cifradas con `password_hash`.
-- Después de 5 intentos fallidos, el ingreso se bloquea 60 segundos.
+- Cada contraseña incorrecta dice cuántos intentos quedan. Al **tercer intento fallido** el ingreso se bloquea 60 segundos, contados desde ese intento; la pantalla muestra los segundos que faltan bajando de uno en uno (aunque se recargue la página) y el botón **Ingresar** queda apagado hasta que se pueda intentar de nuevo.
+- Los scripts y estilos se cargan con su versión (`js/login.js?v=…`, función `recurso()` de `index.php`), así el navegador usa siempre los archivos nuevos y no los que tenía guardados.
 - Los permisos se revisan en el servidor en cada petición. Ocultar un botón en la pantalla no es la única protección.
 - Si el propietario inactiva a un empleado, este pierde el acceso de inmediato.
 
@@ -188,22 +189,31 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
 | Flor | Flor o follaje, tipo de flor (Rosa, Eucalipto…), color, largo del tallo y días de duración |
 | Envoltura | Papel o cinta, tipo, color, diseño, medida y material. El papel lleva acabado y la cinta indica si es personalizable |
 | Base | Tipo, material, color, forma, medidas y diseño |
-| Chocolate | Tipo, marca, presentación, peso, sabor y fecha de vencimiento (no anterior a hoy) |
+| Chocolate | Tipo, marca, presentación, peso, sabor y fecha de vencimiento (al menos 30 días después de hoy) |
 | Peluche | Tipo, tamaño, color, diseño y material |
 | Tarjeta | Tipo, temática, color, material, medidas, si es personalizable y elaboración (hecha en el negocio o comprada) |
-| Spray | Tipo (pintura floral, abrillantador de follaje o aromatizante floral), marca, contenido (ml) y fecha de vencimiento (opcional). La pintura lleva color y **cobro por flor pintada**; el aromatizante, aroma |
+| Spray | Tipo (pintura floral, abrillantador de follaje o aromatizante floral), marca, contenido (ml) y fecha de vencimiento (opcional; si se pone, al menos 30 días después de hoy). La pintura lleva color y **cobro por flor pintada**; el aromatizante, aroma |
 | Accesorio | Tipo (corona, perfume, splash, moño, topper u otro), tamaño y, si se quiere, color y material. Se puede poner en un arreglo o agregar como adicional |
 
 - **Listas:** las opciones de cada lista están en `inventariocontrolador::opciones()`. La pantalla y la validación usan las mismas.
 - **Colores y tipos de flor (tablas catálogo):** el color de todos los insumos sale de `tbcolor` y el tipo de flor de `tbtipoflor` (con su clase, Flor o Follaje). En las tablas de categoría se guarda el id (`tbcolorid`, `tbtipoflorid`), así que ya no se puede escribir un color inventado como "carro". El tipo de flor tiene que ser de la misma clase que se eligió (Eucalipto es follaje). El propietario agrega colores y tipos, o los inactiva, en **Inventario → Colores y tipos de flor**; uno inactivo ya no se puede elegir en insumos nuevos, pero los que ya lo tienen no cambian.
 - **Medidas:** en centímetros, con formato `20` o `20 x 30`.
-- **Nombre:** no puede repetirse para el mismo proveedor.
+- **Nombre:** un insumo se registra **una sola vez**: no se puede repetir el nombre (sin importar mayúsculas, tildes ni el proveedor). La comparación se hace en PHP, así funciona igual con cualquier configuración de la base. Si otro proveedor también lo vende, se agrega en **Otros proveedores** del insumo que ya existe.
+- **Nuevo insumo que ya existe:** apenas se escribe un nombre que ya está registrado (por ejemplo "rosa roja"), el formulario se llena solo con los datos de ese insumo, que quedan sin poder cambiarse, y pasa a **Agregar stock**: se elige **a qué proveedor se lo compró** (el principal o uno de Otros proveedores, cada uno con su precio del paquete) y **cuántos paquetes**; abajo dice cuántas unidades se suman, cómo queda el stock y cuánto costó la compra. Con **Es otro insumo** se vuelve al formulario en blanco.
+- **Fecha de vencimiento (chocolates y sprays):** al menos 30 días después de hoy, para no comprar algo que está por vencer. Al editar, si la fecha no se cambia, no se vuelve a revisar.
+- **Stock:** al registrar el insumo se escribe el **stock inicial**. Después ya no se escribe a mano (al editar solo se muestra):
+  - Lo que llega con un pedido se suma solo al marcarlo **Recibido**.
+  - Lo que se compra sin pedido se suma con **Stock** (en la lista) o **Agregar stock** (en Ver y en Editar), o escribiendo el nombre en Nuevo insumo: proveedor y paquetes, y se suma a lo que ya hay.
+  - Lo que sale en los arreglos se rebaja solo al terminar la solicitud.
+  - Las flores que **se dañaron o se marchitaron** se rebajan aparte, con **Rebajar dañadas** en Ver. No se puede rebajar más de lo que hay, y la ventana avisa si deja de alcanzar para lo apartado.
+  - Cada cambio queda en los movimientos con su motivo, el proveedor de la compra y quién lo hizo.
 - **Varios proveedores:** cada insumo tiene un **proveedor principal** (`tbinventario.tbproveedorid`), y su precio es el costo del insumo. En **Otros proveedores** se agregan los demás a los que se les puede comprar el mismo paquete, cada uno con su precio (tabla `tbinventariootroproveedor`). El formulario muestra a cuánto sale la unidad con cada uno y si es más barato o más caro que el principal; en la lista dice "y 2 proveedores más", y en **Ver** salen todos con la comparación. No se puede repetir un proveedor, ni poner el principal, ni uno inactivo.
 - **Precios:**
   - El precio del paquete debe ser mayor que 0, con máximo 2 decimales.
   - El costo por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
   - El **precio de venta** por unidad es el que se le cobra al cliente en un arreglo personalizado o como adicional. No puede ser menor que el costo, y la pantalla muestra la ganancia.
 - **Stock apartado (previsibilidad):** cada insumo guarda cuánto está apartado para las solicitudes abiertas (`tbinventariostockreservado`). Lo **disponible** es el stock menos lo apartado. En la lista, debajo del stock dice "8 apartadas · 32 libres", o "Faltan 9" si las solicitudes abiertas piden más de lo que hay; en **Ver** salen Stock actual, Apartado para solicitudes y Disponible.
+- **Ver:** los datos van por secciones: estado, **Stock** (actual, apartado, disponible y mínimo), **Proveedores y precios** (el principal y los otros con la comparación, costo, venta, ganancia y temporada alta) y los datos de la categoría, y debajo los movimientos del stock.
 - **Nivel de stock**, con un círculo de color (según lo disponible):
   - Rojo: igual o por debajo del mínimo.
   - Amarillo: hasta 1,5 veces el mínimo.
@@ -294,7 +304,7 @@ La foto de la clienta se guarda en `Publico/imagenes/solicitudes/referencia_…`
 - **Predefinida:** un arreglo del catálogo (el que el cliente eligió del catálogo de WhatsApp) por la cantidad (1 a 99), más **adicionales** opcionales: chocolates, cintas, peluches, tarjetas u otros productos, cada uno a su precio de venta.
 - **Personalizada:** el cliente elige los productos. Cada producto se cobra a **su costo + el % de ganancia** que se elige (100% por defecto, es decir, el doble del costo), redondeado hacia arriba a ₡10. El % se cambia con − y +, con los botones 50%, 80%, 100% y 150%, o escribiéndolo (de 0 a 500), y se guarda en la solicitud.
   - **Con presupuesto:** los productos y las flores pintadas no pueden pasarse del monto que dio el cliente. Los precios ya llevan el % de ganancia: debajo de cada uno se ve "costo ₡294 + 80%" (el costo solo lo ve el propietario). La pantalla muestra cuánto queda, desactiva los productos que ya no alcanzan y no deja pintar más flores de las que alcanzan.
-  - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo.
+  - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo. **Sugerir arreglos** también funciona aquí (ver Asistente).
 - **Servicio express:** se elige la zona y se cobra su precio. La dirección de entrega es obligatoria.
 - **Flores pintadas (opcional):** se elige la pintura floral (spray) y cuántas flores se pintan; se cobra el "cobro por flor" de esa pintura por cada una. El campo no deja escribir más flores de las que lleva el arreglo y el botón + se apaga al llegar al tope. El spray no se agrega como producto ni va dentro de los arreglos del catálogo.
 - **Total:** arreglo × cantidad + productos + flores pintadas + express. Debajo se ven los dos totales, con precios normales y en temporada alta, y (solo el propietario) el costo y la ganancia del personalizado. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
@@ -322,6 +332,12 @@ El algoritmo está en `Aplicacion/Controlador/asistentecontrolador.php`. Cada ar
 6. **Orden:** 60% qué tanto aprovecha el presupuesto + 25% si la receta lleva las flores que pidió la clienta + 15% qué tan cerca queda del tamaño original. No se repiten dos propuestas con las mismas flores.
 
 Si sobra dinero, la propuesta lo dice, avisa si fue porque no hay más de alguna flor en inventario y sugiere adicionales que caben (peluche, chocolates, corona…).
+
+**Personalizado libre (sin presupuesto):** el mismo botón (**Asistente de arreglos**) propone hasta 3 arreglos para cotizar:
+
+1. Cada receta va **de su tamaño original**, con lo que hay en stock: si de una flor no alcanza, van las que hay y la propuesta lo avisa. Las flores que eligió la clienta se mantienen (si pidió más que la receta, van las que pidió). El papel, la base, la cinta y los adicionales de la receta van si hay stock.
+2. Cada producto se cobra igual que en el personalizado: costo × (1 + % / 100), hacia arriba a ₡10.
+3. **Orden:** 70% cuántos de los tipos de flor que eligió la clienta lleva la receta + 30% qué parte de la receta alcanzó el stock. No se repiten dos propuestas con las mismas flores.
 
 ### Temporada alta
 
@@ -440,7 +456,9 @@ Cada cambio de stock queda en `tbinventariomovimiento`: el motivo, la cantidad (
 | Inicial | Al registrar el producto |
 | Entrada | Al recibir un pedido |
 | Salida | Al terminar una solicitud de pedido de arreglo |
-| Ajuste | Al corregir el stock a mano editando el producto |
+| Compra | Al agregar stock comprado sin pedido (guarda a qué proveedor, en `tbproveedorid`) |
+| Dañado | Al rebajar las que se dañaron o se marchitaron |
+| Ajuste | Datos viejos: cuando el stock se corregía editando el producto |
 
 ## Pruebas automáticas
 
