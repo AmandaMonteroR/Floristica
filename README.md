@@ -239,7 +239,8 @@ Cuando la clienta manda por WhatsApp la foto de un arreglo que le gustó, en **C
 El algoritmo está en `Aplicacion/Controlador/huellafoto.php` y usa la extensión GD de PHP (en Ubuntu se instala con `sudo apt install php-gd`). No usa servicios externos ni se paga nada.
 
 1. **Huella de la foto.** La foto se achica a 48 × 48 píxeles y se le saca:
-   - **Colores de toda la foto:** cada píxel se pasa a tono, saturación y brillo, y se cuenta en uno de 15 grupos (rojo, naranja, amarillo, verde lima, verde, verde agua, celeste, azul, azul oscuro, morado, fucsia, rosado, blanco, gris y negro). Los píxeles del centro cuentan más (campana de Gauss), porque ahí suele estar el arreglo, y el blanco, gris y negro cuentan menos, porque casi siempre son el fondo.
+   - **Colores de toda la foto:** cada píxel se pasa a tono, saturación y brillo, y se cuenta en uno de 16 grupos (rojo, naranja, amarillo, verde lima, verde, verde agua, celeste, azul, azul oscuro, morado, fucsia, rosado, blanco, gris, negro y café). Los píxeles del centro cuentan más (campana de Gauss), porque ahí suele estar el arreglo, y el blanco, gris, negro y café cuentan menos, porque casi siempre son el fondo.
+   - **Tonos cálidos con cuidado:** el naranja y el amarillo solo cuentan como flor si el color es **vivo** (saturado y claro), como una gerbera o un girasol. Si es apagado, es **café** (papel kraft, la piel de la mano, madera, pared beige); si es oscuro, es follaje en sombra (**verde**); y si es muy pálido, es **blanco crema** (rosas blancas). Del mismo modo, un rojo muy saturado es **rojo** (rosa roja) y uno menos saturado es **rosado** (lirio o rosa rosada).
    - **Colores por zonas:** lo mismo en cada cuarto de la foto, para que importe dónde está cada color.
    - **Forma:** la foto en blanco y negro de 9 × 8 píxeles; cada uno de los 64 bits dice si un píxel es más claro que el de su derecha.
 2. **Parecido** (0 a 100%) = 50% colores en común + 30% colores en común por zonas + 20% bits iguales de la forma. "Colores en común" es la suma, grupo por grupo, del menor de los dos valores.
@@ -249,6 +250,8 @@ Las huellas del catálogo se guardan en `tbarreglofloralhuella`. Se calculan sol
 
 **Limitación:** compara colores y forma, no "entiende" qué flores son: un ramo de rosas rojas se parece a otro ramo rojo, aunque sea de otras flores.
 
+**Versión del algoritmo:** cada huella guarda su versión (`huellafoto::VERSION`). Si el algoritmo cambia, las huellas del catálogo se calculan de nuevo solas en la siguiente búsqueda.
+
 **Lupa:** en los resultados, en las propuestas del asistente y en las fotos de las solicitudes, al pasar el mouse por una foto se ve más grande junto al puntero, y con un clic (o tocándola en el celular) se abre en toda la pantalla (`Publico/js/lupa.js`; sirve para cualquier `<img data-lupa>`).
 
 ### Valorar un ramo por foto (algoritmo)
@@ -257,12 +260,15 @@ Si ningún arreglo del catálogo se parece a la foto de la clienta, en el mismo 
 
 El sistema **no reconoce ni cuenta las flores**: la empleada elige el tamaño (**Pequeño** 6 flores, **Mediano** 12, **Grande** 24) o escribe cuántas ve (1 a 100), y el algoritmo (`Aplicacion/Controlador/valoracioncontrolador.php`) hace lo demás con la misma huella de colores de la búsqueda:
 
-1. **Colores de flores:** se toman los grupos de color de flores (rojo, naranja, amarillo, celeste, azul, morado, fucsia, rosado y blanco) que ocupan al menos 6% de la foto (el blanco 12%, porque también puede ser fondo o papel), máximo 4. Un color pegado a otro más fuerte (naranja junto a rojo) necesita 15%, porque suele ser la sombra o el borde de las mismas flores.
-2. **Flor de cada color:** la flor activa de ese color (`tbinventariocategoriaflor`) que más se usa en las recetas del catálogo y que tiene stock. Si dos colores dan la misma flor, se suman.
-3. **Cantidades:** las flores se reparten según cuánto ocupa cada color en la foto (cada color lleva al menos 1). Si una flor no tiene suficiente stock, se completa con otra del mismo color; si aun así no alcanza, se avisa cuántas faltan.
-4. **Follaje:** 1 por cada 3 flores si la foto tiene verde (5% o más); si no, 1 por cada 6.
-5. **Papel:** 1 pliego por cada 8 flores (de 1 a 4); negro si la foto tiene 10% de negro o más; si no, el que más se usa en el catálogo junto con la flor principal. **Cinta:** 1, la que más se usa con la flor principal.
-6. **Precio:** cada producto a costo × (1 + % / 100), hacia arriba a ₡10, igual que en un personalizado.
+1. **Quitar el fondo:** con un **relleno por inundación** (búsqueda en anchura, BFS) se empieza en la orilla de la foto y se avanza a los píxeles vecinos mientras sean blancos, grises o cafés y **lisos** (casi sin diferencia de brillo con los de alrededor). Así se marca la pared, la mesa o el piso. Las flores blancas no son lisas (los pétalos tienen sombras y bordes), así que el relleno se detiene en ellas y no se confunden con la pared.
+2. **Colores de flores:** de lo que no es fondo, con más peso en el centro, se toman los grupos de color de flores (rojo, naranja, amarillo, celeste, azul, morado, fucsia, rosado y blanco). El café (kraft, piel), los verdes, el gris y el negro no cuentan. Un color se toma si es al menos 12% de los colores de flores **y** al menos la cuarta parte del color principal, máximo 4: así los centros amarillos de las margaritas o un detalle pequeño no se vuelven otra flor.
+3. **Flores de cada color:** la flor activa de ese color (`tbinventariocategoriaflor`) que más se usa en las recetas del catálogo y que tiene stock.
+4. **Cantidades:** las flores se reparten según cuánto ocupa cada color en la foto (cada color lleva al menos 1). Si de un color van 6 o más, se reparten entre 2 flores de ese color (3 desde 12 flores), en proporción 3 : 2 : 1, pero **solo con flores que van juntas en alguna receta del catálogo**: un ramo blanco queda con áster, margaritas y claveles blancos, y uno de rosas rojas queda solo con rosas rojas (en el catálogo nunca van con anturios). Si una flor no tiene suficiente stock, se completa con otra del mismo color; si aun así no alcanza, se avisa cuántas faltan.
+5. **Follaje:** 1 por cada 3 flores si la foto tiene verde (5% o más); si no, 1 por cada 6.
+6. **Papel:** 1 pliego por cada 8 flores (de 1 a 4); negro si la foto tiene 10% de negro o más; si no, el que más se usa en el catálogo junto con la flor principal. **Cinta:** 1, la que más se usa con la flor principal.
+7. **Precio:** cada producto a costo × (1 + % / 100), hacia arriba a ₡10, igual que en un personalizado.
+
+**Qué tan bien acierta:** se midió con las 18 fotos del catálogo, comparando los colores que ve el algoritmo con los de la receta real de cada arreglo, más la foto de un ramo blanco de una clienta. El color principal acierta en **13 de 19** (antes de la versión 2, en 4 de 19: casi todo salía "naranja" por el papel kraft y la mano). Los que fallan son fotos donde el blanco es papel, una cinta o el cielo, o donde la receta no coincide con la foto. El girasol (amarillo dorado) y la gerbera naranja tienen casi el mismo tono, así que a veces se confunden: se corrige en la solicitud.
 
 La foto de la clienta se guarda en `Publico/imagenes/solicitudes/referencia_…` para usarla como foto de referencia y para volver a calcular sin subirla otra vez al cambiar el tamaño o el %. Todo se puede corregir después en la solicitud.
 

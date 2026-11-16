@@ -77,13 +77,15 @@ class busquedafotocontrolador
         ]);
     }
 
-    // La huella guardada del arreglo, o se calcula y se guarda si no hay o si cambió la foto
+    // La huella guardada del arreglo, o se calcula y se guarda si no hay, si cambió la foto
+    // o si se guardó con una versión anterior del algoritmo
     private function huelladearreglo($arreglo, $guardadas)
     {
         $id = (int) $arreglo->getTbarreglofloralid();
         $foto = (string) $arreglo->getTbarreglofloralfoto();
 
-        if (isset($guardadas[$id]) && $guardadas[$id]['foto'] === $foto && is_array($guardadas[$id]['huella'])) {
+        if (isset($guardadas[$id]) && $guardadas[$id]['foto'] === $foto && is_array($guardadas[$id]['huella'])
+            && ($guardadas[$id]['huella']['version'] ?? 1) === huellafoto::VERSION) {
             return $guardadas[$id]['huella'];
         }
 

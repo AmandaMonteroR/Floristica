@@ -1301,6 +1301,48 @@ prueba('Agrega follaje, papel y cinta', isset($tipos['Follaje'], $tipos['Papel']
 prueba('El total es la suma de los productos', abs(array_sum(array_column($lineasvaloracion, 'subtotal')) - ($valoracion['total'] ?? -1)) < 0.01);
 prueba('A una empleada no le muestra el costo ni la ganancia', !isset($valoracion['costo']) && !isset($valoracion['ganancia'])
     && !isset($lineasvaloracion[0]['costo']));
+
+// Ramo blanco: se dibuja una foto con margaritas blancas (centro amarillo pequeño) y rosas crema sobre follaje
+// verde oscuro. Antes el follaje en sombra se tomaba como amarillo y se ponían girasoles.
+$fotoblanco = tempnam(sys_get_temp_dir(), 'ramoblanco') . '.jpg';
+$lienzo = imagecreatetruecolor(400, 400);
+imagefill($lienzo, 0, 0, imagecolorallocate($lienzo, 92, 98, 40));
+mt_srand(7);
+for ($i = 0; $i < 70; $i++) {
+    $x = mt_rand(20, 380);
+    $y = mt_rand(20, 380);
+    imagefilledellipse($lienzo, $x + 3, $y + 3, 46, 46, imagecolorallocate($lienzo, 190, 192, 185));
+    if ($i % 3 === 0) {
+        imagefilledellipse($lienzo, $x, $y, 44, 44, imagecolorallocate($lienzo, 246, 240, 222));
+    } else {
+        imagefilledellipse($lienzo, $x, $y, 40, 40, imagecolorallocate($lienzo, 250, 250, 248));
+        imagefilledellipse($lienzo, $x, $y, 9, 9, imagecolorallocate($lienzo, 240, 200, 20));
+    }
+}
+imagejpeg($lienzo, $fotoblanco, 90);
+imagedestroy($lienzo);
+$r = $lorena->post('catalogo', 'valorar', ['flores' => '24', 'porcentaje' => '150'], ['foto' => $fotoblanco]);
+@unlink($fotoblanco);
+$lineasblanco = array_values(array_filter(datos($r)['lineas'] ?? [], function ($linea) { return $linea['tipo'] === 'Flor'; }));
+$detalleblanco = json_encode(array_map(function ($l) { return $l['cantidad'] . ' ' . $l['nombre'] . ' (' . $l['color'] . ')'; }, $lineasblanco), JSON_UNESCAPED_UNICODE);
+prueba('Un ramo blanco se valora solo con flores blancas (sin girasoles ni otras amarillas)', exito($r) && $lineasblanco
+    && count(array_filter($lineasblanco, function ($l) { return $l['color'] !== 'Blanco'; })) === 0, $detalleblanco);
+prueba('…repartidas entre varias flores blancas que van juntas en el catálogo, y suman 24',
+    count($lineasblanco) >= 2 && array_sum(array_column($lineasblanco, 'cantidad')) === 24, $detalleblanco);
+$colorespantalla = array_column(datos($r)['colores'] ?? [], 'nombre');
+prueba('…y en los colores de la foto ya no sale amarillo', !in_array('Amarillo', $colorespantalla, true), json_encode($colorespantalla, JSON_UNESCAPED_UNICODE));
+
+// Ramo de 24 rosas rojas envuelto en papel kraft y sostenido con la mano: el papel y la piel no son flores naranjas,
+// y las rosas rojas no se mezclan con otras flores rojas que nunca van con ellas en el catálogo (anturio)
+$r = $propietario->post('catalogo', 'valorar', ['flores' => '24', 'porcentaje' => '100'],
+    ['foto' => __DIR__ . '/../Publico/imagenes/catalogo/ramo_clasico_24.jpeg']);
+$lineasrojo = array_values(array_filter(datos($r)['lineas'] ?? [], function ($linea) { return $linea['tipo'] === 'Flor'; }));
+$detallerojo = json_encode(array_map(function ($l) { return $l['cantidad'] . ' ' . $l['nombre'] . ' (' . $l['color'] . ')'; }, $lineasrojo), JSON_UNESCAPED_UNICODE);
+prueba('El papel kraft y la mano no se toman como flores naranjas', exito($r)
+    && count(array_filter($lineasrojo, function ($l) { return in_array($l['color'], ['Naranja', 'Amarillo'], true); })) === 0, $detallerojo);
+prueba('…la flor principal es la rosa roja y no se mezcla con anturios', ($lineasrojo[0]['nombre'] ?? '') === 'Rosa roja'
+    && count(array_filter($lineasrojo, function ($l) { return strpos($l['nombre'], 'Anturio') === 0; })) === 0, $detallerojo);
+
 $referenciavalorada = $valoracion['referencia'] ?? '';
 prueba('Guarda la foto de la clienta para usarla de foto de referencia',
     preg_match('#^imagenes/solicitudes/referencia_#', $referenciavalorada) === 1 && is_file(__DIR__ . '/../Publico/' . $referenciavalorada), $referenciavalorada);

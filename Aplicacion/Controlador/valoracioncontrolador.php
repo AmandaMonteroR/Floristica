@@ -11,13 +11,14 @@ require_once __DIR__ . '/huellafoto.php';
 //
 // El sistema no reconoce qué flor es cada una ni las cuenta: la empleada dice cuántas flores
 // ve en la foto (o elige pequeño, mediano o grande) y el algoritmo hace lo demás:
-// 1. Saca los colores de la foto (la misma huella de la búsqueda por foto).
-// 2. Los colores de flores (rojo, rosado, blanco...) que tienen al menos 6% de la foto
-//    (el blanco 12%, porque también puede ser fondo o papel) se pasan a flores del inventario
-//    de ese color: la que más se usa en las recetas del catálogo y que tiene stock.
-//    Un color pegado a otro más fuerte (naranja junto a rojo) necesita 15%: si no, suele ser
-//    la sombra o el borde de las mismas flores.
-// 3. Las flores se reparten según cuánto ocupa cada color en la foto.
+// 1. Saca los colores de la foto (la misma huella de la búsqueda por foto). El fondo (pared, mesa) se quita
+//    con un relleno por inundación desde la orilla, y el papel kraft, la piel y el follaje en sombra no
+//    cuentan como colores de flores (ver huellafoto::coloresflores()).
+// 2. Cada color de flor que ocupa al menos 12% de las flores y al menos la cuarta parte del color principal
+//    se pasa a flores del inventario de ese color: las que más se usan en las recetas del catálogo y tienen stock.
+// 3. Las flores se reparten según cuánto ocupa cada color en la foto. Si de un color van varias, se reparten
+//    entre 2 o 3 flores distintas de ese color, pero solo las que van juntas en alguna receta del catálogo
+//    (un ramo blanco lleva áster, margaritas y claveles; un ramo de rosas rojas lleva solo rosas).
 // 4. Follaje: 1 por cada 3 flores si la foto tiene verde (5% o más); si no, 1 por cada 6.
 // 5. Papel: 1 pliego por cada 8 flores (de 1 a 4), negro si la foto tiene mucho negro; si no,
 //    el que más se usa con la flor principal en el catálogo. Cinta: 1.
@@ -25,12 +26,12 @@ require_once __DIR__ . '/huellafoto.php';
 // La empleada puede corregir todo después en la solicitud.
 class valoracioncontrolador
 {
-    const MINIMOCOLOR = 0.06;
-    const MINIMOVECINO = 0.15;
-    const MINIMOBLANCO = 0.12;
     const MINIMOVERDE = 0.05;
     const MINIMONEGRO = 0.10;
     const MAXIMOCOLORES = 4;
+    // Desde cuántas flores de un mismo color se ponen 2 o 3 flores distintas de ese color
+    const FLORESPARADOS = 6;
+    const FLORESPARATRES = 12;
 
     // Grupo de color de la huella => colores de flores del inventario que le corresponden
     private $equivalencias = [
@@ -111,7 +112,7 @@ class valoracioncontrolador
             }
         }
 
-        $resultado = $this->calcular($huella['colores'], (int) $flores, (int) $porcentaje);
+        $resultado = $this->calcular($huella, (int) $flores, (int) $porcentaje);
 
         if (!$espropietario) {
             unset($resultado['costo'], $resultado['ganancia']);
@@ -129,74 +130,73 @@ class valoracioncontrolador
         return $this->respuesta(true, '', $resultado);
     }
 
-    // El algoritmo (pasos 2 a 6). $colores: los 15 grupos de la huella (suman 1).
-    public function calcular($colores, $flores, $porcentaje)
+    // El algoritmo (pasos 2 a 6). $huella: la huella de la foto (huellafoto::calcular()).
+    public function calcular($huella, $flores, $porcentaje)
     {
+        $colores = $huella['colores'];
         $productos = $this->productos($porcentaje);
         $notas = [];
         $usados = [];
 
         // 2. Colores de flores que se ven en la foto, del que más ocupa al que menos
         $vistos = [];
-        foreach ($this->equivalencias as $grupo => $nombres) {
-            $minimo = $grupo === 12 ? self::MINIMOBLANCO : self::MINIMOCOLOR;
-            $parte = (float) ($colores[$grupo] ?? 0);
-            if ($grupo < 12 && $parte < self::MINIMOVECINO) {
-                $vecinos = [($grupo + 11) % 12, ($grupo + 1) % 12];
-                foreach ($vecinos as $vecino) {
-                    if (($colores[$vecino] ?? 0) > $parte) {
-                        $minimo = self::MINIMOVECINO;
-                    }
-                }
-            }
-            if ($parte >= $minimo) {
-                $vistos[$grupo] = $parte;
-            }
-        }
-        arsort($vistos);
-        $vistos = array_slice($vistos, 0, min(self::MAXIMOCOLORES, $flores), true);
-
-        // Cada color se pasa a una flor; si dos colores dan la misma flor, se suman
-        $partes = [];
-        foreach ($vistos as $grupo => $parte) {
-            $lista = $this->candidatas($productos, 'Flor', $this->equivalencias[$grupo]);
-            if (!$lista) {
+        foreach (huellafoto::coloresflores($huella, min(self::MAXIMOCOLORES, $flores)) as $grupo => $parte) {
+            if (!$this->candidatas($productos, 'Flor', $this->equivalencias[$grupo])) {
                 $notas[] = 'No hay flores de color ' . mb_strtolower(huellafoto::$colores[$grupo]) . ' con stock en el inventario.';
                 continue;
             }
-            $id = $lista[0];
-            if (!isset($partes[$id])) {
-                $partes[$id] = ['parte' => 0, 'grupo' => $grupo];
-            }
-            $partes[$id]['parte'] += $parte;
+            $vistos[$grupo] = $parte;
         }
 
         // Si no se distinguió ningún color de flor (por ejemplo, una foto casi toda verde)
-        if (!$partes) {
-            $lista = $this->candidatas($productos, 'Flor', []);
-            if (!$lista) {
+        $sincolor = !$vistos;
+        if ($sincolor) {
+            if (!$this->candidatas($productos, 'Flor', [])) {
                 return $this->vacio($notas, 'No hay flores con stock en el inventario para valorar el ramo.');
             }
-            $partes[$lista[0]] = ['parte' => 1, 'grupo' => null];
-            $notas[] = 'No se distinguió bien el color de las flores; se usó ' . $productos[$lista[0]]['nombre'] . '. Corríjalo si hace falta.';
+            $vistos[-1] = 1;
+            $notas[] = 'No se distinguió bien el color de las flores; se usaron las que más se usan en el catálogo. Corríjalo si hace falta.';
         }
 
-        // 3. Se reparten las flores según lo que ocupa cada color (cada color lleva al menos 1)
-        $cantidades = $this->repartir(array_map(function ($parte) {
-            return $parte['parte'];
-        }, $partes), $flores);
-
+        // 3. Se reparten las flores según lo que ocupa cada color (cada color lleva al menos 1),
+        //    y las de cada color entre 1, 2 o 3 flores distintas de ese color
+        $porcolor = $this->repartir($vistos, $flores);
         $lineas = [];
-        foreach ($cantidades as $id => $cantidad) {
-            $grupo = $partes[$id]['grupo'];
-            $nombres = $grupo === null ? [] : $this->equivalencias[$grupo];
-            $faltan = $this->agregar($lineas, $usados, $productos, 'Flor', $nombres, $id, $cantidad,
-                $grupo === null ? '' : huellafoto::$colores[$grupo]);
+        foreach ($porcolor as $grupo => $cantidad) {
+            $nombres = $grupo === -1 ? [] : $this->equivalencias[$grupo];
+            $color = $grupo === -1 ? '' : huellafoto::$colores[$grupo];
+            $lista = $this->candidatas($productos, 'Flor', $nombres, $usados);
+            if (!$lista) {
+                $lista = $this->candidatas($productos, 'Flor', $nombres);
+            }
+            // La flor principal de ese color, y otras del mismo color solo si van junto con ella
+            // en alguna receta del catálogo (áster y margarita blancos sí; rosa roja y anturio rojo no)
+            $principalcolor = $lista[0];
+            $junto = $this->datos->usos($principalcolor);
+            $elegidas = [$principalcolor];
+            foreach (array_slice($lista, 1) as $id) {
+                if (($junto[$id] ?? 0) > 0) {
+                    $elegidas[] = $id;
+                }
+            }
+            $tipos = min(count($elegidas), $cantidad >= self::FLORESPARATRES ? 3 : ($cantidad >= self::FLORESPARADOS ? 2 : 1));
+            $pesos = array_slice([3, 2, 1], 0, $tipos);
+            $partes = $this->repartir(array_combine(array_slice($elegidas, 0, $tipos), $pesos), $cantidad);
+
+            $faltan = 0;
+            foreach ($partes as $id => $parte) {
+                $faltan += $this->agregar($lineas, $usados, $productos, 'Flor', $nombres, $id, $parte, $color);
+            }
             if ($faltan > 0) {
-                $notas[] = 'Faltan ' . $faltan . ' flores de color ' . mb_strtolower(huellafoto::$colores[$grupo] ?? '')
+                $notas[] = 'Faltan ' . $faltan . ' flores' . ($color !== '' ? ' de color ' . mb_strtolower($color) : '')
                     . ' en el inventario; el ramo quedaría con menos flores.';
             }
         }
+        $cantidades = [];
+        foreach ($lineas as $linea) {
+            $cantidades[$linea['tbinventarioid']] = $linea['cantidad'];
+        }
+        arsort($cantidades);
 
         // 4. Follaje
         $verde = ($colores[3] ?? 0) + ($colores[4] ?? 0) + ($colores[5] ?? 0);
