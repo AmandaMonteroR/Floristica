@@ -605,8 +605,22 @@ $categoriasinventario = [
 </dialog>
 
 <dialog id="dialogodetalle" class="dialogo dialogo-ancho">
-    <h2 id="titulodetalle"></h2>
-    <dl id="listadetalle" class="detalle"></dl>
+    <!-- Foto del producto (sale en la proforma) y sus datos -->
+    <div class="detalle-arreglo">
+        <div class="columna-foto" id="columnafoto">
+            <img id="fotodetalle" class="foto-detalle" alt="" data-lupa>
+            <div class="foto-vacia" id="fotovacia"><span aria-hidden="true">&#10047;</span>Todavía no tiene foto</div>
+            <input type="file" id="campofoto" accept="image/jpeg,image/png,image/webp" hidden>
+            <button type="button" class="boton boton-foto" id="botonfoto">Agregar foto</button>
+            <button type="button" class="enlace enlace-peligro" id="botonquitarfoto" hidden>Quitar foto</button>
+            <small class="nota-foto texto-suave">JPG, PNG o WEBP de hasta 2 MB. Sale en la proforma que se le manda al cliente.</small>
+            <small class="error" id="errorfoto" role="alert"></small>
+        </div>
+        <div>
+            <h2 id="titulodetalle"></h2>
+            <dl id="listadetalle" class="detalle"></dl>
+        </div>
+    </div>
     <h3 class="subtitulo-seccion">Movimientos del stock</h3>
     <p class="nota">Los 20 más recientes, del más viejo al más nuevo. Las entradas suman y las salidas restan.</p>
     <div class="tabla-contenedor">
@@ -746,5 +760,6 @@ $categoriasinventario = [
 <script src="<?= recurso('js/historial.js') ?>"></script>
 <script src="<?= recurso('js/preciostemporada.js') ?>"></script>
 <script src="<?= recurso('js/inventario.js') ?>"></script>
+<script src="<?= recurso('js/lupa.js') ?>"></script>
 </body>
 </html>

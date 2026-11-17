@@ -4145,3 +4145,311 @@ img[data-lupa] {
     color: var(--texto-suave);
     cursor: not-allowed;
 }
+
+
+/* ---------- Proforma para el cliente ---------- */
+
+.dialogo-proforma {
+    width: min(820px, calc(100% - 2rem));
+    background: #f6eef2;
+}
+
+.barra-proforma {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.barra-proforma .nota {
+    margin: 0;
+}
+
+.barra-proforma .acciones-grupo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.barra-proforma a.boton {
+    text-decoration: none;
+}
+
+.hoja-proforma {
+    padding: 2rem 2.25rem;
+    background: #fff;
+    border-radius: var(--radio);
+    box-shadow: 0 1px 4px rgba(59, 15, 36, 0.12);
+    color: var(--texto);
+}
+
+.proforma-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--principal);
+}
+
+.proforma-marca {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.proforma-marca img {
+    width: 56px;
+    height: 56px;
+}
+
+.proforma-marca strong {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--principal);
+    line-height: 1.1;
+}
+
+.proforma-marca span,
+.proforma-titulo span {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--texto-suave);
+}
+
+.proforma-titulo {
+    text-align: right;
+}
+
+.proforma-titulo strong {
+    display: block;
+    font-size: 1.4rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ciruela);
+}
+
+.proforma-datos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 1.5rem;
+    margin: 1.25rem 0;
+}
+
+.proforma-datos dt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-suave);
+}
+
+.proforma-datos dd {
+    margin: 0;
+}
+
+.proforma-tabla {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.proforma-tabla th {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--texto-suave);
+    border-bottom: 1px solid var(--borde);
+}
+
+.proforma-tabla td {
+    padding: 0.75rem 0.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--borde);
+}
+
+.proforma-tabla .numero {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.proforma-tabla td small {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.82rem;
+    color: var(--texto-suave);
+}
+
+.proforma-foto {
+    width: 96px;
+}
+
+.proforma-foto img,
+.proforma-sinfoto {
+    display: block;
+    width: 84px;
+    height: 84px;
+    border-radius: var(--radio);
+    object-fit: cover;
+}
+
+.renglon-principal .proforma-foto {
+    width: 148px;
+}
+
+.renglon-principal .proforma-foto img,
+.renglon-principal .proforma-sinfoto {
+    width: 136px;
+    height: 136px;
+}
+
+.proforma-sinfoto {
+    display: grid;
+    place-items: center;
+    font-size: 0.75rem;
+    color: var(--texto-suave);
+    background: var(--rosa-claro);
+}
+
+.proforma-etiqueta {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 0 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--principal-oscuro);
+    background: var(--rosa-claro);
+    border-radius: 999px;
+    vertical-align: middle;
+}
+
+.proforma-total {
+    display: flex;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 1rem 0.5rem 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.proforma-total strong {
+    color: var(--principal);
+}
+
+.proforma-nota {
+    margin: 1rem 0 0;
+    padding: 0.75rem 1rem;
+    background: var(--rosa-claro);
+    border-radius: var(--radio);
+}
+
+.proforma-pie {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--texto-suave);
+    text-align: center;
+}
+
+.proforma-pie p {
+    margin: 0.2rem 0;
+}
+
+.proforma-pie .proforma-gracias {
+    margin-top: 0.6rem;
+    font-size: 1rem;
+    color: var(--principal);
+}
+
+@media (max-width: 600px) {
+    .hoja-proforma {
+        padding: 1.25rem 1rem;
+    }
+
+    .proforma-datos {
+        grid-template-columns: 1fr;
+    }
+
+    .proforma-titulo {
+        text-align: left;
+    }
+
+    /* Celular: sin precio por unidad */
+    .proforma-tabla th:nth-child(4),
+    .proforma-tabla td:nth-child(4) {
+        display: none;
+    }
+
+    .proforma-tabla th,
+    .proforma-tabla td {
+        padding-left: 0.3rem;
+        padding-right: 0.3rem;
+    }
+
+    .proforma-foto,
+    .renglon-principal .proforma-foto {
+        width: 62px;
+    }
+
+    .proforma-foto img,
+    .proforma-sinfoto,
+    .renglon-principal .proforma-foto img,
+    .renglon-principal .proforma-sinfoto {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+/* Al imprimir solo sale la hoja */
+@media print {
+    @page {
+        margin: 12mm;
+    }
+
+    body:has(#dialogoproforma[open]) {
+        background: #fff;
+    }
+
+    body:has(#dialogoproforma[open]) > :not(#dialogoproforma) {
+        display: none !important;
+    }
+
+    #dialogoproforma[open] {
+        position: static;
+        display: block;
+        width: auto;
+        max-width: none;
+        max-height: none;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+        border: none;
+        background: #fff;
+        animation: none;
+    }
+
+    #dialogoproforma::backdrop {
+        display: none;
+    }
+
+    #dialogoproforma .barra-proforma,
+    #avisoproforma {
+        display: none !important;
+    }
+
+    .hoja-proforma {
+        padding: 0;
+        box-shadow: none;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .proforma-tabla tr {
+        break-inside: avoid;
+    }
+}

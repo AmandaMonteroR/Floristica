@@ -95,7 +95,7 @@ function formatearmonto(monto) {
     return '₡' + Number(monto).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// Monto corto para la cotización de WhatsApp: ₡15 000
+// Monto corto para la proforma y las listas: ₡15 000
 function montocorto(monto) {
     return '₡' + Number(monto).toLocaleString('es-CR', { maximumFractionDigits: 2 });
 }
@@ -665,78 +665,309 @@ function actualizarresumen() {
 // Lo que se cobra aparte del ramo en un personalizado (en un predefinido, todo lo agregado es adicional)
 const categoriasadicionales = ['Chocolate', 'Peluche', 'Tarjeta'];
 
-// Texto para pegar en WhatsApp. A la clienta no se le dice cuánto cuesta cada flor o cada cosa del ramo:
-// lo que lleva va sin precio, con el precio del ramo; debajo, lo que se cobra aparte y al final el total
-function textocotizacion() {
+/* ---------- Proforma para el cliente ---------- */
+
+// Encabezado de la proforma
+const negocio = { nombre: 'Floristica', lugar: 'El Humo de Roxana, Cariari, Limón' };
+
+// Renglones de la proforma: foto, cantidad, precio y subtotal.
+// El ramo personalizado va con un solo precio; los adicionales, aparte.
+function datosproforma() {
     const cuentas = calcular();
-    const cliente = buscar(opciones.clientes, 'tbclienteid', formulario.elements.tbclienteid.value);
-    const texto = [];
+    const renglones = [];
     const conproducto = lineas.filter((linea) => linea.tbinventarioid).map((linea) => ({
         linea, producto: buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid),
     }));
-    const nombrede = (item) => (item.producto ? item.producto.tbinventarionombre : item.linea.nombre);
+    const nombrede = (item) => (item.producto ? item.producto.tbinventarionombre : item.linea.nombre || 'Producto');
+    const agregar = (renglon) => {
+        renglon.subtotal = Math.round(renglon.subtotal);
+        renglones.push(renglon);
+        return renglon;
+    };
     let adicionales = conproducto;
-    let lineaprecioramo = -1;
-
-    texto.push(`Hola${cliente ? ' ' + cliente.tbclientenombre.split(' ')[0] : ''}, esta es la cotización de su arreglo:`);
+    let ramo = null;
 
     if (cuentas.tipo === 'Predefinido') {
         const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', formulario.elements.tbarreglofloralid.value);
         if (arreglo) {
-            const lleva = arreglo.lleva ?? [];
-            texto.push('');
-            texto.push(`${cuentas.cantidad} × ${arreglo.tbarreglofloralnombre}${lleva.length ? (cuentas.cantidad > 1 ? ', cada uno lleva:' : ', lleva:') : ''}`);
-            lleva.forEach((item) => texto.push(`- ${item.cantidad} × ${item.nombre}`));
-            texto.push(`Precio ${cuentas.cantidad > 1 ? 'de los arreglos' : 'del arreglo'}: ${montocorto(cuentas.arreglo)}`);
+            agregar({
+                foto: arreglo.tbarreglofloralfoto, nombre: arreglo.tbarreglofloralnombre,
+                titulolleva: cuentas.cantidad > 1 ? 'Cada uno lleva' : 'Lleva',
+                lleva: (arreglo.lleva ?? []).map((item) => `${item.cantidad} × ${item.nombre}`),
+                cantidad: cuentas.cantidad, precio: precioarreglo(), subtotal: cuentas.arreglo, principal: true,
+            });
         }
     } else if (cuentas.tipo === 'Personalizado') {
         const esadicional = (item) => Boolean(item.producto) && categoriasadicionales.includes(item.producto.tbinventariocategoria);
-        const ramo = conproducto.filter((item) => !esadicional(item));
+        const delramo = conproducto.filter((item) => !esadicional(item));
         adicionales = conproducto.filter(esadicional);
-        if (ramo.length > 0) {
-            texto.push('');
-            texto.push('Su ramo lleva:');
-            ramo.forEach((item) => texto.push(`- ${item.linea.cantidad} × ${nombrede(item)}`));
-            lineaprecioramo = texto.push('') - 1;
+        if (delramo.length > 0) {
+            ramo = agregar({
+                foto: formulario.elements.tbsolicitudencargoreferencia.value, nombre: 'Ramo personalizado',
+                titulolleva: 'Lleva', lleva: delramo.map((item) => `${item.linea.cantidad} × ${nombrede(item)}`),
+                cantidad: 1, precio: 0, subtotal: 0, principal: true,
+            });
         }
     }
 
-    // Lo que se cobra aparte, redondeado a colones como se muestra; el precio del ramo es lo que queda del
-    // total, así las cuentas que ve la clienta siempre suman exacto
-    const aparte = [];
-    let sumaaparte = 0;
-    const cobrar = (etiqueta, monto) => {
-        const redondeado = Math.round(monto);
-        sumaaparte += redondeado;
-        aparte.push(`${etiqueta}: ${montocorto(redondeado)}`);
-    };
-    if (adicionales.length > 0) {
-        aparte.push('Adicionales:');
-        adicionales.forEach((item) => cobrar(`- ${item.linea.cantidad} × ${nombrede(item)}`, subtotallinea(item.linea)));
-    }
+    adicionales.forEach((item) => agregar({
+        foto: item.producto ? item.producto.tbinventariofoto : '',
+        nombre: nombrede(item), cantidad: parseInt(item.linea.cantidad, 10) || 0,
+        precio: preciolinea(item.linea), subtotal: subtotallinea(item.linea), adicional: true,
+    }));
+
     if (cuentas.pintadas > 0) {
-        cobrar(cuentas.pintadas === 1 ? 'Flor pintada' : `Flores pintadas (${cuentas.pintadas})`, cuentas.pintura);
+        const pintura = buscar(opciones.pinturas ?? [], 'tbinventarioid', formulario.elements.tbsolicitudencargosprayid.value);
+        agregar({
+            nombre: cuentas.pintadas === 1 ? 'Flor pintada' : 'Flores pintadas',
+            detalle: pintura ? pintura.tbinventarionombre : '', cantidad: cuentas.pintadas, precio: preciopintura(), subtotal: cuentas.pintura, servicio: true,
+        });
     }
+
     if (casillaexpress.checked) {
         const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
-        cobrar(`Servicio express${zona ? ' a ' + zona.tbzonaentreganombre : ''}`, cuentas.express);
-    }
-    if (lineaprecioramo >= 0) {
-        texto[lineaprecioramo] = `Precio del ramo: ${montocorto(Math.round(cuentas.total) - sumaaparte)}`;
-    }
-    if (aparte.length > 0) {
-        texto.push('', ...aparte);
+        agregar({
+            nombre: 'Servicio express', detalle: zona ? `Entrega en ${zona.tbzonaentreganombre}` : '',
+            cantidad: 1, precio: cuentas.express, subtotal: cuentas.express, servicio: true,
+        });
     }
 
-    texto.push('');
-    texto.push(`*Total a cobrar: ${montocorto(Math.round(cuentas.total))}*`);
+    // El ramo es lo que queda del total, así todo suma exacto
+    let total = renglones.reduce((suma, renglon) => suma + renglon.subtotal, 0);
+    if (ramo) {
+        total = Math.round(cuentas.total);
+        ramo.subtotal = total - renglones.filter((renglon) => renglon !== ramo).reduce((suma, renglon) => suma + renglon.subtotal, 0);
+        ramo.precio = ramo.subtotal;
+    }
 
+    return { renglones, total, cuentas };
+}
+
+// Qué falta para la proforma ('' si nada)
+function faltaparaproforma() {
+    const tipo = formulario.elements.tbsolicitudencargotipo.value;
+    if (tipo === '') {
+        return 'Elija el tipo de solicitud para ver la proforma.';
+    }
+    if (tipo === 'Predefinido' && !formulario.elements.tbarreglofloralid.value) {
+        return 'Elija el arreglo del catálogo para ver la proforma.';
+    }
+    if (tipo === 'Personalizado' && !lineas.some((linea) => linea.tbinventarioid)) {
+        return 'Agregue los productos del arreglo para ver la proforma.';
+    }
+    return '';
+}
+
+// Foto del renglón; el express y la pintura no llevan
+function fotoproforma(renglon) {
+    if (renglon.foto) {
+        return `<img src="${escapar(renglon.foto)}" alt="${escapar(renglon.nombre)}">`;
+    }
+    return renglon.servicio ? '' : '<span class="proforma-sinfoto">Sin foto</span>';
+}
+
+function dibujarproforma() {
+    const { renglones, total, cuentas } = datosproforma();
+    const cliente = buscar(opciones.clientes, 'tbclienteid', formulario.elements.tbclienteid.value);
+    const numero = formulario.elements.tbsolicitudencargoid.value;
     const fecha = formulario.elements.tbsolicitudencargofechaentrega.value;
-    if (fecha) {
-        texto.push(`Entrega: ${formatearfecha(fecha)}`);
+    const nota = formulario.elements.tbsolicitudencargonota.value.trim();
+    const zona = buscar(opciones.zonas, 'tbzonaentregaid', formulario.elements.tbzonaentregaid.value);
+    const direccion = formulario.elements.tbsolicitudencargodireccionentrega.value.trim();
+    const entrega = casillaexpress.checked
+        ? `A domicilio${zona ? ` (${zona.tbzonaentreganombre})` : ''}${direccion ? `: ${direccion}` : ''}`
+        : 'Se retira en el local';
+    const datos = [
+        ['Cliente', cliente ? cliente.tbclientenombre : 'Sin elegir'],
+        ['Teléfono', cliente ? cliente.tbclientetelefono : ''],
+        ['Fecha de entrega', fecha ? formatearfecha(fecha) : 'Por definir'],
+        ['Entrega', entrega],
+    ].filter(([, valor]) => valor);
+
+    const filas = renglones.map((renglon) => `
+        <tr class="${renglon.principal ? 'renglon-principal' : ''}">
+            <td class="proforma-foto">${fotoproforma(renglon)}</td>
+            <td>
+                <strong>${escapar(renglon.nombre)}</strong>
+                ${renglon.adicional ? '<span class="proforma-etiqueta">Adicional</span>' : ''}
+                ${renglon.detalle ? `<small>${escapar(renglon.detalle)}</small>` : ''}
+                ${renglon.lleva && renglon.lleva.length
+                    ? `<small>${renglon.titulolleva}: ${renglon.lleva.map(escapar).join(', ')}</small>` : ''}
+            </td>
+            <td class="numero">${renglon.cantidad}</td>
+            <td class="numero">${montocorto(renglon.precio)}</td>
+            <td class="numero">${montocorto(renglon.subtotal)}</td>
+        </tr>`).join('');
+
+    document.getElementById('hojaproforma').innerHTML = `
+        <header class="proforma-encabezado">
+            <div class="proforma-marca">
+                <img src="imagenes/logo.png" alt="">
+                <div>
+                    <strong>${escapar(negocio.nombre)}</strong>
+                    <span>${escapar(negocio.lugar)}</span>
+                </div>
+            </div>
+            <div class="proforma-titulo">
+                <strong>Proforma</strong>
+                ${numero ? `<span>Solicitud N.º ${escapar(numero)}</span>` : ''}
+                <span>Fecha: ${formatearfecha(hoy())}</span>
+            </div>
+        </header>
+        <dl class="proforma-datos">
+            ${datos.map(([etiqueta, valor]) => `<div><dt>${etiqueta}</dt><dd>${escapar(valor)}</dd></div>`).join('')}
+        </dl>
+        <table class="proforma-tabla">
+            <thead>
+                <tr>
+                    <th><span class="solo-lector">Foto</span></th>
+                    <th>Descripción</th>
+                    <th class="numero">Cant.</th>
+                    <th class="numero">Precio</th>
+                    <th class="numero">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>${filas}</tbody>
+        </table>
+        <p class="proforma-total"><span>Total a pagar</span> <strong>${montocorto(total)}</strong></p>
+        ${nota ? `<p class="proforma-nota"><strong>Indicaciones:</strong> ${escapar(nota)}</p>` : ''}
+        <footer class="proforma-pie">
+            ${opciones.temporada ? `<p>Precios de ${escapar(opciones.temporada.tbtemporadanombre)}.</p>` : ''}
+            <p>Montos en colones. Esta proforma no es una factura.${cuentas.tipo === 'Personalizado'
+                ? ' Las flores pueden variar un poco según lo que haya ese día.' : ''}</p>
+            <p class="proforma-gracias">¡Gracias por preferirnos!</p>
+        </footer>`;
+
+    // Nombre del PDF
+    const nombrecliente = cliente ? ` ${cliente.tbclientenombre}` : '';
+    dialogoproforma.dataset.titulo = `Proforma${numero ? ' N.º ' + numero : ''}${nombrecliente} ${formatearfecha(hoy()).replace(/\//g, '-')}`;
+
+    const enlace = document.getElementById('enlacewhatsapp');
+    const digitos = cliente ? String(cliente.tbclientetelefono).replace(/\D/g, '') : '';
+    enlace.hidden = digitos === '';
+    enlace.href = digitos ? `https://wa.me/506${digitos.slice(-8)}` : '#';
+}
+
+const dialogoproforma = document.getElementById('dialogoproforma');
+
+function abrirproforma() {
+    const falta = faltaparaproforma();
+    if (falta !== '') {
+        avisoformulario.textContent = falta;
+        avisoformulario.hidden = false;
+        avisoformulario.scrollIntoView({ block: 'nearest' });
+        return;
+    }
+    avisoformulario.hidden = true;
+    document.getElementById('avisoproforma').hidden = true;
+    dibujarproforma();
+    dialogoproforma.showModal();
+    dialogoproforma.scrollTop = 0;
+}
+
+// Espera a que carguen las fotos
+function esperarfotos(contenedor) {
+    return Promise.all([...contenedor.querySelectorAll('img')].map((imagen) => (imagen.complete
+        ? Promise.resolve()
+        : new Promise((listo) => {
+            imagen.addEventListener('load', listo, { once: true });
+            imagen.addEventListener('error', listo, { once: true });
+        }))));
+}
+
+// Genera y descarga el PDF (html2canvas + jsPDF, tamaño carta)
+async function descargarproformapdf() {
+    const boton = document.getElementById('botonpdfproforma');
+    const avisoproforma = document.getElementById('avisoproforma');
+    avisoproforma.hidden = true;
+
+    if (typeof window.html2canvas !== 'function' || !window.jspdf) {
+        avisoproforma.textContent = 'No se pudo cargar lo necesario para generar el PDF. Recargue la página.';
+        avisoproforma.hidden = false;
+        return;
     }
 
-    return texto.join('\n');
+    boton.disabled = true;
+    boton.textContent = 'Generando PDF…';
+
+    try {
+        const hoja = document.getElementById('hojaproforma');
+        await esperarfotos(hoja);
+
+        // Mismo ancho siempre, también en el celular
+        const ancho = 760;
+        const escala = 2;
+        let cortes = [];
+        const lienzo = await window.html2canvas(hoja, {
+            scale: escala,
+            backgroundColor: '#ffffff',
+            windowWidth: 1200,
+            logging: false,
+            onclone: (copia) => {
+                const hojacopia = copia.getElementById('hojaproforma');
+                hojacopia.style.width = `${ancho}px`;
+                hojacopia.style.padding = '0';
+                hojacopia.style.boxShadow = 'none';
+                hojacopia.style.borderRadius = '0';
+                // Puntos donde se puede cortar la hoja
+                const arriba = hojacopia.getBoundingClientRect().top;
+                cortes = [...hojacopia.querySelectorAll('.proforma-datos, .proforma-tabla thead, .proforma-tabla tbody tr, '
+                    + '.proforma-total, .proforma-nota, .proforma-pie')]
+                    .map((elemento) => (elemento.getBoundingClientRect().top - arriba) * escala);
+            },
+        });
+
+        const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+        const margen = 36;
+        const anchopagina = pdf.internal.pageSize.getWidth() - margen * 2;
+        const altopagina = pdf.internal.pageSize.getHeight() - margen * 2;
+        const factor = anchopagina / lienzo.width;
+        const cabe = Math.floor(altopagina / factor);
+
+        let inicio = 0;
+        while (inicio < lienzo.height - 1) {
+            let fin = Math.min(lienzo.height, inicio + cabe);
+            if (fin < lienzo.height) {
+                const corte = cortes.filter((punto) => punto > inicio + 10 && punto <= fin).pop();
+                if (corte) {
+                    fin = corte;
+                }
+            }
+
+            const pedazo = document.createElement('canvas');
+            pedazo.width = lienzo.width;
+            pedazo.height = Math.ceil(fin - inicio);
+            const contexto = pedazo.getContext('2d');
+            contexto.fillStyle = '#ffffff';
+            contexto.fillRect(0, 0, pedazo.width, pedazo.height);
+            contexto.drawImage(lienzo, 0, -inicio);
+
+            if (inicio > 0) {
+                pdf.addPage();
+            }
+            pdf.addImage(pedazo.toDataURL('image/jpeg', 0.92), 'JPEG', margen, margen, anchopagina, pedazo.height * factor);
+            inicio = fin;
+        }
+
+        pdf.setProperties({ title: dialogoproforma.dataset.titulo || 'Proforma', creator: negocio.nombre });
+        pdf.save(`${dialogoproforma.dataset.titulo || 'Proforma'}.pdf`);
+    } catch (error) {
+        avisoproforma.textContent = 'No se pudo generar el PDF. Intente de nuevo o use "Imprimir".';
+        avisoproforma.hidden = false;
+    } finally {
+        boton.disabled = false;
+        boton.textContent = 'Descargar PDF';
+    }
+}
+
+// Imprime con el nombre de la proforma como título
+function imprimirproforma() {
+    const anterior = document.title;
+    document.title = dialogoproforma.dataset.titulo || 'Proforma';
+    window.addEventListener('afterprint', () => {
+        document.title = anterior;
+    }, { once: true });
+    window.print();
 }
 
 /* ---------- Borrador ---------- */
@@ -1436,18 +1667,10 @@ document.getElementById('botonagregarlinea').addEventListener('click', () => {
     guardarborrador();
 });
 
-document.getElementById('botoncopiar').addEventListener('click', async (evento) => {
-    const botoncopiar = evento.currentTarget;
-    try {
-        await navigator.clipboard.writeText(textocotizacion());
-        botoncopiar.textContent = '¡Copiada! Péguela en WhatsApp';
-    } catch (error) {
-        botoncopiar.textContent = 'No se pudo copiar';
-    }
-    setTimeout(() => {
-        botoncopiar.textContent = 'Copiar cotización para WhatsApp';
-    }, 2500);
-});
+document.getElementById('botonproforma').addEventListener('click', abrirproforma);
+document.getElementById('botonimprimirproforma').addEventListener('click', imprimirproforma);
+document.getElementById('botonpdfproforma').addEventListener('click', descargarproformapdf);
+document.getElementById('botoncerrarproforma').addEventListener('click', () => dialogoproforma.close());
 
 formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();

@@ -294,7 +294,7 @@
 
         <div class="resumen-solicitud" aria-live="polite">
             <dl id="resumentotal"></dl>
-            <button type="button" class="boton" id="botoncopiar">Copiar cotización para WhatsApp</button>
+            <button type="button" class="boton" id="botonproforma">Ver proforma para el cliente</button>
         </div>
 
         <div class="acciones-dialogo">
@@ -302,6 +302,24 @@
             <button type="submit" class="boton boton-principal" id="botonguardar">Guardar solicitud</button>
         </div>
     </form>
+</dialog>
+
+<!-- Proforma para el cliente: se descarga en PDF -->
+<dialog id="dialogoproforma" class="dialogo dialogo-proforma" aria-labelledby="tituloproforma">
+    <div class="barra-proforma">
+        <div>
+            <h2 id="tituloproforma">Proforma para el cliente</h2>
+            <p class="nota">Descárguela en PDF y envíesela por WhatsApp. Lleva la foto del arreglo y de cada adicional.</p>
+        </div>
+        <div class="acciones-grupo">
+            <a class="boton" id="enlacewhatsapp" target="_blank" rel="noopener" hidden>Abrir chat de WhatsApp</a>
+            <button type="button" class="boton" id="botonimprimirproforma">Imprimir</button>
+            <button type="button" class="boton boton-principal" id="botonpdfproforma">Descargar PDF</button>
+            <button type="button" class="boton" id="botoncerrarproforma">Cerrar</button>
+        </div>
+    </div>
+    <p id="avisoproforma" class="aviso aviso-error" role="alert" hidden></p>
+    <article class="hoja-proforma" id="hojaproforma"></article>
 </dialog>
 
 <dialog id="dialogoasignar" class="dialogo dialogo-angosto">
@@ -406,6 +424,8 @@
 </dialog>
 
 <script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/librerias/html2canvas.min.js') ?>"></script>
+<script src="<?= recurso('js/librerias/jspdf.umd.min.js') ?>"></script>
 <script src="<?= recurso('js/encargo.js') ?>"></script>
 <script src="<?= recurso('js/asistente.js') ?>"></script>
 <script src="<?= recurso('js/lupa.js') ?>"></script>

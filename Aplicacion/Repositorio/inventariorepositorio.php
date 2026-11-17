@@ -83,6 +83,13 @@ class inventariorepositorio
         return $this->cambiarestado($id, 1);
     }
 
+    // La foto del producto (sale en la proforma del cliente). '' o null la quita.
+    public function guardarfoto($id, $ruta)
+    {
+        $sentencia = $this->conexion->prepare('UPDATE tbinventario SET tbinventariofoto = ? WHERE tbinventarioid = ?');
+        return $sentencia->execute([$ruta !== '' ? $ruta : null, $id]);
+    }
+
     public function sumarstock($id, $unidades)
     {
         $sentencia = $this->conexion->prepare('UPDATE tbinventario SET tbinventariostock = tbinventariostock + ? WHERE tbinventarioid = ?');

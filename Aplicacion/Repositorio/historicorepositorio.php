@@ -1,17 +1,14 @@
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 
-// Repositorio único para los históricos nuevos.
-// Cada tabla se llama tb<entidad><campo>historico y tiene:
-// id, tb<entidad>id, valor, tbempleadoid (quién hizo el cambio) y fecha.
-// En los de empleado, quién hizo el cambio va en tbempleadoidresponsable.
+// Repositorio de los históricos: tablas tb<entidad><campo>historico
 class historicorepositorio
 {
     private $conexion;
 
-    // Entidades y datos que llevan histórico. Solo se aceptan estos nombres.
+    // Campos con histórico por entidad
     private $campos = [
-        'inventario'    => ['nombre', 'proveedor', 'precio', 'precioventa', 'preciotemporada', 'otroproveedor', 'stockminimo', 'estado'],
+        'inventario'    => ['nombre', 'proveedor', 'precio', 'precioventa', 'preciotemporada', 'otroproveedor', 'stockminimo', 'estado', 'foto'],
         'arreglofloral' => ['nombre', 'precio', 'estado'],
         'temporada'     => ['nombre', 'vigente', 'estado'],
         'empleado'      => ['nombre', 'telefono', 'rol', 'usuario', 'clave', 'estado'],
@@ -27,6 +24,7 @@ class historicorepositorio
         $this->conexion = Basedatos::conectar();
     }
 
+    // Nombre de la tabla; solo campos permitidos
     private function tabla($entidad, $campo)
     {
         if (!in_array($campo, $this->campos[$entidad] ?? [], true)) {
@@ -36,8 +34,7 @@ class historicorepositorio
         return 'tb' . $entidad . $campo . 'historico';
     }
 
-    // Columna de quién hizo el cambio. En los históricos de empleado se llama distinto,
-    // porque tbempleadoid ya es el empleado al que se le hizo el cambio.
+    // Quién hizo el cambio (en empleado es otra columna)
     private function columnaresponsable($entidad)
     {
         return $entidad === 'empleado' ? 'tbempleadoidresponsable' : 'tbempleadoid';
@@ -49,6 +46,7 @@ class historicorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
+    // Guarda un cambio
     public function registrar($entidad, $campo, $id, $valor, $idempleado)
     {
         $tabla = $this->tabla($entidad, $campo);
@@ -66,7 +64,7 @@ class historicorepositorio
         ]);
     }
 
-    // Del más antiguo al más reciente, con el nombre de quien hizo el cambio
+    // Cambios de un registro, del más viejo al más nuevo
     public function listar($entidad, $campo, $id)
     {
         $tabla = $this->tabla($entidad, $campo);

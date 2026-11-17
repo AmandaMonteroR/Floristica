@@ -29,6 +29,10 @@ class inventariocontrolador
     // Al registrar: el insumo activo que ya tiene ese nombre, para ofrecer sumarle el stock
     private $existente = null;
     private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray', 'Accesorio'];
+    // Fotos de los productos (para la proforma)
+    private $carpetafotos;
+    private $tiposfoto = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+    private $tamanomaximo = 2097152;
 
     // Opciones de las listas de cada categoría. La vista las usa para llenar los select
     // y el controlador para validar, así las dos siempre coinciden.
@@ -75,6 +79,7 @@ class inventariocontrolador
         $this->colores = new colorrepositorio();
         $this->tiposflor = new tipoflorrepositorio();
         $this->otrosproveedores = new inventariootroproveedorrepositorio();
+        $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/productos/';
     }
 
     /* ---------- Catálogos de colores y tipos de flor ---------- */
@@ -454,6 +459,99 @@ class inventariocontrolador
         return $this->respuesta(true, 'Insumo reactivado correctamente.');
     }
 
+    /* ---------- Foto del producto ---------- */
+
+    // Sube o cambia la foto; con $foto = null la quita
+    public function subirfoto($id, $foto, $usuario)
+    {
+        $id = (int) $id;
+        $inventario = $this->repositorio->obtenerporid($id);
+
+        if (!$inventario) {
+            return $this->respuesta(false, 'El producto no existe.');
+        }
+
+        $anterior = (string) $inventario->getTbinventariofoto();
+        $quitar = $foto === null;
+
+        if ($quitar && $anterior === '') {
+            return $this->respuesta(false, 'El producto no tiene foto.');
+        }
+
+        $nueva = '';
+        if (!$quitar) {
+            $error = $this->validarfoto($foto);
+            if ($error !== '') {
+                return $this->respuesta(false, $error, ['errores' => ['tbinventariofoto' => $error]]);
+            }
+            $nueva = $this->guardarfoto($foto, $id);
+        }
+
+        try {
+            $this->entransaccion(function () use ($id, $nueva, $usuario) {
+                $this->repositorio->guardarfoto($id, $nueva);
+                $this->historico->registrar('inventario', $id, [], ['foto' => $nueva], $usuario['id']);
+            });
+        } catch (Throwable $excepcion) {
+            // Si falla, se borra la foto nueva
+            $this->eliminarfoto($nueva);
+            throw $excepcion;
+        }
+
+        $this->eliminarfoto($anterior);
+
+        $mensaje = $quitar ? 'Se quitó la foto del producto.'
+            : ($anterior === '' ? 'Se agregó la foto del producto.' : 'Se cambió la foto del producto.');
+
+        return $this->respuesta(true, $mensaje, ['tbinventariofoto' => $nueva]);
+    }
+
+    // JPG, PNG o WEBP de hasta 2 MB
+    private function validarfoto($foto)
+    {
+        if (!is_array($foto) || ($foto['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return 'Elija la foto del producto.';
+        }
+        if ($foto['error'] !== UPLOAD_ERR_OK) {
+            return 'No se pudo subir la foto. Verifique que pese menos de 2 MB.';
+        }
+        if ($foto['size'] > $this->tamanomaximo) {
+            return 'La foto no puede pesar más de 2 MB.';
+        }
+        $imagen = @getimagesize($foto['tmp_name']);
+        if (!$imagen || !isset($this->tiposfoto[$imagen['mime']])) {
+            return 'La foto debe ser una imagen JPG, PNG o WEBP.';
+        }
+
+        return '';
+    }
+
+    // Guarda el archivo y devuelve su ruta
+    private function guardarfoto($foto, $id)
+    {
+        if (!is_dir($this->carpetafotos)) {
+            mkdir($this->carpetafotos, 0775, true);
+        }
+
+        $tipo = getimagesize($foto['tmp_name'])['mime'];
+        $nombre = 'producto_' . $id . '_' . date('YmdHis') . '_' . bin2hex(random_bytes(4)) . '.' . $this->tiposfoto[$tipo];
+
+        if (!move_uploaded_file($foto['tmp_name'], $this->carpetafotos . $nombre)) {
+            throw new RuntimeException('No se pudo guardar la foto del producto.');
+        }
+
+        return 'imagenes/productos/' . $nombre;
+    }
+
+    // Solo borra fotos subidas desde el sistema
+    private function eliminarfoto($ruta)
+    {
+        $archivo = __DIR__ . '/../../Publico/' . $ruta;
+        if ($ruta !== '' && strpos($ruta, 'imagenes/productos/producto_') === 0 && is_file($archivo)) {
+            unlink($archivo);
+        }
+    }
+
     public function historial($id)
     {
         $id = (int) $id;
@@ -471,6 +569,7 @@ class inventariocontrolador
             'otroproveedor' => 'Otro proveedor',
             'stockminimo' => 'Stock mínimo',
             'estado'      => 'Estado',
+            'foto'        => 'Foto',
         ];
 
         $nombres = $this->nombresproveedores();
@@ -493,6 +592,8 @@ class inventariocontrolador
                         . ($precio === '' ? 'ya no se le compra' : historicocontrolador::monto($precio) . ' el paquete');
                 case 'estado':
                     return historicocontrolador::estado($valor);
+                case 'foto':
+                    return (string) $valor === '' ? 'Sin foto' : 'Foto nueva';
                 default:
                     return (string) $valor;
             }
@@ -1334,6 +1435,7 @@ class inventariocontrolador
             'tbinventariodisponible'      => $inventario->getDisponible(),
             'tbinventariofaltante'        => $inventario->getFaltante(),
             'tbinventarioestado'          => (int) $inventario->getTbinventarioestado(),
+            'tbinventariofoto'            => (string) $inventario->getTbinventariofoto(),
             'stockbajo'                   => $inventario->tieneStockBajo(),
         ];
     }

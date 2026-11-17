@@ -134,7 +134,7 @@ header('Content-Type: application/json; charset=utf-8');
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
     'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
     'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar',
-    'guardarcatalogo', 'estadocatalogo', 'abonar', 'anularabono', 'movimientostock'];
+    'guardarcatalogo', 'estadocatalogo', 'abonar', 'anularabono', 'movimientostock', 'quitarfoto'];
 
 if (in_array($accion, $accionespost) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -225,6 +225,13 @@ try {
                     break;
                 case 'movimientostock':
                     $respuesta = $controlador->movimientostock($_POST, $usuarioactual);
+                    break;
+                // Foto del producto (para la proforma)
+                case 'subirfoto':
+                    $respuesta = $controlador->subirfoto($_POST['id'] ?? 0, $_FILES['tbinventariofoto'] ?? null, $usuarioactual);
+                    break;
+                case 'quitarfoto':
+                    $respuesta = $controlador->subirfoto($_POST['id'] ?? 0, null, $usuarioactual);
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];

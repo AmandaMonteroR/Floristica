@@ -14,13 +14,7 @@ require_once __DIR__ . '/../Repositorio/temporadarepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariocategoriarepositorio.php';
 require_once __DIR__ . '/../Repositorio/abonorepositorio.php';
 
-// Solicitudes de pedido de arreglo:
-// - Predefinida: un arreglo del catálogo (el cliente lo eligió del catálogo de WhatsApp) + adicionales.
-// - Personalizada: el cliente elige los productos. "Presupuesto": no se puede pasar del monto que dio.
-//   "Libre": se eligen los productos y el sistema calcula el total para cotizarle.
-//   Cada producto se cobra a su costo + el % de ganancia que se elige (100% = el doble del costo).
-// - Cada solicitud guarda lo que costaron sus flores y productos, para la ganancia en Ventas.
-// - Express: se cobra el precio de la zona de entrega (lo define el propietario).
+// Solicitudes de pedido de arreglo: predefinidas (catálogo + adicionales) o personalizadas
 class encargocontrolador
 {
     private $repositorio;
@@ -52,8 +46,7 @@ class encargocontrolador
         $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/solicitudes/';
     }
 
-    // Precio que se cobra hoy. Con una temporada en uso, el de un producto sube con lo que cobra el proveedor
-    // y el de un arreglo con el costo de todo lo que lleva (los dos con el mismo porcentaje de ganancia).
+    // Precio de hoy (con temporada alta si está en uso)
     private function precioactual($tipo, $id, $precionormal)
     {
         if ($tipo === 'arreglofloral') {
@@ -65,13 +58,13 @@ class encargocontrolador
         return $productos[(int) $id]['venta'] ?? (float) $precionormal;
     }
 
-    // Personalizados: costo por unidad + el % de ganancia, redondeado hacia arriba a ₡10
+    // Costo + % de ganancia, hacia arriba a ₡10
     public static function preciopersonalizado($costo, $porcentaje)
     {
         return (float) (ceil(round($costo * (1 + $porcentaje / 100), 2) / 10) * 10);
     }
 
-    // Cuántas flores y follajes lleva un arreglo del catálogo (las que se pueden pintar)
+    // Flores y follajes del arreglo (las que se pueden pintar)
     private function floresdearreglo($idarreglo)
     {
         $flores = 0;
@@ -85,7 +78,7 @@ class encargocontrolador
         return $flores;
     }
 
-    // Lo que lleva un arreglo del catálogo, sin precios: [['nombre' => 'Rosa blanca', 'cantidad' => 12], …]
+    // Lo que lleva el arreglo, sin precios
     private function llevaarreglo($idarreglo)
     {
         $lleva = [];
@@ -99,7 +92,7 @@ class encargocontrolador
         return $lleva;
     }
 
-    // Pinturas florales activas, con lo que se cobra por cada flor pintada
+    // Pinturas activas y su cobro por flor
     private function pinturas()
     {
         $atributos = new inventariocategoriarepositorio();
@@ -123,7 +116,7 @@ class encargocontrolador
         return $lista;
     }
 
-    // Hasta cuántos meses adelante se puede pedir un arreglo
+    // Meses máximos para pedir
     const MESESMAXIMOS = 6;
 
     public static function fechamaxima()
@@ -131,7 +124,7 @@ class encargocontrolador
         return date('Y-m-d', strtotime('+' . self::MESESMAXIMOS . ' months'));
     }
 
-    // Todo lo que se necesita para llenar el formulario, en una sola consulta
+    // Datos para llenar el formulario
     public function opciones()
     {
         $datos = ['arreglos' => [], 'empleados' => [], 'clientes' => [], 'zonas' => [], 'productos' => [],
@@ -181,7 +174,7 @@ class encargocontrolador
         }
 
         foreach ($this->inventario->listar('', '', 1) as $producto) {
-            // El spray no se vende suelto: la pintura se cobra por flor pintada
+            // El spray se cobra por flor pintada
             if ($producto->getTbinventariocategoria() === 'Spray') {
                 continue;
             }
@@ -189,11 +182,13 @@ class encargocontrolador
                 'tbinventarioid'          => (int) $producto->getTbinventarioid(),
                 'tbinventarionombre'      => $producto->getTbinventarionombre(),
                 'tbinventariocategoria'   => $producto->getTbinventariocategoria(),
+                // Foto para la proforma
+                'tbinventariofoto'        => (string) $producto->getTbinventariofoto(),
                 'tbinventarioprecioventa' => $this->precioactual('inventario', $producto->getTbinventarioid(), $producto->getTbinventarioprecioventa()),
                 'tbinventariostock'       => (int) $producto->getTbinventariostock(),
-                // Lo que se puede pedir: el stock menos lo apartado para otras solicitudes
+                // Stock menos lo apartado
                 'tbinventariodisponible'  => $producto->getDisponible(),
-                // Costo por unidad y venta, normal y en temporada alta
+                // Costo y venta, normal y temporada alta
                 'costonormal'             => $normales[(int) $producto->getTbinventarioid()]['costo'] ?? 0,
                 'costoalto'               => $altos[(int) $producto->getTbinventarioid()]['costo'] ?? 0,
                 'ventanormal'             => $normales[(int) $producto->getTbinventarioid()]['venta'] ?? 0,
@@ -228,7 +223,7 @@ class encargocontrolador
         $datos['insumos'] = $this->convertirinsumos($encargo);
         $datos['materiales'] = $this->materiales($encargo);
         $datos['historial'] = $this->historial($encargo->getTbsolicitudencargoid());
-        // Lo que ya pagó la clienta y lo que le falta (los abonos se registran en Cuentas por cobrar)
+        // Lo abonado y el saldo
         $datos['abonado'] = (new abonorepositorio())->totalde('cobrar', $encargo->getTbsolicitudencargoid());
         $datos['saldo'] = max(0, round((float) $encargo->getTbsolicitudencargototal() - $datos['abonado'], 2));
 
@@ -239,8 +234,7 @@ class encargocontrolador
     {
         $datos = $this->limpiar($datos);
 
-        // Al registrarla, el propietario o un empleado la puede dejar sin asignar o asignársela a cualquier
-        // persona activa (validar() revisa que exista y esté activa), igual que con "Asignar" en la lista
+        // Se puede dejar sin asignar o asignar a alguien activo
 
         $errores = $this->validar($datos, null);
         $vigente = $this->temporadas->vigente();
@@ -255,10 +249,10 @@ class encargocontrolador
         $id = $this->entransaccion(function () use ($encargo, $datos, $usuario) {
             $id = $this->repositorio->insertar($encargo);
             $this->repositorio->guardarinsumos($id, $datos['lineas']);
-            // Lo que pide queda apartado en el inventario (stock reservado)
+            // Aparta lo que pide en el inventario
             $this->inventario->recalcularreservado();
             $this->historico->registrar('estado', $id, 'Pendiente', $usuario['id']);
-            // La foto de referencia solo queda en el historial si se puso
+            // Referencia al historial solo si se puso
             $iniciales = array_filter($this->datoshistorico($encargo), function ($valor, $campo) {
                 return $campo !== 'referencia' || $valor !== '';
             }, ARRAY_FILTER_USE_BOTH);
@@ -298,7 +292,7 @@ class encargocontrolador
 
         $anteriores = $this->datoshistorico($encargo);
 
-        // La asignación no se cambia aquí, sino con "Asignar"
+        // La asignación se cambia con "Asignar"
         $datos['tbempleadoid'] = $encargo->getTbempleadoid();
         $datos['tbsolicitudencargoid'] = $id;
         $datos['tbsolicitudencargoestado'] = $encargo->getTbsolicitudencargoestado();
@@ -331,7 +325,7 @@ class encargocontrolador
             return $this->respuesta(false, 'Solo se pueden asignar solicitudes pendientes o en proceso.');
         }
 
-        // Un empleado puede asignar las solicitudes sin asignar o pasarle a otra persona las suyas
+        // Un empleado asigna las sin asignar o las suyas
         if (($usuario['rol'] ?? '') !== 'Propietario' && $encargo->getTbempleadoid()
             && (int) $encargo->getTbempleadoid() !== (int) $usuario['id']) {
             return $this->respuesta(false, 'Esta solicitud ya la tiene otra persona. Solo puede asignar las que están sin asignar o las suyas.');
@@ -344,7 +338,7 @@ class encargocontrolador
 
         $empleado = $this->empleados->obtenerporid((int) $idempleado);
 
-        // Si se elige a la misma persona no hay nada que cambiar ni que guardar en el historial
+        // Misma persona: no hay cambio
         if ((int) $encargo->getTbempleadoid() === (int) $idempleado) {
             return $this->respuesta(true, 'La solicitud ya estaba asignada a ' . $empleado->getTbempleadonombre() . '.');
         }
@@ -357,7 +351,7 @@ class encargocontrolador
         return $this->respuesta(true, 'Solicitud asignada a ' . $empleado->getTbempleadonombre() . '.');
     }
 
-    // Quien tiene la sesión abierta (propietario o empleado) se asigna la solicitud
+    // Se la asigna quien tiene la sesión
     public function asignarme($id, $usuario)
     {
         $encargo = $this->repositorio->obtenerporid((int) $id);
@@ -370,7 +364,7 @@ class encargocontrolador
         return $this->asignar(['tbsolicitudencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']], $usuario);
     }
 
-    // Un empleado solo puede mover sus propias solicitudes
+    // Un empleado solo mueve las suyas
     private function esdeotro(Encargo $encargo, $usuario)
     {
         return $usuario['rol'] !== 'Propietario' && (int) $encargo->getTbempleadoid() !== (int) $usuario['id'];
@@ -468,8 +462,7 @@ class encargocontrolador
         return $this->respuesta(true, 'Solicitud cancelada.');
     }
 
-    // Foto de cómo quedó el arreglo personalizado. Se puede agregar o cambiar en cualquier momento
-    // (menos si se canceló). La sube el propietario o quien tiene asignada la solicitud.
+    // Foto de cómo quedó el personalizado (no si está cancelada)
     public function subirfoto($id, $foto, $usuario)
     {
         $id = (int) $id;
@@ -550,7 +543,7 @@ class encargocontrolador
         return 'imagenes/solicitudes/' . $nombre;
     }
 
-    // Solo borra fotos de la carpeta de solicitudes
+    // Solo borra fotos de solicitudes
     private function eliminarfoto($ruta)
     {
         $archivo = __DIR__ . '/../../Publico/' . $ruta;
@@ -559,18 +552,18 @@ class encargocontrolador
         }
     }
 
-    // Cambia el estado y lo deja en el historial con quién lo hizo
+    // Cambia el estado y lo guarda en el historial
     private function cambiarestado($id, $estado, $usuario)
     {
         $this->entransaccion(function () use ($id, $estado, $usuario) {
             $this->repositorio->cambiarestado($id, $estado);
             $this->historico->registrar('estado', $id, $estado, $usuario['id']);
-            // Si se cancela, lo que tenía apartado vuelve a estar disponible
+            // Al cancelar, se libera lo apartado
             $this->inventario->recalcularreservado();
         });
     }
 
-    // Datos de la solicitud que llevan histórico general (tbsolicitudencargo<campo>historico)
+    // Campos con histórico general
     private function datoshistorico(Encargo $encargo)
     {
         return [
@@ -580,8 +573,7 @@ class encargocontrolador
         ];
     }
 
-    // Foto de referencia: una imagen que ya está en el servidor (la del arreglo del catálogo
-    // o la que mandó la clienta y se guardó al valorar el ramo). No se sube aquí.
+    // Foto de referencia: imagen que ya está en el servidor
     private function validarreferencia($ruta, $actual)
     {
         if ($ruta === '' || ($actual !== null && $ruta === (string) $actual->getTbsolicitudencargoreferencia())) {
@@ -598,7 +590,7 @@ class encargocontrolador
         return '';
     }
 
-    // Historial de la solicitud en palabras, para mostrarlo en "Ver"
+    // Historial en palabras para "Ver"
     private function historial($idencargo)
     {
         $lista = [];
@@ -618,7 +610,7 @@ class encargocontrolador
             ];
         }
 
-        // Cambios de fecha de entrega y de total. El primer valor es el del registro, así que no se repite.
+        // Cambios de fecha y total (el primero es el registro)
         $formatear = function ($campo, $valor) {
             return $campo === 'total' ? historicocontrolador::monto($valor) : date('d/m/Y', strtotime($valor));
         };
@@ -636,7 +628,7 @@ class encargocontrolador
             ];
         }
 
-        // Foto del arreglo personalizado
+        // Foto del personalizado
         $sinformato = function ($campo, $valor) {
             return $valor;
         };
@@ -670,8 +662,7 @@ class encargocontrolador
         return $lista;
     }
 
-    // Productos que hay que sacar del inventario para prepararla, y si alcanza el stock.
-    // Predefinida: los del arreglo × cantidad, más los adicionales. Personalizada: los que eligió el cliente.
+    // Productos que salen del inventario y si alcanza
     private function materiales(Encargo $encargo)
     {
         $necesarias = $this->necesarias(
@@ -697,8 +688,7 @@ class encargocontrolador
         return $materiales;
     }
 
-    // [idproducto => unidades] que necesita una solicitud: la receta del arreglo × cantidad (si es
-    // predefinida) más sus productos (adicionales o los del personalizado)
+    // [idproducto => unidades] que necesita la solicitud
     private function necesarias($idarreglo, $cantidad, $insumos)
     {
         $necesarias = [];
@@ -719,9 +709,7 @@ class encargocontrolador
         return $necesarias;
     }
 
-    // Stock reservado ("previsibilidad"): lo que piden las solicitudes abiertas está apartado, así que
-    // solo se puede pedir lo disponible (stock − reservado). Al editar, lo que esta misma solicitud ya
-    // tenía apartado cuenta como suyo, y si no se aumenta, no se vuelve a revisar.
+    // Revisa que alcance lo disponible (stock − apartado)
     private function revisarstock($datos, $insumos, $actual)
     {
         $pedidas = $this->necesarias($datos['tbsolicitudencargotipo'] === 'Predefinido' ? $datos['tbarreglofloralid'] : null,
@@ -831,7 +819,7 @@ class encargocontrolador
             'insumos'                            => [],
         ];
 
-        // Productos: insumos[0][tbinventarioid], insumos[0][cantidad]... Las filas vacías se ignoran.
+        // Productos del formulario; filas vacías se ignoran
         foreach ((array) ($datos['insumos'] ?? []) as $fila) {
             $producto = trim((string) ($fila['tbinventarioid'] ?? ''));
             $cantidad = trim((string) ($fila['cantidad'] ?? ''));
@@ -844,9 +832,7 @@ class encargocontrolador
         return $limpios;
     }
 
-    // Valida y, si todo está bien, completa los precios y totales en $datos.
-    // $actual es la solicitud que se está editando (null al crear): lo que ya tenía
-    // se acepta aunque después se haya inactivado y conserva el precio con que se cotizó.
+    // Valida y completa precios y totales
     private function validar(&$datos, $actual)
     {
         $errores = [];
@@ -871,7 +857,7 @@ class encargocontrolador
             $errores['tbsolicitudencargotipo'] = 'El tipo de solicitud no es válido.';
         }
 
-        // % de ganancia de los personalizados: de 0 a 500 (100 = el precio es el doble del costo)
+        // % de ganancia: 0 a 500
         $porcentaje = $datos['tbsolicitudencargoporcentaje'];
         $porcentajevalido = ctype_digit($porcentaje) && (int) $porcentaje <= 500;
         if ($tipo === 'Personalizado') {
@@ -882,13 +868,13 @@ class encargocontrolador
             }
         }
         $porcentaje = $porcentajevalido ? (int) $porcentaje : 100;
-        // Al editar, si no cambió el %, cada producto conserva el precio con que se cotizó
+        // Mismo %: se conserva el precio cotizado
         $mismoporcentaje = !$esnuevo && $actual->esPersonalizado()
             && (float) $actual->getTbsolicitudencargoporcentaje() === (float) $porcentaje;
         $costos = $this->temporadas->productos();
         $costo = 0;
 
-        // Productos (adicionales o los del arreglo personalizado), con el precio de cada uno
+        // Productos y su precio
         $preciosanteriores = [];
         if (!$esnuevo) {
             foreach ($this->repositorio->listarinsumos($actual->getTbsolicitudencargoid()) as $insumo) {
@@ -921,7 +907,7 @@ class encargocontrolador
                 continue;
             }
 
-            // Si el mismo producto se eligió dos veces, se suman las cantidades
+            // Producto repetido: se suman
             if ($producto->getTbinventariocategoria() === 'Spray') {
                 $erroresproductos[] = $etiqueta . 'el spray no se agrega como producto; use "Flores pintadas".';
                 continue;
@@ -936,11 +922,11 @@ class encargocontrolador
             $costo += (int) $fila['cantidad'] * $costounidad;
 
             if ($tipo === 'Personalizado') {
-                // Personalizado: costo + % de ganancia
+                // Personalizado: costo + %
                 $lineas[$idproducto] = $mismoporcentaje && isset($preciosanteriores[$idproducto])
                     ? $preciosanteriores[$idproducto] : self::preciopersonalizado($costounidad, $porcentaje);
             } else {
-                // Adicional de un predefinido: su precio de venta
+                // Adicional: precio de venta
                 $lineas[$idproducto] = $preciosanteriores[$idproducto]
                     ?? $this->precioactual('inventario', $idproducto, $producto->getTbinventarioprecioventa());
             }
@@ -1067,7 +1053,7 @@ class encargocontrolador
             $datos['tbsolicitudencargodireccionentrega'] = '';
         }
 
-        // Flores pintadas con spray: se cobra un monto por cada flor pintada
+        // Flores pintadas: cobro por flor
         $pintadas = $datos['tbsolicitudencargoflorespintadas'];
         $preciopintura = 0;
         if ($datos['tbsolicitudencargosprayid'] === '' && in_array($pintadas, ['', '0'], true)) {
@@ -1107,7 +1093,7 @@ class encargocontrolador
         $datos['tbsolicitudencargopreciopintura'] = $preciopintura;
         $datos['tbsolicitudencargocostopintura'] = $costopintura;
 
-        // Con presupuesto, las flores pintadas también entran en el monto que dio el cliente
+        // Con presupuesto, la pintura entra en el monto
         if ($tipo === 'Personalizado' && $datos['tbsolicitudencargomodalidad'] === 'Presupuesto' && $costopintura > 0
             && !isset($errores['tbsolicitudencargopresupuesto']) && !isset($errores['insumos'])
             && !isset($errores['tbsolicitudencargoflorespintadas'])
@@ -1119,7 +1105,7 @@ class encargocontrolador
                 . '. Pinte menos flores o quite algún producto.';
         }
 
-        // Fecha de entrega: al editar se acepta la que ya tenía aunque ya haya pasado
+        // Al editar se acepta la fecha que tenía
         $fecha = DateTime::createFromFormat('Y-m-d', $datos['tbsolicitudencargofechaentrega']);
         $mismafecha = !$esnuevo && $actual->getTbsolicitudencargofechaentrega() === $datos['tbsolicitudencargofechaentrega'];
         if ($datos['tbsolicitudencargofechaentrega'] === '') {
@@ -1129,7 +1115,7 @@ class encargocontrolador
         } elseif ($datos['tbsolicitudencargofechaentrega'] < date('Y-m-d') && !$mismafecha) {
             $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega no puede ser anterior a hoy.';
         } elseif ($datos['tbsolicitudencargofechaentrega'] > self::fechamaxima() && !$mismafecha) {
-            // No se reciben solicitudes para dentro de años (por ejemplo, para el 2030)
+            // Máximo dentro de unos meses
             $errores['tbsolicitudencargofechaentrega'] = 'La fecha de entrega puede ser como máximo dentro de '
                 . self::MESESMAXIMOS . ' meses (hasta el ' . date('d/m/Y', strtotime(self::fechamaxima())) . ').';
         }
@@ -1138,7 +1124,7 @@ class encargocontrolador
             $errores['tbsolicitudencargonota'] = 'La nota no puede superar 255 caracteres.';
         }
 
-        // Al crear se puede dejar sin asignar
+        // Al crear puede quedar sin asignar
         if ($esnuevo && $datos['tbempleadoid'] !== '') {
             $error = $this->validarempleado($datos['tbempleadoid']);
             if ($error !== '') {
@@ -1153,7 +1139,7 @@ class encargocontrolador
         $datos['tbsolicitudencargocosto'] = round($costo, 2);
         $datos['lineas'] = $insumos;
 
-        // Si la clienta ya abonó, el total no puede quedar por debajo de lo que pagó
+        // El total no puede ser menor que lo abonado
         if (!$errores && $actual !== null) {
             $abonado = (new abonorepositorio())->totalde('cobrar', $actual->getTbsolicitudencargoid());
             if ($datos['tbsolicitudencargototal'] < $abonado - 0.001) {
@@ -1163,7 +1149,7 @@ class encargocontrolador
             }
         }
 
-        // No se deja crear (ni aumentar) una solicitud si no hay inventario disponible para prepararla
+        // No se crea si no hay inventario disponible
         if (!$errores) {
             $error = $this->revisarstock($datos, $insumos, $actual);
             if ($error !== '') {
@@ -1174,7 +1160,7 @@ class encargocontrolador
         return $errores;
     }
 
-    // Nombres de clientes, zonas, arreglos y empleados, para no consultarlos uno por uno
+    // Nombres para no consultarlos uno por uno
     private function nombres()
     {
         $nombres = ['clientes' => [], 'zonas' => [], 'arreglos' => [], 'empleados' => [], 'temporadas' => []];
@@ -1213,7 +1199,7 @@ class encargocontrolador
             }
         }
 
-        // Texto corto de lo que pidió el cliente
+        // Resumen de lo que pidió
         if ($encargo->esPersonalizado()) {
             $descripcion = $encargo->getTbsolicitudencargomodalidad() === 'Presupuesto'
                 ? 'Personalizado con presupuesto de ' . historicocontrolador::monto($encargo->getTbsolicitudencargopresupuesto())

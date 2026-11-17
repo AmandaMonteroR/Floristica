@@ -14,6 +14,7 @@ class Inventario
     private $tbinventariostockminimo;
     private $tbinventariostockreservado;
     private $tbinventarioestado;
+    private $tbinventariofoto;
 
     public function __construct($datos = [])
     {
@@ -29,6 +30,7 @@ class Inventario
         $this->tbinventariostockminimo     = $datos['tbinventariostockminimo'] ?? 0;
         $this->tbinventariostockreservado  = $datos['tbinventariostockreservado'] ?? 0;
         $this->tbinventarioestado          = $datos['tbinventarioestado'] ?? 1;
+        $this->tbinventariofoto            = $datos['tbinventariofoto'] ?? null;
     }
 
     public function getTbinventarioid() { 
@@ -97,6 +99,12 @@ class Inventario
     public function setTbinventarioestado($valor) { 
         $this->tbinventarioestado = $valor; }
 
+    public function getTbinventariofoto() {
+        return $this->tbinventariofoto; }
+
+    public function setTbinventariofoto($valor) {
+        $this->tbinventariofoto = $valor; }
+
     public function estaActivo()
     {
         return (int) $this->tbinventarioestado === 1;
@@ -122,4 +130,3 @@ class Inventario
     public function getFaltante() {
         return max(0, (int) $this->tbinventariostockreservado - (int) $this->tbinventariostock); }
 }
-
