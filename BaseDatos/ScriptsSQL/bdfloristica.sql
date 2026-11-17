@@ -94,6 +94,8 @@ CREATE TABLE tbinventario (
     -- Disponible = stock - reservado. No se puede pedir más de lo disponible.
     tbinventariostockreservado INT DEFAULT 0,
     tbinventarioestado TINYINT(1),
+    -- Foto del producto (chocolates, tarjetas, peluches...): sale en la proforma que se le manda al cliente
+    tbinventariofoto VARCHAR(255),
     PRIMARY KEY (tbinventarioid)
 );
 
@@ -595,6 +597,16 @@ CREATE TABLE tbinventarionombrehistorico (
     tbempleadoid INT,
     tbinventarionombrehistoricofecha DATETIME,
     PRIMARY KEY (tbinventarionombrehistoricoid)
+);
+
+-- Cuándo se agregó, cambió o quitó la foto del producto (el valor es la ruta; vacío si se quitó)
+CREATE TABLE tbinventariofotohistorico (
+    tbinventariofotohistoricoid INT,
+    tbinventarioid INT,
+    tbinventariofotohistoricovalor VARCHAR(255),
+    tbempleadoid INT,
+    tbinventariofotohistoricofecha DATETIME,
+    PRIMARY KEY (tbinventariofotohistoricoid)
 );
 
 -- ---------- Históricos del catálogo de arreglos ----------
