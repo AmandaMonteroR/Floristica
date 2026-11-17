@@ -126,8 +126,12 @@ Floristica/
 `Documentacion/diagramaflujo.html` tiene el diagrama de flujo del ciclo del negocio, en tres páginas:
 
 1. **El ciclo completo:** inventario → catálogo → solicitud → preparación → venta y cobro → reportes → compras → recepción, y otra vez al inventario; con los estados de cada cosa y sus tablas.
-2. **Una solicitud de pedido de arreglo:** desde que la clienta pide (con o sin foto) hasta que se entrega y se cobra, con cada decisión: si hay inventario disponible, si deja adelanto, si cancela, si pagó todo.
-3. **Una compra al proveedor:** desde la alerta de stock bajo hasta que la mercadería entra al inventario, de contado o a crédito.
+2. **Una solicitud de pedido de arreglo:** desde que la clienta pide (con o sin foto) hasta que se
+   entrega y se cobra: si hay inventario disponible, la cotización por WhatsApp, si deja adelanto,
+   quién la toma, si cancela y si pagó todo.
+3. **Una compra al proveedor:** desde la alerta de stock bajo hasta que sube el stock: con pedido
+   (si el proveedor no lo confirma se cancela; de contado o a crédito) o comprada directo con
+   **Agregar stock**.
 
 Cada paso tiene el color de quién lo hace: un empleado o el propietario, solo el propietario, o el sistema solo. Se abre con doble clic en el navegador; para el PDF, **Ctrl + P → Guardar como PDF** (`Documentacion/diagramaflujo.pdf`).
 
@@ -224,8 +228,10 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
 - **Proveedor:** solo se puede pedir a proveedores activos, y solo insumos que se le compran a ese proveedor: los que lo tienen como principal y los que lo tienen en **Otros proveedores**. Cada insumo sale con el precio de ese proveedor.
 - **Fecha:** no puede ser posterior a hoy.
 - **Cantidades:** se piden en paquetes, de 1 a 9999.
-- **Estados:** Pendiente → Confirmado → Recibido.
-  - Solo un pedido pendiente se puede editar o confirmar.
+- **Estados:** Pendiente → Confirmado → Recibido (o Cancelado).
+  - Solo un pedido pendiente se puede editar, confirmar o **cancelar**.
+  - Cancelar es para cuando el proveedor no confirma el pedido: queda "Cancelado", no se suma nada
+    al inventario y el historial dice quién lo canceló.
 - **Confirmar:** se elige el pago, de contado o a crédito. A crédito el plazo es de 1 a 365 días.
 - **Recibir:** suma al stock las unidades de cada paquete.
 

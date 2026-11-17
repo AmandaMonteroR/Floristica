@@ -34,6 +34,7 @@
                 <option value="Pendiente">Pendientes</option>
                 <option value="Confirmado">Confirmados</option>
                 <option value="Recibido">Recibidos</option>
+                <option value="Cancelado">Cancelados</option>
             </select>
         </label>
     </section>

@@ -559,6 +559,24 @@ prueba('Queda el movimiento "Entrada" del pedido', ($ultimomovimiento['tipo'] ??
 $historial = datos($propietario->get('pedido', 'historial', ['id' => $idpedido]));
 prueba('Historial del pedido: Pendiente → Confirmado → Recibido', array_column($historial, 'nuevo') === ['Pendiente', 'Confirmado', 'Recibido'], json_encode(array_column($historial, 'nuevo')));
 prueba('No deja recibirlo dos veces', !exito($propietario->post('pedido', 'recibir', ['id' => $idpedido])));
+$r = $propietario->post('pedido', 'cancelar', ['id' => $idpedido]);
+prueba('No deja cancelar un pedido ya recibido', !exito($r) && strpos(mensaje($r), 'pendientes') !== false, mensaje($r));
+
+// Si el proveedor no confirma, el pedido se cancela y no suma nada al inventario
+$r = $propietario->post('pedido', 'crear', ['tbproveedorid' => 1, 'tbpedidofecha' => $hoy] + $detalle);
+$idcancelado = (int) (datos($r)['tbpedidoid'] ?? 0);
+$stockantes = (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'];
+prueba('Un empleado no puede cancelar pedidos (403)', $lorena->post('pedido', 'cancelar', ['id' => $idcancelado])['codigo'] === 403);
+$r = $propietario->post('pedido', 'cancelar', ['id' => $idcancelado]);
+prueba('Cancela un pedido pendiente que el proveedor no confirmó', exito($r), mensaje($r));
+$cancelado = datos($propietario->get('pedido', 'obtener', ['id' => $idcancelado]));
+prueba('Queda "Cancelado" y el stock no cambia', ($cancelado['tbpedidoestado'] ?? '') === 'Cancelado'
+    && (int) datos($propietario->get('inventario', 'obtener', ['id' => 1]))['tbinventariostock'] === $stockantes);
+prueba('Un pedido cancelado ya no se puede confirmar', !exito($propietario->post('pedido', 'confirmar',
+    ['tbpedidoid' => $idcancelado, 'tbconfirmacioncompratipopago' => 'Contado'])));
+$historial = datos($propietario->get('pedido', 'historial', ['id' => $idcancelado]));
+prueba('Historial del pedido cancelado: Pendiente → Cancelado', array_column($historial, 'nuevo') === ['Pendiente', 'Cancelado'],
+    json_encode(array_column($historial, 'nuevo')));
 
 /* =====================================================================
  * 6. Catálogo

@@ -371,7 +371,8 @@ async function cargarpedidos() {
         if (pedido.tbpedidoestado === 'Pendiente') {
             acciones += `
                 <button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
-                <button type="button" class="enlace" data-accion="confirmar" data-id="${id}">Confirmar</button>`;
+                <button type="button" class="enlace" data-accion="confirmar" data-id="${id}">Confirmar</button>
+                <button type="button" class="enlace enlace-peligro" data-accion="cancelar" data-id="${id}">Cancelar</button>`;
         } else if (pedido.tbpedidoestado === 'Confirmado') {
             acciones += `
                 <button type="button" class="enlace" data-accion="recibir" data-id="${id}">Recibir</button>`;
@@ -547,6 +548,30 @@ async function recibir(id) {
     datos.append('id', id);
 
     const resultado = await enviar('recibir', datos);
+    mostraraviso(resultado.mensaje, resultado.exito ? 'exito' : 'error');
+
+    if (resultado.exito) {
+        cargarpedidos();
+    }
+}
+
+// El proveedor no confirmó: el pedido queda "Cancelado" y no se suma nada al inventario
+async function cancelar(id) {
+    const aceptado = await confirmar({
+        titulo: '¿Cancelar el pedido?',
+        mensaje: `El pedido N.º ${id} quedará cancelado (por ejemplo, si el proveedor no lo confirmó). No se suma nada al inventario.`,
+        textoaceptar: 'Cancelar pedido',
+        peligro: true,
+    });
+
+    if (!aceptado) {
+        return;
+    }
+
+    const datos = new FormData();
+    datos.append('id', id);
+
+    const resultado = await enviar('cancelar', datos);
     mostraraviso(resultado.mensaje, resultado.exito ? 'exito' : 'error');
 
     if (resultado.exito) {
@@ -767,6 +792,9 @@ cuerpotabla.addEventListener('click', (evento) => {
             break;
         case 'recibir':
             recibir(id);
+            break;
+        case 'cancelar':
+            cancelar(id);
             break;
     }
 });

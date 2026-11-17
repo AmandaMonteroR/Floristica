@@ -248,6 +248,29 @@ class pedidocontrolador
         return $this->respuesta(true, 'Pedido recibido. El stock del inventario se actualizó.');
     }
 
+    // Si el proveedor no confirma el pedido, se cancela. Solo los pendientes: uno confirmado ya es una compra.
+    public function cancelar($id, $usuario)
+    {
+        $id = (int) $id;
+        $pedido = $this->repositorio->obtenerporid($id);
+
+        if (!$pedido) {
+            return $this->respuesta(false, 'El pedido no existe.');
+        }
+
+        if ($pedido->getTbpedidoestado() !== 'Pendiente') {
+            return $this->respuesta(false, 'Solo se pueden cancelar los pedidos pendientes. Este ya está '
+                . mb_strtolower($pedido->getTbpedidoestado()) . '.');
+        }
+
+        $this->entransaccion(function () use ($id, $usuario) {
+            $this->repositorio->cambiarestado($id, 'Cancelado');
+            $this->historico->registrar('pedido', $id, ['estado' => 'Pendiente'], ['estado' => 'Cancelado'], $usuario['id']);
+        });
+
+        return $this->respuesta(true, 'Pedido N.º ' . $id . ' cancelado. No se sumó nada al inventario.');
+    }
+
     public function historial($id)
     {
         $id = (int) $id;

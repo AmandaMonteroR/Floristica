@@ -259,6 +259,9 @@ try {
                 case 'recibir':
                     $respuesta = $controlador->recibir($_POST['id'] ?? 0, $usuarioactual);
                     break;
+                case 'cancelar':
+                    $respuesta = $controlador->cancelar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
                 case 'historial':
                     $respuesta = $controlador->historial($_GET['id'] ?? 0);
                     break;

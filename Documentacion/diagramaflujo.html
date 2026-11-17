@@ -8,13 +8,15 @@
 :root { --texto: #2a1420; --suave: #7a5b6a; --borde: #c9a9b8; --principal: #c2255c; }
 * { box-sizing: border-box; }
 body { margin: 0; padding: 24px 16px 48px; background: #fbf4f7; color: var(--texto);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; line-height: 1.45; }
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif; line-height:
+        1.45; }
 main { max-width: 960px; margin: 0 auto; }
 h1 { margin: 0 0 4px; color: var(--principal); font-size: 1.7rem; }
 h2 { margin: 0 0 6px; font-size: 1.2rem; }
 p { margin: 0 0 12px; }
 .suave { color: var(--suave); }
-section { margin-top: 24px; padding: 18px 20px; background: #fff; border: 1px solid #f0d9e3; border-radius: 10px; }
+section { margin-top: 24px; padding: 18px 20px; background: #fff; border: 1px solid #f0d9e3;
+    border-radius: 10px; }
 svg { display: block; width: 100%; height: auto; margin-top: 8px; }
 svg .f { stroke: #6b4a59; stroke-width: 1.2; }
 svg .emp { fill: #fde8ef; }
@@ -27,13 +29,17 @@ svg .n { font-size: 14px; font-weight: 700; text-anchor: middle; fill: #9c1c4a; 
 svg .e { font-size: 11.5px; font-weight: 600; fill: #9c1c4a; }
 svg .l { fill: none; stroke: #6b4a59; stroke-width: 1.4; marker-end: url(#m); }
 svg .punta { fill: #6b4a59; }
-.leyenda { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 10px 0 0; padding: 0; list-style: none; font-size: .9rem; }
+.leyenda { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 10px 0 0; padding: 0; list-style:
+    none; font-size: .9rem; }
 .leyenda li { display: flex; align-items: center; gap: 6px; }
-.muestra { display: inline-block; width: 26px; height: 16px; border: 1px solid #6b4a59; border-radius: 3px; }
+.muestra { display: inline-block; width: 26px; height: 16px; border: 1px solid #6b4a59;
+    border-radius: 3px; }
 .muestra.ovalo { border-radius: 8px; }
-.muestra.rombo { width: 14px; height: 14px; transform: rotate(45deg); background: #fff; margin: 0 6px; }
+.muestra.rombo { width: 14px; height: 14px; transform: rotate(45deg); background: #fff; margin: 0
+    6px; }
 table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: .92rem; }
-th, td { padding: 6px 8px; border-bottom: 1px solid #f0d9e3; text-align: left; vertical-align: top; }
+th, td { padding: 6px 8px; border-bottom: 1px solid #f0d9e3; text-align: left; vertical-align: top;
+    }
 th { color: var(--suave); font-weight: 600; }
 .imprimir { margin-top: 8px; font-size: .9rem; }
 @media print {
@@ -48,33 +54,97 @@ th { color: var(--suave); font-weight: 600; }
 <body>
 <main>
     <h1>Floristica: diagrama de flujo del ciclo</h1>
-    <p class="suave">Cómo se mueven las flores y el dinero en la floristería: desde que una clienta pide un arreglo hasta que se le compra
+    <p class="suave">Cómo se mueven las flores y el dinero en la floristería: desde que una clienta
+        pide un arreglo hasta que se le compra
         otra vez al proveedor. Cada paso dice quién lo hace.</p>
     
 <ul class="leyenda">
-    <li><span class="muestra ovalo" style="background:#fff4d6"></span>Inicio o fin (clienta, proveedor)</li>
-    <li><span class="muestra" style="background:#fde8ef"></span>Lo hace un empleado o el propietario</li>
+    <li><span class="muestra ovalo" style="background:#fff4d6"></span>Inicio o fin (clienta,
+        proveedor)</li>
+    <li><span class="muestra" style="background:#fde8ef"></span>Lo hace un empleado o el
+        propietario</li>
     <li><span class="muestra" style="background:#ece3f6"></span>Solo el propietario</li>
     <li><span class="muestra" style="background:#e3efe7"></span>Lo hace el sistema solo</li>
     <li><span class="muestra rombo"></span>Decisión</li>
 </ul>
-    <p class="imprimir suave">Para guardarlo en PDF: Ctrl + P → "Guardar como PDF" (cada diagrama sale en su propia página).</p>
+    <p class="imprimir suave">Para guardarlo en PDF: Ctrl + P → "Guardar como PDF" (cada diagrama
+        sale en su propia página).</p>
 
     <section>
         <h2>1. El ciclo completo</h2>
-        <p class="suave">Lo que se vende sale del inventario; lo que se cobra y se gasta llega a los reportes; con las alertas se compra
+        <p class="suave">Lo que se vende sale del inventario; lo que se cobra y se gasta llega a
+            los reportes; con las alertas se compra
             otra vez y el inventario vuelve a subir.</p>
-        <svg viewBox="0 0 880 350" role="img" aria-label="El ciclo del negocio"><defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta"/></marker></defs><rect class="f emp" x="15.0" y="24.0" width="190" height="92" rx="10"/><text class="n" x="110" y="48">1. Inventario</text><text class="t"><tspan x="110" y="72">Insumos con stock, apartado</tspan><tspan x="110" y="87">y disponible; alertas</tspan></text><rect class="f emp" x="235.0" y="24.0" width="190" height="92" rx="10"/><text class="n" x="330" y="48">2. Catálogo</text><text class="t"><tspan x="330" y="72">Arreglos con su receta;</tspan><tspan x="330" y="87">búsqueda y valoración por foto</tspan></text><rect class="f emp" x="455.0" y="24.0" width="190" height="92" rx="10"/><text class="n" x="550" y="48">3. Solicitud</text><text class="t"><tspan x="550" y="72">Se revisa el disponible</tspan><tspan x="550" y="87">y se apartan las flores</tspan></text><rect class="f emp" x="675.0" y="24.0" width="190" height="92" rx="10"/><text class="n" x="770" y="48">4. Preparación</text><text class="t"><tspan x="770" y="72">Asignada, "En proceso"</tspan><tspan x="770" y="87">y "Terminado"</tspan></text><rect class="f pro" x="675.0" y="244.0" width="190" height="92" rx="10"/><text class="n" x="770" y="268">5. Venta y cobro</text><text class="t"><tspan x="770" y="292">Sale del inventario; adelantos</tspan><tspan x="770" y="307">y cuentas por cobrar</tspan></text><rect class="f pro" x="455.0" y="244.0" width="190" height="92" rx="10"/><text class="n" x="550" y="268">6. Reportes</text><text class="t"><tspan x="550" y="292">Ganancia neta (ventas −</tspan><tspan x="550" y="307">costo − gastos) y trazabilidad</tspan></text><rect class="f pro" x="235.0" y="244.0" width="190" height="92" rx="10"/><text class="n" x="330" y="268">7. Compras</text><text class="t"><tspan x="330" y="292">Pedido al proveedor; contado</tspan><tspan x="330" y="307">o crédito (cuentas por pagar)</tspan></text><rect class="f pro" x="15.0" y="244.0" width="190" height="92" rx="10"/><text class="n" x="110" y="268">8. Recepción</text><text class="t"><tspan x="110" y="292">Entra la mercadería y</tspan><tspan x="110" y="307">sube el stock</tspan></text><path class="l" d="M205,70 L235,70"/><path class="l" d="M425,70 L455,70"/><path class="l" d="M645,70 L675,70"/><path class="l" d="M770,116 L770,244"/><path class="l" d="M675,290 L645,290"/><path class="l" d="M455,290 L425,290"/><path class="l" d="M235,290 L205,290"/><path class="l" d="M110,244 L110,116"/><rect class="f pro" x="465" y="156" width="170" height="48" rx="10"/><text class="t"><tspan x="550" y="176">Gastos del negocio</tspan><tspan x="550" y="191">(alquiler, luz, salarios…)</tspan></text><path class="l" d="M550,204 L550,244"/></svg>
+        <svg viewBox="0 0 880 350" role="img" aria-label="El ciclo del negocio">
+<defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+    markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" class="punta"/></marker></defs>
+<rect class="f emp" x="15.0" y="24.0" width="190" height="92" rx="10"/>
+<text class="n" x="110" y="48">1. Inventario</text>
+<text class="t">
+<tspan x="110" y="72">Stock, apartado y disponible;</tspan>
+<tspan x="110" y="87">alertas y dañadas</tspan></text>
+<rect class="f emp" x="235.0" y="24.0" width="190" height="92" rx="10"/>
+<text class="n" x="330" y="48">2. Catálogo</text>
+<text class="t">
+<tspan x="330" y="72">Arreglos con su receta;</tspan>
+<tspan x="330" y="87">búsqueda y valoración por foto</tspan></text>
+<rect class="f emp" x="455.0" y="24.0" width="190" height="92" rx="10"/>
+<text class="n" x="550" y="48">3. Solicitud</text>
+<text class="t">
+<tspan x="550" y="72">Se revisa el disponible</tspan>
+<tspan x="550" y="87">y se apartan las flores</tspan></text>
+<rect class="f emp" x="675.0" y="24.0" width="190" height="92" rx="10"/>
+<text class="n" x="770" y="48">4. Preparación</text>
+<text class="t">
+<tspan x="770" y="72">Asignada, "En proceso"</tspan>
+<tspan x="770" y="87">y "Terminado"</tspan></text>
+<rect class="f pro" x="675.0" y="244.0" width="190" height="92" rx="10"/>
+<text class="n" x="770" y="268">5. Venta y cobro</text>
+<text class="t">
+<tspan x="770" y="292">Sale del inventario; adelantos</tspan>
+<tspan x="770" y="307">y cuentas por cobrar</tspan></text>
+<rect class="f pro" x="455.0" y="244.0" width="190" height="92" rx="10"/>
+<text class="n" x="550" y="268">6. Reportes</text>
+<text class="t">
+<tspan x="550" y="292">Ganancia neta (ventas −</tspan>
+<tspan x="550" y="307">costo − gastos) y trazabilidad</tspan></text>
+<rect class="f pro" x="235.0" y="244.0" width="190" height="92" rx="10"/>
+<text class="n" x="330" y="268">7. Compras</text>
+<text class="t">
+<tspan x="330" y="292">Pedido o compra directa;</tspan>
+<tspan x="330" y="307">contado o crédito (por pagar)</tspan></text>
+<rect class="f pro" x="15.0" y="244.0" width="190" height="92" rx="10"/>
+<text class="n" x="110" y="268">8. Recepción</text>
+<text class="t">
+<tspan x="110" y="292">Entra la mercadería y</tspan>
+<tspan x="110" y="307">sube el stock</tspan></text>
+<path class="l" d="M205,70 L235,70"/>
+<path class="l" d="M425,70 L455,70"/>
+<path class="l" d="M645,70 L675,70"/>
+<path class="l" d="M770,116 L770,244"/>
+<path class="l" d="M675,290 L645,290"/>
+<path class="l" d="M455,290 L425,290"/>
+<path class="l" d="M235,290 L205,290"/>
+<path class="l" d="M110,244 L110,116"/>
+<rect class="f pro" x="465" y="156" width="170" height="48" rx="10"/>
+<text class="t">
+<tspan x="550" y="176">Gastos del negocio</tspan>
+<tspan x="550" y="191">(alquiler, luz, salarios…)</tspan></text>
+<path class="l" d="M550,204 L550,244"/>
+</svg>
         
 <table>
     <thead><tr><th>Qué</th><th>Estados</th><th>Tablas principales</th></tr></thead>
     <tbody>
-        <tr><td>Solicitud de pedido de arreglo</td><td>Pendiente → En proceso → Terminado (o Cancelado)</td>
+        <tr><td>Solicitud de pedido de arreglo</td><td>Pendiente → En proceso → Terminado (o
+            Cancelado)</td>
             <td>tbsolicitudencargo, tbsolicitudencargoinsumo, tbsolicitudencargoabono</td></tr>
         <tr><td>Pedido al proveedor</td><td>Pendiente → Confirmado → Recibido (o Cancelado)</td>
             <td>tbpedido, tbpedidodetalle, tbconfirmacioncompra, tbpedidoabono</td></tr>
         <tr><td>Insumo</td><td>Disponible = stock − apartado para solicitudes abiertas</td>
-            <td>tbinventario (tbinventariostockreservado), tbinventariomovimiento, tbinventariootroproveedor</td></tr>
+            <td>tbinventario (tbinventariostockreservado), tbinventariomovimiento,
+                tbinventariootroproveedor</td></tr>
         <tr><td>Gasto</td><td>Cuenta o anulado</td><td>tbgasto</td></tr>
     </tbody>
 </table>
@@ -82,14 +152,246 @@ th { color: var(--suave); font-weight: 600; }
 
     <section class="pagina">
         <h2>2. Una solicitud de pedido de arreglo (venta)</h2>
-        <p class="suave">Si no hay inventario disponible (el stock menos lo apartado para otras solicitudes), el sistema no deja guardarla.</p>
-        <svg viewBox="0 0 900 1162" role="img" aria-label="Flujo de una solicitud de pedido de arreglo"><defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta"/></marker></defs><rect class="f ext" x="125" y="19" width="210" height="54" rx="27"/><text class="t"><tspan x="230" y="50">La clienta pide un arreglo</tspan></text><polygon class="f dec" points="230,97 330,128 230,159 130,128"/><text class="t"><tspan x="230" y="132">¿Trae una foto?</tspan></text><rect class="f emp" x="415" y="101" width="210" height="54" rx="6"/><text class="t"><tspan x="520" y="124.5">Buscar por foto</tspan><tspan x="520" y="139.5">en el catálogo</tspan></text><rect class="f emp" x="125" y="183" width="210" height="54" rx="6"/><text class="t"><tspan x="230" y="206.5">Elegir del catálogo o usar</tspan><tspan x="230" y="221.5">el asistente de presupuesto</tspan></text><polygon class="f dec" points="520,179 620,210 520,241 420,210"/><text class="t"><tspan x="520" y="214">¿Alguno se parece?</tspan></text><rect class="f sis" x="685" y="183" width="210" height="54" rx="6"/><text class="t"><tspan x="790" y="206.5">Valorar el ramo de la foto</tspan><tspan x="790" y="221.5">con lo que hay en inventario</tspan></text><rect class="f emp" x="105" y="265" width="250" height="54" rx="6"/><text class="t"><tspan x="230" y="288.5">Registrar la solicitud: clienta, flores,</tspan><tspan x="230" y="303.5">entrega (máx. 6 meses), express</tspan></text><polygon class="f dec" points="230,343 330,374 230,405 130,374"/><text class="t"><tspan x="230" y="370.5">¿Hay inventario</tspan><tspan x="230" y="385.5">disponible?</tspan></text><rect class="f sis" x="415" y="347" width="210" height="54" rx="6"/><text class="t"><tspan x="520" y="370.5">No deja guardarla: cambiar</tspan><tspan x="520" y="385.5">flores o cantidad, o comprar</tspan></text><rect class="f sis" x="110" y="429" width="240" height="54" rx="6"/><text class="t"><tspan x="230" y="452.5">Queda "Pendiente" y las flores</tspan><tspan x="230" y="467.5">quedan apartadas (reservado)</tspan></text><polygon class="f dec" points="230,507 330,538 230,569 130,538"/><text class="t"><tspan x="230" y="542">¿Deja un adelanto?</tspan></text><rect class="f pro" x="415" y="511" width="210" height="54" rx="6"/><text class="t"><tspan x="520" y="534.5">Registrar el abono</tspan><tspan x="520" y="549.5">(cuenta por cobrar)</tspan></text><rect class="f emp" x="125" y="593" width="210" height="54" rx="6"/><text class="t"><tspan x="230" y="624">Asignarla a una empleada</tspan></text><polygon class="f dec" points="230,671 330,702 230,733 130,702"/><text class="t"><tspan x="230" y="706">¿La clienta cancela?</tspan></text><rect class="f pro" x="415" y="675" width="210" height="54" rx="6"/><text class="t"><tspan x="520" y="698.5">"Cancelado": se libera</tspan><tspan x="520" y="713.5">lo apartado</tspan></text><rect class="f ext" x="460" y="757" width="120" height="54" rx="27"/><text class="t"><tspan x="520" y="788">Fin</tspan></text><rect class="f emp" x="125" y="757" width="210" height="54" rx="6"/><text class="t"><tspan x="230" y="788">Iniciar: "En proceso"</tspan></text><rect class="f emp" x="110" y="839" width="240" height="54" rx="6"/><text class="t"><tspan x="230" y="862.5">Terminar: las flores salen del</tspan><tspan x="230" y="877.5">inventario y es una venta</tspan></text><polygon class="f dec" points="230,917 330,948 230,979 130,948"/><text class="t"><tspan x="230" y="952">¿Pagó todo?</tspan></text><rect class="f pro" x="415" y="921" width="210" height="54" rx="6"/><text class="t"><tspan x="520" y="944.5">Cuenta por cobrar: abonos</tspan><tspan x="520" y="959.5">hasta que el saldo sea 0</tspan></text><rect class="f pro" x="125" y="1003" width="210" height="54" rx="6"/><text class="t"><tspan x="230" y="1026.5">Reportes: ganancia neta</tspan><tspan x="230" y="1041.5">y trazabilidad</tspan></text><rect class="f ext" x="170" y="1085" width="120" height="54" rx="27"/><text class="t"><tspan x="230" y="1116">Fin</tspan></text><path class="l" d="M230,73 L230,97"/><path class="l" d="M330,128 L415,128"/><text class="e" x="342" y="122" text-anchor="start">Sí</text><path class="l" d="M230,159 L230,183"/><text class="e" x="236" y="173" text-anchor="start">No</text><path class="l" d="M520,155 L520,179"/><path class="l" d="M420,210 L335,210"/><text class="e" x="408" y="204" text-anchor="end">Sí, se elige</text><path class="l" d="M620,210 L685,210"/><text class="e" x="632" y="204" text-anchor="start">No</text><path class="l" d="M790,237 L790,253 L290,253 L290,265"/><path class="l" d="M230,237 L230,265"/><path class="l" d="M230,319 L230,343"/><path class="l" d="M330,374 L415,374"/><text class="e" x="342" y="368" text-anchor="start">No</text><path class="l" d="M520,347 L520,292 L355,292"/><path class="l" d="M230,405 L230,429"/><text class="e" x="236" y="419" text-anchor="start">Sí</text><path class="l" d="M230,483 L230,507"/><path class="l" d="M330,538 L415,538"/><text class="e" x="342" y="532" text-anchor="start">Sí</text><path class="l" d="M520,565 L520,620 L335,620"/><path class="l" d="M230,569 L230,593"/><text class="e" x="236" y="583" text-anchor="start">No</text><path class="l" d="M230,647 L230,671"/><path class="l" d="M330,702 L415,702"/><text class="e" x="342" y="696" text-anchor="start">Sí</text><path class="l" d="M520,729 L520,757"/><path class="l" d="M230,733 L230,757"/><text class="e" x="236" y="747" text-anchor="start">No</text><path class="l" d="M230,811 L230,839"/><path class="l" d="M230,893 L230,917"/><path class="l" d="M330,948 L415,948"/><text class="e" x="342" y="942" text-anchor="start">No</text><path class="l" d="M520,975 L520,1030 L335,1030"/><path class="l" d="M230,979 L230,1003"/><text class="e" x="236" y="993" text-anchor="start">Sí</text><path class="l" d="M230,1057 L230,1085"/></svg>
+        <p class="suave">Si no hay inventario disponible (el stock menos lo apartado para otras
+            solicitudes), el sistema no deja guardarla.</p>
+        <svg viewBox="0 0 900 1244" role="img"
+    aria-label="Flujo de una solicitud de pedido de arreglo">
+<defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+    markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" class="punta"/></marker></defs>
+<rect class="f ext" x="125" y="19" width="210" height="54" rx="27"/>
+<text class="t">
+<tspan x="230" y="50">La clienta pide un arreglo</tspan></text>
+<polygon class="f dec" points="230,97 330,128 230,159 130,128"/>
+<text class="t">
+<tspan x="230" y="132">¿Trae una foto?</tspan></text>
+<rect class="f emp" x="415" y="101" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="124.5">Buscar por foto</tspan>
+<tspan x="520" y="139.5">en el catálogo</tspan></text>
+<rect class="f emp" x="125" y="183" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="206.5">Elegir del catálogo o usar</tspan>
+<tspan x="230" y="221.5">el asistente de presupuesto</tspan></text>
+<polygon class="f dec" points="520,179 620,210 520,241 420,210"/>
+<text class="t">
+<tspan x="520" y="214">¿Alguno se parece?</tspan></text>
+<rect class="f sis" x="685" y="183" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="790" y="206.5">Valorar el ramo de la foto</tspan>
+<tspan x="790" y="221.5">con lo que hay en inventario</tspan></text>
+<rect class="f emp" x="105" y="265" width="250" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="288.5">Registrar la solicitud: clienta, flores,</tspan>
+<tspan x="230" y="303.5">entrega (máx. 6 meses), express</tspan></text>
+<polygon class="f dec" points="230,343 330,374 230,405 130,374"/>
+<text class="t">
+<tspan x="230" y="370.5">¿Hay inventario</tspan>
+<tspan x="230" y="385.5">disponible?</tspan></text>
+<rect class="f sis" x="415" y="347" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="370.5">No deja guardarla: cambiar</tspan>
+<tspan x="520" y="385.5">flores o cantidad, o comprar</tspan></text>
+<rect class="f sis" x="110" y="429" width="240" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="452.5">Queda "Pendiente" y las flores</tspan>
+<tspan x="230" y="467.5">quedan apartadas (reservado)</tspan></text>
+<rect class="f emp" x="90" y="511" width="280" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="534.5">Copiar la cotización para WhatsApp:</tspan>
+<tspan x="230" y="549.5">lo que lleva y el total, sin precio por flor</tspan></text>
+<polygon class="f dec" points="230,589 330,620 230,651 130,620"/>
+<text class="t">
+<tspan x="230" y="624">¿Deja un adelanto?</tspan></text>
+<rect class="f pro" x="415" y="593" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="616.5">Registrar el abono</tspan>
+<tspan x="520" y="631.5">(cuenta por cobrar)</tspan></text>
+<rect class="f emp" x="125" y="675" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="698.5">Una empleada la toma</tspan>
+<tspan x="230" y="713.5">("Asignármela") o se la asignan</tspan></text>
+<polygon class="f dec" points="230,753 330,784 230,815 130,784"/>
+<text class="t">
+<tspan x="230" y="788">¿La clienta cancela?</tspan></text>
+<rect class="f pro" x="415" y="757" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="780.5">"Cancelado": se libera</tspan>
+<tspan x="520" y="795.5">lo apartado</tspan></text>
+<rect class="f ext" x="460" y="839" width="120" height="54" rx="27"/>
+<text class="t">
+<tspan x="520" y="870">Fin</tspan></text>
+<rect class="f emp" x="125" y="839" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="870">Iniciar: "En proceso"</tspan></text>
+<rect class="f emp" x="110" y="921" width="240" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="944.5">Terminar: las flores salen del</tspan>
+<tspan x="230" y="959.5">inventario y es una venta</tspan></text>
+<polygon class="f dec" points="230,999 330,1030 230,1061 130,1030"/>
+<text class="t">
+<tspan x="230" y="1034">¿Pagó todo?</tspan></text>
+<rect class="f pro" x="415" y="1003" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="1026.5">Cuenta por cobrar: abonos</tspan>
+<tspan x="520" y="1041.5">hasta que el saldo sea 0</tspan></text>
+<rect class="f pro" x="125" y="1085" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="1108.5">Reportes: ganancia neta</tspan>
+<tspan x="230" y="1123.5">y trazabilidad</tspan></text>
+<rect class="f ext" x="170" y="1167" width="120" height="54" rx="27"/>
+<text class="t">
+<tspan x="230" y="1198">Fin</tspan></text>
+<path class="l" d="M230,73 L230,97"/>
+<path class="l" d="M330,128 L415,128"/>
+<text class="e" x="342" y="122"
+    text-anchor="start">Sí</text>
+<path class="l" d="M230,159 L230,183"/>
+<text class="e" x="236" y="173"
+    text-anchor="start">No</text>
+<path class="l" d="M520,155 L520,179"/>
+<path class="l" d="M420,210 L335,210"/>
+<text class="e" x="408" y="204"
+    text-anchor="end">Sí, se elige</text>
+<path class="l" d="M620,210 L685,210"/>
+<text class="e" x="632" y="204"
+    text-anchor="start">No</text>
+<path class="l" d="M790,237 L790,253 L290,253 L290,265"/>
+<path class="l" d="M230,237 L230,265"/>
+<path class="l" d="M230,319 L230,343"/>
+<path class="l" d="M330,374 L415,374"/>
+<text class="e" x="342" y="368"
+    text-anchor="start">No</text>
+<path class="l" d="M520,347 L520,292 L355,292"/>
+<path class="l" d="M230,405 L230,429"/>
+<text class="e" x="236" y="419"
+    text-anchor="start">Sí</text>
+<path class="l" d="M230,483 L230,511"/>
+<path class="l" d="M230,565 L230,589"/>
+<path class="l" d="M330,620 L415,620"/>
+<text class="e" x="342" y="614"
+    text-anchor="start">Sí</text>
+<path class="l" d="M520,647 L520,702 L335,702"/>
+<path class="l" d="M230,651 L230,675"/>
+<text class="e" x="236" y="665"
+    text-anchor="start">No</text>
+<path class="l" d="M230,729 L230,753"/>
+<path class="l" d="M330,784 L415,784"/>
+<text class="e" x="342" y="778"
+    text-anchor="start">Sí</text>
+<path class="l" d="M520,811 L520,839"/>
+<path class="l" d="M230,815 L230,839"/>
+<text class="e" x="236" y="829"
+    text-anchor="start">No</text>
+<path class="l" d="M230,893 L230,921"/>
+<path class="l" d="M230,975 L230,999"/>
+<path class="l" d="M330,1030 L415,1030"/>
+<text class="e" x="342" y="1024"
+    text-anchor="start">No</text>
+<path class="l" d="M520,1057 L520,1112 L335,1112"/>
+<path class="l" d="M230,1061 L230,1085"/>
+<text class="e" x="236" y="1075"
+    text-anchor="start">Sí</text>
+<path class="l" d="M230,1139 L230,1167"/>
+</svg>
     </section>
 
     <section class="pagina">
         <h2>3. Una compra al proveedor</h2>
-        <p class="suave">Un insumo tiene un proveedor principal y puede tener otros, cada uno con su precio.</p>
-        <svg viewBox="0 0 680 834" role="img" aria-label="Flujo de una compra al proveedor"><defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="punta"/></marker></defs><rect class="f sis" x="110" y="19" width="240" height="54" rx="27"/><text class="t"><tspan x="230" y="50">Alerta de stock bajo en el inicio</tspan></text><rect class="f pro" x="110" y="101" width="240" height="54" rx="6"/><text class="t"><tspan x="230" y="124.5">Revisar el insumo: stock,</tspan><tspan x="230" y="139.5">apartado, disponible y faltante</tspan></text><rect class="f pro" x="95" y="183" width="270" height="54" rx="6"/><text class="t"><tspan x="230" y="206.5">Elegir proveedor: el principal u otro</tspan><tspan x="230" y="221.5">(se compara el precio por unidad)</tspan></text><rect class="f pro" x="105" y="265" width="250" height="54" rx="6"/><text class="t"><tspan x="230" y="288.5">Registrar el pedido ("Pendiente")</tspan><tspan x="230" y="303.5">con paquetes y precio</tspan></text><polygon class="f dec" points="230,343 330,374 230,405 130,374"/><text class="t"><tspan x="230" y="370.5">¿El proveedor</tspan><tspan x="230" y="385.5">lo confirma?</tspan></text><rect class="f pro" x="415" y="347" width="210" height="54" rx="6"/><text class="t"><tspan x="520" y="378">"Cancelado"</tspan></text><rect class="f ext" x="460" y="429" width="120" height="54" rx="27"/><text class="t"><tspan x="520" y="460">Fin</tspan></text><rect class="f pro" x="110" y="429" width="240" height="54" rx="6"/><text class="t"><tspan x="230" y="452.5">Confirmar la compra:</tspan><tspan x="230" y="467.5">monto y fecha ("Confirmado")</tspan></text><polygon class="f dec" points="230,507 330,538 230,569 130,538"/><text class="t"><tspan x="230" y="542">¿Contado o crédito?</tspan></text><rect class="f pro" x="405" y="511" width="230" height="54" rx="6"/><text class="t"><tspan x="520" y="534.5">Cuenta por pagar: vence a los</tspan><tspan x="520" y="549.5">días del plazo; se abona</tspan></text><rect class="f pro" x="100" y="593" width="260" height="54" rx="6"/><text class="t"><tspan x="230" y="616.5">Recibir la mercadería ("Recibido"):</tspan><tspan x="230" y="631.5">entra al inventario</tspan></text><rect class="f sis" x="100" y="675" width="260" height="54" rx="6"/><text class="t"><tspan x="230" y="698.5">Sube el stock disponible y se</tspan><tspan x="230" y="713.5">pueden aceptar más solicitudes</tspan></text><rect class="f ext" x="170" y="757" width="120" height="54" rx="27"/><text class="t"><tspan x="230" y="788">Fin</tspan></text><path class="l" d="M230,73 L230,101"/><path class="l" d="M230,155 L230,183"/><path class="l" d="M230,237 L230,265"/><path class="l" d="M230,319 L230,343"/><path class="l" d="M330,374 L415,374"/><text class="e" x="342" y="368" text-anchor="start">No</text><path class="l" d="M520,401 L520,429"/><path class="l" d="M230,405 L230,429"/><text class="e" x="236" y="419" text-anchor="start">Sí</text><path class="l" d="M230,483 L230,507"/><path class="l" d="M330,538 L405,538"/><text class="e" x="342" y="532" text-anchor="start">Crédito</text><path class="l" d="M520,565 L520,620 L360,620"/><path class="l" d="M230,569 L230,593"/><text class="e" x="236" y="583" text-anchor="start">Contado</text><path class="l" d="M230,647 L230,675"/><path class="l" d="M230,729 L230,757"/></svg>
+        <p class="suave">Un insumo tiene un proveedor principal y puede tener otros, cada uno con
+            su precio.
+            Las flores que se dañan o se marchitan se rebajan desde el insumo ("Rebajar
+                dañadas").</p>
+        <svg viewBox="0 0 900 916" role="img"
+    aria-label="Flujo de una compra al proveedor">
+<defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+    markerHeight="7" orient="auto-start-reverse">
+<path d="M0,0 L10,5 L0,10 z" class="punta"/></marker></defs>
+<rect class="f sis" x="110" y="19" width="240" height="54" rx="27"/>
+<text class="t">
+<tspan x="230" y="50">Alerta de stock bajo en el inicio</tspan></text>
+<rect class="f pro" x="110" y="101" width="240" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="124.5">Revisar el insumo: stock,</tspan>
+<tspan x="230" y="139.5">apartado, disponible y faltante</tspan></text>
+<polygon class="f dec" points="230,179 330,210 230,241 130,210"/>
+<text class="t">
+<tspan x="230" y="206.5">¿Con pedido</tspan>
+<tspan x="230" y="221.5">al proveedor?</tspan></text>
+<rect class="f pro" x="690" y="183" width="200" height="54" rx="6"/>
+<text class="t">
+<tspan x="790" y="206.5">Agregar stock (sin pedido):</tspan>
+<tspan x="790" y="221.5">proveedor y paquetes</tspan></text>
+<rect class="f pro" x="95" y="265" width="270" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="288.5">Elegir proveedor: el principal u otro</tspan>
+<tspan x="230" y="303.5">(se compara el precio por unidad)</tspan></text>
+<rect class="f pro" x="105" y="347" width="250" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="370.5">Registrar el pedido ("Pendiente")</tspan>
+<tspan x="230" y="385.5">con paquetes y precio</tspan></text>
+<polygon class="f dec" points="230,425 330,456 230,487 130,456"/>
+<text class="t">
+<tspan x="230" y="452.5">¿El proveedor</tspan>
+<tspan x="230" y="467.5">lo confirma?</tspan></text>
+<rect class="f pro" x="415" y="429" width="210" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="452.5">Cancelar el pedido</tspan>
+<tspan x="520" y="467.5">("Cancelado")</tspan></text>
+<rect class="f ext" x="460" y="511" width="120" height="54" rx="27"/>
+<text class="t">
+<tspan x="520" y="542">Fin</tspan></text>
+<rect class="f pro" x="110" y="511" width="240" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="534.5">Confirmar la compra:</tspan>
+<tspan x="230" y="549.5">monto y fecha ("Confirmado")</tspan></text>
+<polygon class="f dec" points="230,589 330,620 230,651 130,620"/>
+<text class="t">
+<tspan x="230" y="624">¿Contado o crédito?</tspan></text>
+<rect class="f pro" x="405" y="593" width="230" height="54" rx="6"/>
+<text class="t">
+<tspan x="520" y="616.5">Cuenta por pagar: vence a los</tspan>
+<tspan x="520" y="631.5">días del plazo; se abona</tspan></text>
+<rect class="f pro" x="100" y="675" width="260" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="698.5">Recibir la mercadería ("Recibido"):</tspan>
+<tspan x="230" y="713.5">entra al inventario</tspan></text>
+<rect class="f sis" x="100" y="757" width="260" height="54" rx="6"/>
+<text class="t">
+<tspan x="230" y="780.5">Sube el stock disponible y se</tspan>
+<tspan x="230" y="795.5">pueden aceptar más solicitudes</tspan></text>
+<rect class="f ext" x="170" y="839" width="120" height="54" rx="27"/>
+<text class="t">
+<tspan x="230" y="870">Fin</tspan></text>
+<path class="l" d="M230,73 L230,101"/>
+<path class="l" d="M230,155 L230,179"/>
+<path class="l" d="M330,210 L690,210"/>
+<text class="e" x="342" y="204"
+    text-anchor="start">No, se compró directo</text>
+<path class="l" d="M790,237 L790,784 L360,784"/>
+<path class="l" d="M230,241 L230,265"/>
+<text class="e" x="236" y="255"
+    text-anchor="start">Sí</text>
+<path class="l" d="M230,319 L230,347"/>
+<path class="l" d="M230,401 L230,425"/>
+<path class="l" d="M330,456 L415,456"/>
+<text class="e" x="342" y="450"
+    text-anchor="start">No</text>
+<path class="l" d="M520,483 L520,511"/>
+<path class="l" d="M230,487 L230,511"/>
+<text class="e" x="236" y="501"
+    text-anchor="start">Sí</text>
+<path class="l" d="M230,565 L230,589"/>
+<path class="l" d="M330,620 L405,620"/>
+<text class="e" x="342" y="614"
+    text-anchor="start">Crédito</text>
+<path class="l" d="M520,647 L520,702 L360,702"/>
+<path class="l" d="M230,651 L230,675"/>
+<text class="e" x="236" y="665"
+    text-anchor="start">Contado</text>
+<path class="l" d="M230,729 L230,757"/>
+<path class="l" d="M230,811 L230,839"/>
+</svg>
     </section>
 </main>
 </body>
