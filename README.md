@@ -127,7 +127,7 @@ Floristica/
 
 1. **El ciclo completo:** inventario → catálogo → solicitud → preparación → venta y cobro → reportes → compras → recepción, y otra vez al inventario; con los estados de cada cosa y sus tablas.
 2. **Una solicitud de pedido de arreglo:** desde que la clienta pide (con o sin foto) hasta que se
-   entrega y se cobra: si hay inventario disponible, la cotización por WhatsApp, si deja adelanto,
+   entrega y se cobra: si hay inventario disponible, la proforma con fotos por WhatsApp, si deja adelanto,
    quién la toma, si cancela y si pagó todo.
 3. **Una compra al proveedor:** desde la alerta de stock bajo hasta que sube el stock: con pedido
    (si el proveedor no lo confirma se cancela; de contado o a crédito) o comprada directo con
@@ -217,7 +217,8 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
   - El costo por unidad se calcula solo: precio del paquete ÷ unidades por paquete.
   - El **precio de venta** por unidad es el que se le cobra al cliente en un arreglo personalizado o como adicional. No puede ser menor que el costo, y la pantalla muestra la ganancia.
 - **Stock apartado (previsibilidad):** cada insumo guarda cuánto está apartado para las solicitudes abiertas (`tbinventariostockreservado`). Lo **disponible** es el stock menos lo apartado. En la lista, debajo del stock dice "8 apartadas · 32 libres", o "Faltan 9" si las solicitudes abiertas piden más de lo que hay; en **Ver** salen Stock actual, Apartado para solicitudes y Disponible.
-- **Ver:** los datos van por secciones: estado, **Stock** (actual, apartado, disponible y mínimo), **Proveedores y precios** (el principal y los otros con la comparación, costo, venta, ganancia y temporada alta) y los datos de la categoría, y debajo los movimientos del stock.
+- **Foto del producto:** en **Ver** está **Agregar foto** (o **Cambiar foto** y **Quitar foto**). Es la foto que sale en la **proforma** que se le manda al cliente cuando lo agrega como adicional (por ejemplo la caja de chocolates o la tarjeta). JPG, PNG o WEBP de hasta 2 MB, en `Publico/imagenes/productos/` (columna `tbinventariofoto`). Los productos sin foto salen en la proforma con un cuadro que dice "Sin foto".
+- **Ver:** la foto del producto y los datos por secciones: estado, **Stock** (actual, apartado, disponible y mínimo), **Proveedores y precios** (el principal y los otros con la comparación, costo, venta, ganancia y temporada alta) y los datos de la categoría, y debajo los movimientos del stock.
 - **Nivel de stock**, con un círculo de color (según lo disponible):
   - Rojo: igual o por debajo del mínimo.
   - Amarillo: hasta 1,5 veces el mínimo.
@@ -313,7 +314,13 @@ La foto de la clienta se guarda en `Publico/imagenes/solicitudes/referencia_…`
   - **Libre:** se eligen los productos y el sistema calcula el total para cotizarlo. **Sugerir arreglos** también funciona aquí (ver Asistente).
 - **Servicio express:** se elige la zona y se cobra su precio. La dirección de entrega es obligatoria.
 - **Flores pintadas (opcional):** se elige la pintura floral (spray) y cuántas flores se pintan; se cobra el "cobro por flor" de esa pintura por cada una. El campo no deja escribir más flores de las que lleva el arreglo y el botón + se apaga al llegar al tope. El spray no se agrega como producto ni va dentro de los arreglos del catálogo.
-- **Total:** arreglo × cantidad + productos + flores pintadas + express. Debajo se ven los dos totales, con precios normales y en temporada alta, y (solo el propietario) el costo y la ganancia del personalizado. El botón **Copiar cotización para WhatsApp** copia el detalle con el total.
+- **Total:** arreglo × cantidad + productos + flores pintadas + express. Debajo se ven los dos totales, con precios normales y en temporada alta, y (solo el propietario) el costo y la ganancia del personalizado. El botón **Ver proforma para el cliente** arma la proforma (ver abajo).
+- **Proforma para el cliente:** reemplaza al texto que se copiaba y se pegaba en WhatsApp. Se abre desde el formulario con **Ver proforma para el cliente** (también antes de guardar la solicitud) y sale como una hoja con el logo, el cliente, la fecha y forma de entrega, y un renglón por cada cosa con **su foto**, cantidad, precio y subtotal, y al final el total:
+  - **Predefinida:** la foto del arreglo del catálogo con lo que lleva, y debajo cada adicional con la foto del producto (por ejemplo 1 chocolate y 1 tarjeta, cada uno con su foto).
+  - **Personalizada:** el ramo con la foto de referencia y lo que lleva, con un solo precio (no se dice cuánto cuesta cada flor); los chocolates, peluches y tarjetas van aparte con su foto.
+  - Las flores pintadas y el servicio express van en su propio renglón; la nota de la solicitud sale como **Indicaciones**.
+  - **Descargar PDF** genera el PDF y lo descarga de una vez, ya con el nombre ("Proforma Ana Mora 17-11-2026.pdf"), en hojas tamaño carta; si no cabe en una hoja, se corta entre renglones. Sale igual desde la computadora o el celular. Se hace en el navegador con dos librerías de licencia MIT que vienen en `Publico/js/librerias/` (no necesitan internet): **html2canvas** toma la hoja como imagen, con las fotos y el ₡, y **jsPDF** arma el PDF.
+  - **Imprimir** la manda a la impresora (solo sale la hoja). **Abrir chat de WhatsApp** abre la conversación con el cliente para mandarle el PDF.
 - **Costo:** cada solicitud guarda lo que costaron sus flores y productos (`tbsolicitudencargocosto`), para calcular la ganancia en Ventas.
 - **Precios guardados:** se guardan los precios del momento. Si después cambian en el catálogo, el inventario o las zonas, las solicitudes ya registradas no cambian, ni siquiera al editarlas.
 - **Stock reservado (previsibilidad):** al guardar, el sistema revisa que haya inventario **disponible** (stock − lo apartado para otras solicitudes abiertas) para todo lo que lleva: la receta del arreglo × cantidad y los adicionales, o los productos del personalizado. Si no alcanza, no deja guardarla y dice, por ejemplo, "Girasol: se necesitan 15 y hay 5 disponibles (12 en inventario, 7 apartadas para otras solicitudes)". Al guardarla, eso queda apartado; al cancelarla vuelve a estar disponible, y al terminarla sale del stock. Al editar, lo que la misma solicitud ya tenía apartado cuenta como suyo, y si no se aumenta no se vuelve a revisar. En el formulario, los productos sin disponible dicen "(no hay disponible)". El inicio del propietario avisa los productos con poco disponible y cuántos faltan para preparar todas las solicitudes abiertas.
@@ -429,7 +436,7 @@ Tablas `tb<entidad><dato>historico`. Se ven con **Historial** y muestran el valo
 
 | Módulo | Datos con histórico |
 |--------|---------------------|
-| Inventario | Nombre, proveedor, otros proveedores (cuándo se agregó o quitó cada uno y su precio), precio del paquete, precio de venta, precio del proveedor en cada temporada, stock mínimo y estado |
+| Inventario | Nombre, proveedor, otros proveedores (cuándo se agregó o quitó cada uno y su precio), precio del paquete, precio de venta, precio del proveedor en cada temporada, stock mínimo, estado y foto (cuándo se agregó, cambió o quitó) |
 | Catálogo | Nombre, precio y estado |
 | Empleados | Nombre, teléfono, rol, usuario, contraseña (solo "Asignada" o "Cambiada") y estado |
 | Clientes | Nombre, teléfono, dirección y estado |
