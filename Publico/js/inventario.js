@@ -12,7 +12,6 @@ const filtros = {
         return resto.length > 0 ? `${entera}.${resto.join('').slice(0, 2)}` : entera;
     },
 };
-// Nombre de cada atributo de la categoría, para mostrarlo en "Ver"
 const etiquetascategoria = {
     Flor: {
         tbinventariocategoriaflortipo: 'Flor o follaje',
@@ -121,9 +120,7 @@ let temporizadorbusqueda;
 let temporizadoraviso;
 let datosservidor = {};
 let datosoriginales = {};
-// Catálogos de colores y de tipos de flor (tablas tbcolor y tbtipoflor)
 let catalogos = { colores: [], tiposflor: [] };
-// Proveedores activos (para el principal y para "Otros proveedores") y número de la siguiente fila
 let proveedoresactivos = [];
 let filaotros = 0;
 
@@ -133,7 +130,6 @@ function escapar(texto) {
     return div.innerHTML;
 }
 
-// "2026-10-11 15:25:00" -> "11/10/2026 3:25 p. m."
 function formatearfechahora(fechahora) {
     if (!fechahora) {
         return '';
@@ -224,7 +220,6 @@ async function cargarproveedores() {
     llenarproveedores();
 }
 
-// Todos los proveedores activos (al registrar o editar un insumo)
 function llenarproveedores() {
     selectproveedor.innerHTML = '';
     selectproveedor.add(new Option('Seleccione…', ''));
@@ -242,7 +237,6 @@ function mostrarseccioncategoria() {
     actualizarspray();
 }
 
-// Spray: el color y el cobro por flor son de la pintura floral; el aroma, del aromatizante
 function actualizarspray() {
     const tipo = formulario.elements.tbinventariocategoriaspraytipo.value;
     campospraycolor.hidden = tipo !== 'Pintura floral';
@@ -257,7 +251,6 @@ async function cargarcatalogos() {
     }
 }
 
-// Los colores que se pueden elegir: los activos y, si el insumo ya tenía uno inactivo, ese también
 function prepararcolores(datos = {}) {
     formulario.querySelectorAll('select[data-lista="colores"]').forEach((select) => {
         const elegido = String(datos[select.name] ?? '');
@@ -271,7 +264,6 @@ function prepararcolores(datos = {}) {
     });
 }
 
-// Los tipos de flor según sea flor o follaje (del catálogo tbtipoflor)
 function actualizarvariedades(elegido = formulario.elements.tbinventariocategoriaflorvariedad.value) {
     const clase = formulario.elements.tbinventariocategoriaflortipo.value;
     const select = formulario.elements.tbinventariocategoriaflorvariedad;
@@ -284,7 +276,6 @@ function actualizarvariedades(elegido = formulario.elements.tbinventariocategori
     select.value = lista.some((tipo) => String(tipo.id) === String(elegido)) ? String(elegido) : '';
 }
 
-// Los tipos cambian si es papel o cinta; el acabado solo aplica al papel y "personalizable" solo a la cinta
 function actualizarenvoltura(tipoelegido = formulario.elements.tbinventariocategoriaenvolturatipo.value) {
     const clase = formulario.elements.tbinventariocategoriaenvolturaclase.value;
     const selecttipo = formulario.elements.tbinventariocategoriaenvolturatipo;
@@ -306,7 +297,6 @@ function numero(valor) {
     return parseFloat(String(valor).replace(',', '.'));
 }
 
-// Costo por unidad = precio del paquete ÷ unidades; ganancia = precio de venta − costo
 function calcularpreciounidad() {
     const precio = numero(formulario.elements.tbinventariopreciopaquete.value);
     const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
@@ -318,9 +308,6 @@ function calcularpreciounidad() {
     gananciaunidad.classList.toggle('texto-peligro', costo !== null && venta > 0 && venta < costo);
 }
 
-/* ---------- Otros proveedores del insumo ---------- */
-
-// Una fila: proveedor, precio del paquete, cuánto sale la unidad comparado con el principal y "Quitar"
 function agregarotro(otro = {}) {
     const numerofila = filaotros++;
     const elegido = String(otro.tbproveedorid ?? '');
@@ -353,7 +340,6 @@ function dibujarotros(lista) {
     compararotros();
 }
 
-// Debajo de cada uno: a cuánto sale la unidad y si es más barato o más caro que el principal
 function compararotros() {
     const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
     const principal = numero(formulario.elements.tbinventariopreciopaquete.value);
@@ -374,7 +360,6 @@ function compararotros() {
     });
 }
 
-// Precio del proveedor en temporada: se revisa mientras se escribe y se muestra a cuánto se vendería la unidad
 function revisartemporadas() {
     preciostemporada.revisar(contenedortemporadas, formulario.querySelector('[data-error="temporadas"]'));
     preciostemporada.ventas(contenedortemporadas, numero(formulario.elements.tbinventariopreciopaquete.value),
@@ -432,7 +417,6 @@ function asignarcampos(datos) {
     });
 
     mostrarseccioncategoria();
-    // El tipo de papel o cinta y el tipo de flor se asignan después de cargar sus opciones
     actualizarenvoltura(datos.tbinventariocategoriaenvolturatipo ?? '');
     actualizarvariedades(datos.tbinventariocategoriaflorvariedad ?? '');
     calcularpreciounidad();
@@ -494,8 +478,6 @@ function descartarborrador() {
     avisoborrador.hidden = true;
 }
 
-// Rojo: en el mínimo o por debajo. Amarillo: hasta 50 % por encima del mínimo. Verde: suficiente.
-// Se mide con lo disponible (el stock menos lo apartado para solicitudes abiertas).
 function nivelstock(producto) {
     const stock = producto.tbinventariodisponible;
     const minimo = producto.tbinventariostockminimo;
@@ -509,7 +491,6 @@ function nivelstock(producto) {
     return { clase: 'stock-bien', texto: 'Suficiente' };
 }
 
-// Debajo del stock: cuánto está apartado para solicitudes abiertas y cuánto queda libre
 function textoapartado(producto) {
     if (producto.tbinventariostockreservado <= 0) {
         return '';
@@ -532,7 +513,6 @@ async function cargarinventario() {
         return;
     }
 
-    // El nivel de stock se filtra aquí, con el mismo cálculo del círculo de color
     const productos = filtrostock.value === ''
         ? respuesta.datos
         : respuesta.datos.filter((producto) => nivelstock(producto).clase === `stock-${filtrostock.value}`);
@@ -602,8 +582,6 @@ function mostrarerrores(errores) {
     }
 }
 
-// Al registrar se escribe el stock inicial. Al editar, el stock ya no se escribe: se muestra y se cambia
-// con "Sumar o restar stock", así lo que se compra se suma a lo que ya hay y queda el motivo.
 function modostock(producto) {
     const editando = producto !== null;
     document.getElementById('etiquetastock').textContent = editando ? 'Stock actual (unidades)' : 'Stock inicial (unidades) *';
@@ -661,7 +639,6 @@ async function verdetalle(id) {
     }
 
     const producto = respuesta.datos;
-    // Las filas ['§', 'Título'] son encabezados de sección
     const nombrecategoria = { Flor: 'la flor o follaje', Envoltura: 'la envoltura', Base: 'la base', Chocolate: 'el chocolate',
         Peluche: 'el peluche', Tarjeta: 'la tarjeta', Spray: 'el spray', Accesorio: 'el accesorio' };
     const filas = [
@@ -675,7 +652,6 @@ async function verdetalle(id) {
         ['Stock mínimo', String(producto.tbinventariostockminimo)],
         ['§', 'Proveedores y precios'],
         ['Proveedor', `${producto.tbproveedornombreempresa}${(producto.otrosproveedores ?? []).length > 0 ? ' (principal)' : ''}`],
-        // Otros proveedores: a cuánto vende cada uno el mismo paquete, comparado con el principal
         ...(producto.otrosproveedores ?? []).map((otro) => {
             const diferencia = (otro.preciopaquete - producto.tbinventariopreciopaquete) / Math.max(1, producto.tbinventariounidadespaquete);
             const comparacion = Math.abs(diferencia) < 0.01 ? 'igual que el principal'
@@ -703,12 +679,10 @@ async function verdetalle(id) {
     const etiquetas = etiquetascategoria[producto.tbinventariocategoria] ?? {};
     Object.entries(etiquetas).forEach(([campo, etiqueta]) => {
         let valor = producto.categoria[campo];
-        // El acabado (solo papel) y "personalizable" (solo cinta) no se muestran donde no aplican
         if (producto.tbinventariocategoria === 'Envoltura' && valor === null
             && (campo.endsWith('acabado') || campo.endsWith('personalizable'))) {
             return;
         }
-        // En el spray: color y cobro solo en la pintura, aroma solo en el aromatizante
         if (producto.tbinventariocategoria === 'Spray' && valor === null && !campo.endsWith('fechavencimiento')) {
             return;
         }
@@ -721,7 +695,6 @@ async function verdetalle(id) {
         if (campo.endsWith('personalizable') && valor !== null && valor !== undefined) {
             valor = Number(valor) === 1 ? 'Sí' : 'No';
         }
-        // El color y el tipo de flor se guardan como id: se muestra su nombre
         if ((campo + 'nombre') in producto.categoria) {
             valor = producto.categoria[campo + 'nombre'];
         }
@@ -729,6 +702,7 @@ async function verdetalle(id) {
     });
 
     titulodetalle.textContent = producto.tbinventarionombre;
+    mostrarfoto(producto);
     listadetalle.innerHTML = filas
         .map(([etiqueta, valor]) => (etiqueta === '§'
             ? `<dt class="detalle-seccion">${escapar(valor)}</dt>`
@@ -753,6 +727,74 @@ async function verdetalle(id) {
 
     dialogodetalle.showModal();
 }
+
+const fotodetalle = document.getElementById('fotodetalle');
+const fotovacia = document.getElementById('fotovacia');
+const campofoto = document.getElementById('campofoto');
+const botonfoto = document.getElementById('botonfoto');
+const botonquitarfoto = document.getElementById('botonquitarfoto');
+const errorfoto = document.getElementById('errorfoto');
+
+function mostrarfoto(producto) {
+    const foto = producto.tbinventariofoto;
+    fotodetalle.hidden = !foto;
+    fotodetalle.src = foto || '';
+    fotodetalle.alt = producto.tbinventarionombre;
+    fotovacia.hidden = Boolean(foto);
+    botonfoto.textContent = foto ? 'Cambiar foto' : 'Agregar foto';
+    botonfoto.disabled = false;
+    botonquitarfoto.hidden = !foto;
+    errorfoto.textContent = '';
+    errorfoto.className = 'error';
+}
+
+async function terminarfoto(respuesta) {
+    if (!respuesta.exito) {
+        errorfoto.textContent = respuesta.mensaje;
+        errorfoto.className = 'error';
+        botonfoto.disabled = false;
+        botonfoto.textContent = fotodetalle.hidden ? 'Agregar foto' : 'Cambiar foto';
+        return;
+    }
+    await verdetalle(iddetalle);
+    errorfoto.textContent = respuesta.mensaje;
+    errorfoto.className = 'texto-exito';
+}
+
+async function subirfoto() {
+    const archivo = campofoto.files[0];
+    if (!archivo) {
+        return;
+    }
+    if (archivo.size > 2 * 1024 * 1024) {
+        errorfoto.textContent = 'La foto no puede pesar más de 2 MB.';
+        errorfoto.className = 'error';
+        campofoto.value = '';
+        return;
+    }
+
+    const datos = new FormData();
+    datos.append('id', iddetalle);
+    datos.append('tbinventariofoto', archivo);
+    botonfoto.disabled = true;
+    botonfoto.textContent = 'Subiendo…';
+    const respuesta = await enviar('subirfoto', datos);
+    campofoto.value = '';
+    await terminarfoto(respuesta);
+}
+
+async function quitarfoto() {
+    const datos = new FormData();
+    datos.append('id', iddetalle);
+    botonquitarfoto.disabled = true;
+    const respuesta = await enviar('quitarfoto', datos);
+    botonquitarfoto.disabled = false;
+    await terminarfoto(respuesta);
+}
+
+botonfoto.addEventListener('click', () => campofoto.click());
+campofoto.addEventListener('change', subirfoto);
+botonquitarfoto.addEventListener('click', quitarfoto);
 
 async function cambiarestado(accion, id, nombre) {
     const configuracion = accion === 'inactivar'
@@ -802,7 +844,6 @@ formulario.addEventListener('input', (evento) => {
     }
     campo.removeAttribute('aria-invalid');
 
-    // Al escribir un precio de temporada o cambiar el paquete o la venta, se revisa al momento
     if (campo.name.startsWith('temporadas[') || campo.name === 'tbinventariopreciopaquete'
         || campo.name === 'tbinventarioprecioventa') {
         revisartemporadas();
@@ -817,7 +858,6 @@ formulario.addEventListener('input', (evento) => {
 
 formulario.addEventListener('change', guardarborrador);
 
-// Botones − y + de unidades por paquete, stock y stock mínimo
 const limitescontador = {
     tbinventariounidadespaquete: [1, 10000],
     tbinventariostock: [0, 999999],
@@ -836,7 +876,6 @@ formulario.addEventListener('click', (evento) => {
     const nuevo = Number.isNaN(actual) ? minimo : actual + Number(boton.dataset.paso);
 
     campo.value = String(Math.min(maximo, Math.max(minimo, nuevo)));
-    // Avisa del cambio para que se limpie el error, se guarde el borrador y se recalcule el precio por unidad
     campo.dispatchEvent(new Event('input', { bubbles: true }));
 });
 botonotroproveedor.addEventListener('click', () => {
@@ -907,7 +946,6 @@ formulario.addEventListener('submit', async (evento) => {
     avisoformulario.textContent = respuesta.mensaje;
     avisoformulario.hidden = false;
 
-    // Ya existe un insumo con ese nombre: el formulario pasa a sumarle lo que se compró
     if (respuesta.datos && respuesta.datos.existente) {
         avisoformulario.hidden = true;
         entrarexistente(respuesta.datos.existente.tbinventarioid);
@@ -952,7 +990,6 @@ document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 
-// "Ver historial" del producto que está abierto en el detalle (solo existe para el propietario)
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {
@@ -960,22 +997,17 @@ if (botonverhistorial) {
 }
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
-// El vencimiento debe ser al menos 30 días después de hoy (igual que en el servidor)
 const vencimientominimo = new Date();
 vencimientominimo.setDate(vencimientominimo.getDate() + 30);
 formulario.elements.tbinventariocategoriachocolatefechavencimiento.min = vencimientominimo.toLocaleDateString('en-CA');
 formulario.elements.tbinventariocategoriasprayfechavencimiento.min = vencimientominimo.toLocaleDateString('en-CA');
 
-/* ---------- Nuevo insumo con un nombre que ya existe ---------- */
-
-// Mayúsculas y tildes no cuentan (igual que en el servidor)
 const normalizar = (texto) => String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 const avisoexistente = document.getElementById('avisoexistente');
 const campopaquetes = document.getElementById('campopaquetes');
 const resultadocompra = document.getElementById('resultadocompra');
 let existente = null;
 
-// Proveedores que venden el insumo: el principal y los de "Otros proveedores", cada uno con su precio del paquete
 function vendedores(producto) {
     return [
         { id: String(producto.tbproveedorid), nombre: producto.tbproveedornombreempresa, precio: Number(producto.tbinventariopreciopaquete), principal: true },
@@ -992,8 +1024,6 @@ function llenarvendedores(select, producto) {
     });
 }
 
-// Al registrar, si el nombre ya existe: el formulario se llena con ese insumo, todo queda sin poder cambiarse,
-// y solo se elige a qué proveedor se le compró y cuántos paquetes; eso se suma al stock que ya tiene
 async function entrarexistente(id) {
     const respuesta = await consultar('obtener', { id });
     if (!respuesta.exito) {
@@ -1038,7 +1068,6 @@ async function entrarexistente(id) {
     formulario.elements.paquetescompra.select();
 }
 
-// Vuelve al formulario normal de "Nuevo insumo" (sin perder el nombre que se escribió)
 function salirexistente(nombre = null) {
     Array.from(formulario.elements).forEach((campo) => {
         if (campo.dataset.bloqueadoexistente) {
@@ -1065,8 +1094,6 @@ function salirexistente(nombre = null) {
     botonguardar.textContent = 'Guardar insumo';
 }
 
-// "Se suman 24 unidades: el stock pasa de 96 a 120 · ₡7 500 a Vivero Orosi". El precio del paquete del
-// formulario sigue siendo el del proveedor principal (es el costo del insumo); el de esta compra va aquí.
 function calcularcompra() {
     if (!existente) {
         return;
@@ -1107,7 +1134,6 @@ async function guardarcompra() {
     avisoformulario.hidden = false;
 }
 
-// Apenas termina de escribir el nombre, se busca si ya existe
 formulario.elements.tbinventarionombre.addEventListener('change', async () => {
     const campo = formulario.elements.tbinventarionombre;
     const nombre = campo.value.trim();
@@ -1157,8 +1183,6 @@ dialogoformulario.addEventListener('close', () => {
     }
 });
 
-/* ---------- Ventana de stock: agregar (compra sin pedido) o rebajar las dañadas ---------- */
-
 const dialogostock = document.getElementById('dialogostock');
 const formulariostock = document.getElementById('formulariostock');
 const avisostock = document.getElementById('avisostock');
@@ -1204,7 +1228,6 @@ function calcularresultadostock() {
     resultadostock.className = `resultado-stock${falta ? ' texto-peligro' : ''}`;
 }
 
-// sentido: 'sumar' (compra sin pedido) o 'restar' (se dañaron o se marchitaron)
 async function abrirstock(id, sentido = 'sumar') {
     const respuesta = await consultar('obtener', { id });
     if (!respuesta.exito) {
@@ -1273,7 +1296,6 @@ formulariostock.addEventListener('submit', async (evento) => {
         dialogostock.close();
         mostraraviso(respuesta.mensaje, 'exito');
         cargarinventario();
-        // Si "Ver" de ese insumo estaba abierto, se actualiza con el stock nuevo
         if (dialogodetalle.open && String(iddetalle) === String(productostock.tbinventarioid)) {
             verdetalle(iddetalle);
         }
@@ -1302,8 +1324,6 @@ document.getElementById('botonstockformulario').addEventListener('click', () => 
     dialogoformulario.close();
     abrirstock(id, 'sumar');
 });
-
-/* ---------- Colores y tipos de flor (tablas catálogo) ---------- */
 
 const dialogocatalogos = document.getElementById('dialogocatalogos');
 const avisocatalogos = document.getElementById('avisocatalogos');
@@ -1373,7 +1393,6 @@ dialogocatalogos.addEventListener('click', async (evento) => {
     }
 });
 
-// Solo letras y espacios en los nombres
 dialogocatalogos.addEventListener('input', (evento) => {
     if (evento.target.name === 'nombre') {
         evento.target.value = filtros.letras(evento.target.value);
@@ -1388,10 +1407,8 @@ const catalogoslistos = cargarcatalogos();
 filtrosdesdeurl({ categoria: filtrocategoria, estado: filtroestado, stock: filtrostock });
 cargarinventario();
 
-// Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
 abrirformulariosipide(abrirnuevo);
 
-// Si hay una temporada en uso y hay flores sin precio del proveedor para ella, se avisa
 preciostemporada.aviso({
     modulo: 'inventario',
     singular: 'flor',
