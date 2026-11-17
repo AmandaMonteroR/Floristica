@@ -326,10 +326,10 @@ El algoritmo está en `Aplicacion/Controlador/asistentecontrolador.php`. Cada ar
 
 1. Del presupuesto se apartan los productos que ya eligió la clienta y lo que cuestan las flores pintadas.
 2. Para cada receta se ponen el papel, la base y la cinta (lo que no depende del tamaño) y los adicionales de la receta (tarjeta, chocolate…); si no alcanza, se quitan los adicionales.
-3. Las flores y follajes de la receta se agrandan o se achican en la misma proporción, de 5% en 5% y hasta 3 veces la receta, hasta llenar lo que queda sin pasar del stock. Si la clienta pidió una flor que está en la receta, esas cuentan dentro de la proporción y nunca se ponen menos de las que pidió.
+3. Las flores y follajes de la receta se agrandan o se achican en la misma proporción, de 5% en 5% y hasta 3 veces la receta (6 veces si la receta lleva la flor que pidió la clienta, para que un arreglo pequeño con girasol también llene un presupuesto grande), hasta llenar lo que queda sin pasar del stock. Si la clienta pidió una flor que está en la receta, esas cuentan dentro de la proporción y nunca se ponen menos de las que pidió.
 4. Lo que sobra se completa de a una flor, la que más le falte para mantener la proporción.
 5. Cada producto se cobra igual que en el personalizado: costo × (1 + % / 100), hacia arriba a ₡10. Si la temporada alta está encendida, con sus costos.
-6. **Orden:** 60% qué tanto aprovecha el presupuesto + 25% si la receta lleva las flores que pidió la clienta + 15% qué tan cerca queda del tamaño original. No se repiten dos propuestas con las mismas flores.
+6. **Orden:** primero las recetas que llevan las flores que pidió la clienta (si pidió girasoles, primero los arreglos del catálogo con girasol). Entre ellas: 60% qué tanto aprovecha el presupuesto + 25% si la receta lleva algo de lo que pidió + 15% qué tan cerca queda del tamaño original. No se repiten dos propuestas con las mismas flores.
 
 Si sobra dinero, la propuesta lo dice, avisa si fue porque no hay más de alguna flor en inventario y sugiere adicionales que caben (peluche, chocolates, corona…).
 

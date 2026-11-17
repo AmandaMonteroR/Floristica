@@ -1279,6 +1279,19 @@ $r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '3000', 'porcent
 prueba('Avisa si lo que ya eligió se pasa del presupuesto (10 rosas a 590 = 5 900 > 3 000)',
     !exito($r) && strpos(mensaje($r), 'se pasan del presupuesto') !== false, mensaje($r));
 
+// Con 2 girasoles y ₡20 000: primero los arreglos del catálogo que llevan girasol, agrandados para llenar el presupuesto
+$r = $propietario->post('encargo', 'sugerir', ['presupuesto' => '20000', 'porcentaje' => '100',
+    'insumos' => [['tbinventarioid' => 5, 'cantidad' => 2]]]);
+$propuestas = datos($r)['propuestas'] ?? [];
+prueba('Con 2 girasoles, las dos primeras propuestas son los arreglos con girasol (Ramo de girasol y rosa azul, Ramo pequeño con girasol)',
+    exito($r) && count($propuestas) === 3
+    && in_array($propuestas[0]['tbarreglofloralid'], [7, 14], true) && in_array($propuestas[1]['tbarreglofloralid'], [7, 14], true),
+    implode(', ', array_column($propuestas, 'nombre')));
+prueba('…y se agrandan para aprovechar el presupuesto (más de ₡15 000 cada una, más girasoles que los 2 pedidos)',
+    count($propuestas) === 3 && $propuestas[0]['total'] > 15000 && $propuestas[1]['total'] > 15000
+    && array_values(array_filter($propuestas[0]['lineas'], function ($linea) { return $linea['tbinventarioid'] === 5; }))[0]['cantidad'] > 2,
+    implode(', ', array_map(function ($p) { return $p['nombre'] . ' ' . $p['total']; }, $propuestas)));
+
 $r = $lorena->post('encargo', 'sugerir', ['presupuesto' => '50000', 'porcentaje' => '150',
     'insumos' => [['tbinventarioid' => 1, 'cantidad' => 5]]]);
 $propuestas = datos($r)['propuestas'] ?? [];

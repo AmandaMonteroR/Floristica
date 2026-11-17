@@ -17,8 +17,10 @@ require_once __DIR__ . '/encargocontrolador.php';
 //    Si la clienta pidió una flor que está en la receta (por ejemplo 5 rosas rojas), esas
 //    cuentan dentro de la proporción: nunca se ponen menos de las que pidió.
 // 4. Lo que sobra se completa de a una flor, la que más le falte para mantener la proporción.
-// Al final se ordenan: primero las que aprovechan mejor el presupuesto y las que ya llevan
-// las flores que pidió la clienta.
+// Al final se ordenan: primero las recetas del catálogo que llevan las flores que pidió la clienta
+// (si pidió girasoles, primero los arreglos con girasol) y después las que aprovechan mejor el presupuesto.
+// Una receta que lleva la flor pedida se puede agrandar hasta 6 veces, para que un arreglo pequeño
+// con girasol también llene un presupuesto grande.
 //
 // Personalizado libre (sin presupuesto): cada receta se propone de su tamaño original (con
 // las flores que pidió la clienta, nunca menos) y con lo que hay en stock, para cotizar.
@@ -27,6 +29,8 @@ class asistentecontrolador
 {
     const PROPUESTAS = 3;
     const FACTORMAXIMO = 3.0;
+    // Hasta cuánto se agranda una receta que lleva las flores que pidió la clienta
+    const FACTORMAXIMOPEDIDA = 6.0;
 
     private $arreglos;
     private $inventario;
@@ -296,6 +300,10 @@ class asistentecontrolador
             return null;
         }
 
+        // Si la receta lleva alguna de las flores que pidió la clienta, se puede agrandar más
+        $llevapedidas = array_intersect_key($flores, array_filter($minimos));
+        $maximo = $llevapedidas ? self::FACTORMAXIMOPEDIDA : self::FACTORMAXIMO;
+
         // Primero con todo; si no alcanza, sin chocolates, peluches, tarjetas ni accesorios
         foreach ([true, false] as $conopcionales) {
             $base = $estructura + ($conopcionales ? $opcionales : []);
@@ -307,7 +315,7 @@ class asistentecontrolador
                 continue;
             }
 
-            [$cantidades, $factor] = $this->ajustarflores($flores, $minimos, $productos, $disponible - $gastobase);
+            [$cantidades, $factor] = $this->ajustarflores($flores, $minimos, $productos, $disponible - $gastobase, $maximo);
             // Lo que se agrega además de lo que pidió la clienta
             $agregadas = [];
             foreach ($cantidades as $id => $cantidad) {
@@ -322,7 +330,7 @@ class asistentecontrolador
             // Si sobra plata y alguna flor llegó al tope del inventario, se avisa
             $sinstock = [];
             foreach ($cantidades as $id => $cantidad) {
-                if ($cantidad >= $productos[$id]['stock'] && $cantidad < round($flores[$id] * self::FACTORMAXIMO)) {
+                if ($cantidad >= $productos[$id]['stock'] && $cantidad < round($flores[$id] * $maximo)) {
                     $sinstock[] = $productos[$id]['nombre'];
                 }
             }
@@ -335,7 +343,7 @@ class asistentecontrolador
 
     // Agranda o achica las flores en la misma proporción hasta llenar lo que queda (sin pasar del stock).
     // $minimos: las que pidió la clienta de cada flor (ya pagadas). Devuelve [cantidades totales, factor].
-    private function ajustarflores($flores, $minimos, $productos, $queda)
+    private function ajustarflores($flores, $minimos, $productos, $queda, $maximo = self::FACTORMAXIMO)
     {
         $escalar = function ($factor) use ($flores, $minimos, $productos) {
             $cantidades = [];
@@ -353,9 +361,9 @@ class asistentecontrolador
             return $total;
         };
 
-        // El factor más grande que cabe, de 0.05 en 0.05 (hasta 3 veces la receta)
+        // El factor más grande que cabe, de 0.05 en 0.05 (hasta 3 veces la receta, o 6 si lleva la flor pedida)
         $mejor = [$minimos, 0.0];
-        for ($factor = 0.05; $factor <= self::FACTORMAXIMO + 0.0001; $factor += 0.05) {
+        for ($factor = 0.05; $factor <= $maximo + 0.0001; $factor += 0.05) {
             $cantidades = $escalar($factor);
             if ($extra($cantidades) <= $queda) {
                 $mejor = [$cantidades, round($factor, 2)];
@@ -437,14 +445,22 @@ class asistentecontrolador
             return $b['precio'] <=> $a['precio'];
         });
 
-        // Si la receta lleva las mismas flores que pidió la clienta (por ejemplo rosas), se parece más a lo que quiere
+        // Si la receta lleva lo mismo que pidió la clienta (por ejemplo rosas o ese papel), se parece más a lo que quiere.
+        // Las flores pesan más que todo lo demás: si pidió girasoles, primero van los arreglos con girasol.
         $relacion = 0;
+        $enreceta = [];
         foreach ($this->arreglos->listardetalles($arreglo->getTbarreglofloralid()) as $detalle) {
+            $enreceta[(int) $detalle->getTbinventarioid()] = true;
             if (isset($fijos[(int) $detalle->getTbinventarioid()])) {
                 $relacion = 1;
-                break;
             }
         }
+        $floresfijas = array_filter(array_keys($fijos), function ($id) use ($productos) {
+            return $productos[$id]['categoria'] === 'Flor';
+        });
+        $floresiguales = $floresfijas
+            ? count(array_filter($floresfijas, function ($id) use ($enreceta) { return isset($enreceta[$id]); })) / count($floresfijas)
+            : 0;
         $tamano = $factor > 0 ? 1 - min(1, abs(log($factor)) / 2) : 0;
 
         return [
@@ -461,7 +477,7 @@ class asistentecontrolador
             'flores'                => array_sum(array_map(function ($linea) {
                 return $linea['categoria'] === 'Flor' ? $linea['cantidad'] : 0;
             }, $lineas)),
-            'puntaje'               => round(0.6 * $aprovecha + 0.25 * $relacion + 0.15 * $tamano, 4),
+            'puntaje'               => round($floresiguales + 0.6 * $aprovecha + 0.25 * $relacion + 0.15 * $tamano, 4),
         ];
     }
 
