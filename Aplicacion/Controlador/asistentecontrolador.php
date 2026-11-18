@@ -242,7 +242,7 @@ class asistentecontrolador
         return $propuesta;
     }
 
-    // Productos activos (sin spray) con el precio que tendrían en el personalizado
+    // Productos activos (sin spray), con porcentaje en materiales y precio de venta en regalos
     private function productos($porcentaje)
     {
         $costos = $this->temporadas->productos();
@@ -258,7 +258,9 @@ class asistentecontrolador
                 'categoria' => $producto->getTbinventariocategoria(),
                 'stock'     => (int) $producto->getTbinventariostock(),
                 'costo'     => $costo,
-                'precio'    => encargocontrolador::preciopersonalizado($costo, $porcentaje),
+                'precio'    => in_array($producto->getTbinventariocategoria(), $this->opcionales, true)
+                    ? ($costos[$id]['venta'] ?? (float) $producto->getTbinventarioprecioventa())
+                    : encargocontrolador::preciopersonalizado($costo, $porcentaje),
             ];
         }
 

@@ -24,6 +24,9 @@ const campofecha = document.getElementById('campofecha');
 const filtrofecha = document.getElementById('filtrofecha');
 const titulolistado = document.getElementById('titulolistado');
 const aviso = document.getElementById('aviso');
+const dialogoelegirencargo = document.getElementById('dialogoelegirencargo');
+const dialogocatalogoencargo = document.getElementById('dialogocatalogoencargo');
+const dialogoproductosencargo = document.getElementById('dialogoproductosencargo');
 const dialogoformulario = document.getElementById('dialogoformulario');
 const formulario = document.getElementById('formulario');
 const tituloformulario = document.getElementById('tituloformulario');
@@ -67,6 +70,21 @@ const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
 const cuerpocobro = document.getElementById('cuerpocobro');
 const cuerpodetalle = document.getElementById('cuerpodetalle');
+// La sección de materiales cambia según la etapa del encargo.
+const tablamateriales = cuerpodetalle.closest('.tabla-contenedor');
+const titulomateriales = tablamateriales.previousElementSibling;
+const encabezadomateriales = tablamateriales.querySelector('thead');
+const nombremateriales = document.createElement('span');
+const botonmateriales = document.createElement('button');
+botonmateriales.type = 'button';
+botonmateriales.className = 'enlace';
+botonmateriales.hidden = true;
+titulomateriales.replaceChildren(nombremateriales, ' ', botonmateriales);
+
+botonmateriales.addEventListener('click', () => {
+    tablamateriales.hidden = !tablamateriales.hidden;
+    botonmateriales.textContent = tablamateriales.hidden ? 'Ver materiales' : 'Ocultar materiales';
+});
 const cuerpohistorial = document.getElementById('cuerpohistorial');
 const dialogoconfirmacion = document.getElementById('dialogoconfirmacion');
 const iconoconfirmacion = document.getElementById('iconoconfirmacion');
@@ -132,6 +150,63 @@ function filtrardecimal(valor) {
 
 function buscar(lista, campo, id) {
     return lista.find((item) => String(item[campo]) === String(id));
+}
+
+/* ---------- Selección por fotos, con los mismos datos del catálogo e inventario ---------- */
+function fotoencargo(url, nombre) {
+    return url
+        ? `<img src="${escapar(url)}" alt="${escapar(nombre)}" loading="lazy">`
+        : '<span class="sin-foto-encargo" aria-label="Sin foto">✿</span>';
+}
+
+function mostrararregloelegido() {
+    const id = formulario.elements.tbarreglofloralid.value;
+    const arreglo = buscar(opciones.arreglos, 'tbarreglofloralid', id);
+    const caja = document.getElementById('arregloelegido');
+    caja.hidden = !arreglo;
+    caja.innerHTML = arreglo
+        ? `${fotoencargo(arreglo.tbarreglofloralfoto, arreglo.tbarreglofloralnombre)}
+           <div><strong>${escapar(arreglo.tbarreglofloralnombre)}</strong>
+           <small>${montocorto(arreglo.tbarreglofloralprecio)}</small></div>`
+        : '';
+    document.getElementById('botonelegirarreglo').textContent =
+        arreglo ? 'Cambiar arreglo' : 'Buscar arreglo con foto';
+}
+
+function dibujarcatalogoencargo() {
+    const texto = document.getElementById('buscararregloencargo').value.trim().toLocaleLowerCase('es');
+    const elegido = formulario.elements.tbarreglofloralid.value;
+    const lista = opciones.arreglos.filter((arreglo) =>
+        arreglo.tbarreglofloralnombre.toLocaleLowerCase('es').includes(texto));
+    document.getElementById('galeriaarreglosencargo').innerHTML = lista.length
+        ? lista.map((arreglo) => `
+            <button type="button" class="tarjeta-seleccion-encargo${String(arreglo.tbarreglofloralid) === elegido ? ' seleccionada' : ''}"
+                    data-elegirarreglo="${arreglo.tbarreglofloralid}">
+                ${fotoencargo(arreglo.tbarreglofloralfoto, arreglo.tbarreglofloralnombre)}
+                <strong>${escapar(arreglo.tbarreglofloralnombre)}</strong>
+                <span>${montocorto(arreglo.tbarreglofloralprecio)}</span>
+            </button>`).join('')
+        : '<p class="nota">No hay arreglos con ese nombre.</p>';
+}
+
+function dibujarproductosencargo() {
+    const texto = document.getElementById('buscarproductoencargo').value.trim().toLocaleLowerCase('es');
+    const categoria = document.getElementById('categoriaproductoencargo').value;
+    const lista = opciones.productos.filter((producto) =>
+        (!categoria || producto.tbinventariocategoria === categoria)
+        && producto.tbinventarionombre.toLocaleLowerCase('es').includes(texto));
+    document.getElementById('galeriaproductosencargo').innerHTML = lista.length
+        ? lista.map((producto) => {
+            const disponible = Number(producto.tbinventariodisponible) > 0;
+            return `<button type="button" class="tarjeta-seleccion-encargo" data-elegirproducto="${producto.tbinventarioid}"
+                            ${disponible ? '' : 'disabled'}>
+                ${fotoencargo(producto.tbinventariofoto, producto.tbinventarionombre)}
+                <strong>${escapar(producto.tbinventarionombre)}</strong>
+                <span>${montocorto(preciounidad(producto))}</span>
+                <small>${escapar(producto.tbinventariocategoria)}${disponible ? '' : ' · Sin stock disponible'}</small>
+            </button>`;
+        }).join('')
+        : '<p class="nota">No hay productos que coincidan.</p>';
 }
 
 async function peticion(accion, opcionespeticion = {}, parametros = {}) {
@@ -254,7 +329,7 @@ function precioporcentaje(costo, por = porcentaje()) {
 }
 
 function preciounidad(producto, modo = opciones.temporada ? 'alta' : 'normal') {
-    if (esPersonalizado()) {
+    if (esPersonalizado() && !categoriasadicionales.includes(producto.tbinventariocategoria)) {
         return precioporcentaje(modo === 'alta' ? producto.costoalto : producto.costonormal);
     }
     return modo === 'alta' ? producto.ventaalta : producto.ventanormal;
@@ -264,7 +339,9 @@ function usaprecioguardado(linea) {
     if (linea.precioguardado === null || linea.precioguardado === undefined) {
         return false;
     }
-    return !esPersonalizado() || (datosservidor.tbsolicitudencargotipo === 'Personalizado'
+    const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
+    return (producto && categoriasadicionales.includes(producto.tbinventariocategoria))
+        || !esPersonalizado() || (datosservidor.tbsolicitudencargotipo === 'Personalizado'
         && Number(datosservidor.tbsolicitudencargoporcentaje) === porcentaje());
 }
 
@@ -335,7 +412,8 @@ function opcionesproducto(linea) {
 
 function detalleprecio(linea) {
     const producto = buscar(opciones.productos, 'tbinventarioid', linea.tbinventarioid);
-    if (!esPersonalizado() || !espropietario || !producto || usaprecioguardado(linea)) {
+    if (!esPersonalizado() || !espropietario || !producto || usaprecioguardado(linea)
+        || categoriasadicionales.includes(producto.tbinventariocategoria)) {
         return '';
     }
     const costo = opciones.temporada ? producto.costoalto : producto.costonormal;
@@ -343,7 +421,7 @@ function detalleprecio(linea) {
 }
 
 function dibujarlineas() {
-    columnaprecio.textContent = esPersonalizado() ? `Precio (costo + ${porcentaje()}%)` : 'Precio';
+    columnaprecio.textContent = 'Precio';
     if (lineas.length === 0) {
         const texto = esPersonalizado()
             ? 'Use "Agregar producto" para elegir las flores, el papel, la base y lo demás que quiere el cliente.'
@@ -389,6 +467,7 @@ function actualizarsecciones() {
     const conpresupuesto = personalizado && formulario.elements.tbsolicitudencargomodalidad.value === 'Presupuesto';
 
     seccionpredefinido.hidden = tipo !== 'Predefinido';
+    mostrararregloelegido();
     seccionpersonalizado.hidden = !personalizado;
     seccionlineas.hidden = tipo === '';
     seccionpintura.hidden = tipo === '' || ((opciones.pinturas ?? []).length === 0 && !formulario.elements.tbsolicitudencargosprayid.value);
@@ -577,7 +656,7 @@ function actualizarresumen() {
         filas.push([formulario.elements.tbarreglofloralid.value ? `${cuentas.cantidad} × ${nombre}` : 'Arreglo', formatearmonto(cuentas.arreglo)]);
         filas.push(['Adicionales', formatearmonto(cuentas.productos)]);
     } else if (cuentas.tipo === 'Personalizado') {
-        filas.push([`Productos (costo + ${porcentaje()}%)`, formatearmonto(cuentas.productos)]);
+        filas.push(['Productos del arreglo y adicionales', formatearmonto(cuentas.productos)]);
     }
 
     if (cuentas.pintadas > 0) {
@@ -624,7 +703,7 @@ function actualizarresumen() {
     }
 }
 
-const categoriasadicionales = ['Chocolate', 'Peluche', 'Tarjeta'];
+const categoriasadicionales = ['Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'];
 
 const negocio = { nombre: 'Floristica' };
 
@@ -701,7 +780,7 @@ function datosproforma() {
 function faltaparaproforma() {
     const tipo = formulario.elements.tbsolicitudencargotipo.value;
     if (tipo === '') {
-        return 'Elija el tipo de solicitud para ver la proforma.';
+        return 'Elija el tipo de encargo para ver la proforma.';
     }
     if (tipo === 'Predefinido' && !formulario.elements.tbarreglofloralid.value) {
         return 'Elija el arreglo del catálogo para ver la proforma.';
@@ -762,7 +841,7 @@ function dibujarproforma() {
             </div>
             <div class="proforma-titulo">
                 <strong>Proforma</strong>
-                ${numero ? `<span>Solicitud N.º ${escapar(numero)}</span>` : ''}
+                ${numero ? `<span>Encargo N.º ${escapar(numero)}</span>` : ''}
                 <span>Fecha: ${formatearfecha(hoy())}</span>
             </div>
         </header>
@@ -1077,11 +1156,11 @@ function accionesencargo(encargo) {
         if (encargo.tbempleadoid) {
             acciones.push(boton('iniciar', id, 'Iniciar'));
         }
-        acciones.push(boton('cancelar', id, 'Cancelar', true));
+        acciones.push(boton('cancelar', id, 'Cancelar encargo', true));
     } else if (encargo.tbsolicitudencargoestado === 'En proceso') {
         acciones.push(boton('asignar', id, 'Reasignar'));
         acciones.push(boton('terminar', id, 'Terminar'));
-        acciones.push(boton('cancelar', id, 'Cancelar', true));
+        acciones.push(boton('cancelar', id, 'Cancelar encargo', true));
     } else if (encargo.tbsolicitudencargoestado === 'Terminado') {
         acciones.push(boton('entregar', id, 'Marcar como entregado'));
     }
@@ -1243,7 +1322,7 @@ function mostrartemporadaform(texto) {
     avisotemporadaform.hidden = texto === '';
 }
 
-async function abrirnuevo() {
+async function abrirnuevo(tipo = '') {
     await opcioneslistas;
     datosservidor = { tbsolicitudencargofechaentrega: hoy() };
     llenarformulario(datosservidor);
@@ -1252,10 +1331,38 @@ async function abrirnuevo() {
         : '');
     limpiarerrores();
     aplicarborrador();
+    if (tipo !== '' && formulario.elements.tbsolicitudencargotipo.value !== tipo) {
+        formulario.elements.tbsolicitudencargotipo.value = tipo;
+        actualizarsecciones();
+    }
     campoasignar.hidden = false;
-    tituloformulario.textContent = 'Nuevo encargo';
+    const tipoactual = formulario.elements.tbsolicitudencargotipo.value;
+    tituloformulario.textContent = tipoactual === 'Predefinido' ? 'Nuevo encargo del catálogo'
+        : tipoactual === 'Personalizado' ? 'Nuevo encargo personalizado' : 'Nuevo encargo';
+
+    // Al volver de registrar un cliente se recupera el borrador y se selecciona al nuevo.
+    const parametros = new URLSearchParams(window.location.search);
+    const idcliente = parametros.get('clientecreado');
+    if (idcliente && /^\d+$/.test(idcliente)) {
+        if (buscar(opciones.clientes, 'tbclienteid', idcliente)) {
+            formulario.elements.tbclienteid.value = idcliente;
+            avisoborrador.hidden = true;
+            actualizarresumen();
+            guardarborrador();
+        } else {
+            mostraraviso('El cliente se guardó, pero no aparece en la lista. Actualice la página.', 'error');
+        }
+        parametros.delete('clientecreado');
+        window.history.replaceState(null, '', `${window.location.pathname}?${parametros}`);
+    }
     botonguardar.textContent = 'Guardar encargo';
     dialogoformulario.showModal();
+    // Al escoger Catálogo, abre directamente las fotos para elegir el ramo.
+    if (tipo === 'Predefinido' && !formulario.elements.tbarreglofloralid.value) {
+        document.getElementById('buscararregloencargo').value = '';
+        dibujarcatalogoencargo();
+        dialogocatalogoencargo.showModal();
+    }
 }
 
 async function abrireditar(id) {
@@ -1270,7 +1377,7 @@ async function abrireditar(id) {
     datosservidor = respuesta.datos;
     llenarformulario(datosservidor);
     mostrartemporadaform(datosservidor.tbtemporadanombre
-        ? `✿ Esta solicitud se cotizó con los precios de ${datosservidor.tbtemporadanombre}.` : '');
+        ? `✿ Este encargo se cotizó con los precios de ${datosservidor.tbtemporadanombre}.` : '');
     limpiarerrores();
     aplicarborrador();
     campoasignar.hidden = true;
@@ -1286,7 +1393,7 @@ function abrirasignar(id) {
     formularioasignar.elements.tbsolicitudencargoid.value = id;
     formularioasignar.elements.tbempleadoid.value = encargo && encargo.tbempleadoid ? String(encargo.tbempleadoid) : '';
     resumenasignar.textContent = encargo
-        ? `Solicitud N.º ${id} de ${encargo.tbclientenombre}: ${encargo.descripcion}, entrega ${formatearfecha(encargo.tbsolicitudencargofechaentrega)}.`
+        ? `Encargo N.º ${id} de ${encargo.tbclientenombre}: ${encargo.descripcion}, entrega ${formatearfecha(encargo.tbsolicitudencargofechaentrega)}.`
         : '';
     limpiarerrores(formularioasignar);
     dialogoasignar.showModal();
@@ -1308,14 +1415,14 @@ async function verdetalle(id) {
                 + `${encargo.tbsolicitudencargoporcentaje ?? 100}% de ganancia)`
             : 'Predefinido (del catálogo)'],
         ['Fecha de entrega', formatearfecha(encargo.tbsolicitudencargofechaentrega)],
-        ...(encargo.tbsolicitudencargofechaentregareal
+        ...(encargo.tbsolicitudencargoestado === 'Entregado' && encargo.tbsolicitudencargofechaentregareal
             ? [['Entregado el', formatearfechahora(encargo.tbsolicitudencargofechaentregareal)]] : []),
-        ['Entrega', encargo.tbsolicitudencargoexpress === 1
-            ? `Express a ${encargo.tbzonaentreganombre}: ${encargo.tbsolicitudencargodireccionentrega}`
-            : 'El cliente lo recoge en el local'],
+        ['Lugar de entrega', encargo.tbsolicitudencargoexpress === 1
+            ? `A domicilio · ${encargo.tbzonaentreganombre || 'Zona sin registrar'}${encargo.tbsolicitudencargodireccionentrega ? ' — ' + encargo.tbsolicitudencargodireccionentrega : ''}`
+            : 'Retiro en el local'],
         ['Total', formatearmonto(encargo.tbsolicitudencargototal)],
         ['Pagado', encargo.abonado > 0
-            ? `${formatearmonto(encargo.abonado)}${encargo.saldo > 0 ? ` · falta ${formatearmonto(encargo.saldo)}` : ' (pagada completa)'}`
+            ? `${formatearmonto(encargo.abonado)}${encargo.saldo > 0 ? ` · falta ${formatearmonto(encargo.saldo)}` : ' (pago completo)'}`
             : 'Todavía no ha pagado'],
         ...(espropietario ? [
             ['Costo de flores y productos', formatearmonto(encargo.tbsolicitudencargocosto)],
@@ -1324,7 +1431,7 @@ async function verdetalle(id) {
         ['Cotizada con', encargo.tbtemporadanombre ? `Precios de ${encargo.tbtemporadanombre}` : 'Precios normales'],
         ['Asignado a', encargo.tbempleadoid ? `${encargo.tbempleadonombre}${encargo.tbempleadorol === 'Propietario' ? ' (Propietario)' : ''}` : 'Sin asignar'],
         ['Estado', encargo.tbsolicitudencargoestado],
-        ['Registrada el', formatearfecha(encargo.tbsolicitudencargofecharegistro)],
+        ['Registrado el', formatearfecha(encargo.tbsolicitudencargofecharegistro)],
         ['Nota', encargo.tbsolicitudencargonota],
     ];
 
@@ -1346,7 +1453,15 @@ async function verdetalle(id) {
     figurareferencia.hidden = !referencia;
     fotoreferenciadetalle.src = referencia || '';
     columnafoto.hidden = !foto && !puedefoto && !referencia;
-    titulodetalle.textContent = `Solicitud N.º ${encargo.tbsolicitudencargoid}: ${encargo.descripcion}`;
+    // Cuando la vista tenga un subtítulo propio, el encabezado muestra solo el número.
+    // Mientras tanto se conserva la descripción junto al título original.
+    const descripciondetalle = document.getElementById('descripciondetalle');
+    titulodetalle.textContent = descripciondetalle
+        ? `Encargo N.º ${encargo.tbsolicitudencargoid}`
+        : `Encargo N.º ${encargo.tbsolicitudencargoid}: ${encargo.descripcion}`;
+    if (descripciondetalle) {
+        descripciondetalle.textContent = encargo.descripcion;
+    }
     accionesdetalle.innerHTML = accionesencargo(encargo) ?? '';
     accionesdetalle.querySelectorAll('[data-accion="ver"]').forEach((elemento) => elemento.remove());
     accionesdetalle.querySelectorAll('button').forEach((elemento) => {
@@ -1382,18 +1497,44 @@ async function verdetalle(id) {
         </tr>`).join('')
         + `<tr class="fila-total"><td colspan="3">Total</td><td>${formatearmonto(encargo.tbsolicitudencargototal)}</td></tr>`;
 
-    cuerpodetalle.innerHTML = encargo.materiales.length === 0
-        ? '<tr><td colspan="4" class="vacio">No hay productos registrados.</td></tr>'
-        : encargo.materiales.map((material) => `
-        <tr>
-            <td>${escapar(material.tbinventarionombre)}</td>
-            <td>${material.necesarias}</td>
-            <td>${material.stock}</td>
-            <td>${material.alcanza ? '<span class="estado estado-activo">Sí</span>' : `<span class="estado estado-bajo">Faltan ${material.necesarias - material.stock}</span>`}</td>
-        </tr>`).join('');
+    // Los materiales devueltos por el servidor representan la receta actual y el
+    // stock actual. No se presentan como salidas históricas ya comprobadas.
+    const estado = encargo.tbsolicitudencargoestado;
+    const porpreparar = ['Pendiente', 'En proceso'].includes(estado);
+    const cancelado = estado === 'Cancelado';
+    const entregado = estado === 'Entregado';
+
+    titulomateriales.hidden = cancelado;
+    tablamateriales.hidden = cancelado || entregado;
+    botonmateriales.hidden = !entregado;
+    botonmateriales.textContent = 'Ver materiales';
+    nombremateriales.textContent = porpreparar ? 'Materiales necesarios' : 'Materiales del arreglo';
+
+    if (porpreparar) {
+        encabezadomateriales.innerHTML = `
+            <tr><th>Producto</th><th>Necesarias</th><th>En inventario</th><th>¿Alcanza?</th></tr>`;
+        cuerpodetalle.innerHTML = encargo.materiales.length === 0
+            ? '<tr><td colspan="4" class="vacio">No hay materiales registrados.</td></tr>'
+            : encargo.materiales.map((material) => `
+                <tr>
+                    <td>${escapar(material.tbinventarionombre)}</td>
+                    <td>${material.necesarias}</td>
+                    <td>${material.stock}</td>
+                    <td>${material.alcanza ? '<span class="estado estado-activo">Sí</span>'
+                        : `<span class="estado estado-bajo">Faltan ${material.necesarias - material.stock}</span>`}</td>
+                </tr>`).join('');
+    } else if (!cancelado) {
+        // No repetimos la disponibilidad de stock después de terminar el ramo.
+        // Estas cantidades provienen de la composición del encargo, no del historial de movimientos.
+        encabezadomateriales.innerHTML = '<tr><th>Producto</th><th>Cantidad prevista</th></tr>';
+        cuerpodetalle.innerHTML = encargo.materiales.length === 0
+            ? '<tr><td colspan="2" class="vacio">No hay materiales registrados.</td></tr>'
+            : encargo.materiales.map((material) => `
+                <tr><td>${escapar(material.tbinventarionombre)}</td><td>${material.necesarias}</td></tr>`).join('');
+    }
 
     cuerpohistorial.innerHTML = encargo.historial.length === 0
-        ? '<tr><td colspan="3" class="vacio">Esta solicitud no tiene historial registrado.</td></tr>'
+        ? '<tr><td colspan="3" class="vacio">Este encargo no tiene historial registrado.</td></tr>'
         : encargo.historial.map((cambio) => `
             <tr>
                 <td>${formatearfechahora(cambio.fecha)}</td>
@@ -1442,33 +1583,33 @@ async function subirfoto() {
 
 async function ejecutar(accion, id) {
     const encargo = encargos.find((item) => String(item.tbsolicitudencargoid) === String(id));
-    const nombre = encargo ? `la solicitud N.º ${id} (${encargo.descripcion})` : `la solicitud N.º ${id}`;
+    const nombre = encargo ? `el encargo N.º ${id} (${encargo.descripcion})` : `el encargo N.º ${id}`;
 
     const configuraciones = {
         asignarme: {
-            titulo: '¿Asignártela a ti?',
+            titulo: '¿Asignarte este encargo?',
             mensaje: `Te vas a encargar de preparar ${nombre}.`,
             textoaceptar: 'Asignármela',
         },
         iniciar: {
-            titulo: '¿Empezar a prepararla?',
+            titulo: '¿Empezar a prepararlo?',
             mensaje: `${nombre} pasará a "En proceso".`,
             textoaceptar: 'Iniciar',
         },
         terminar: {
-            titulo: '¿Marcar como terminada?',
+            titulo: '¿Marcar como terminado?',
             mensaje: `Se descontarán del inventario los productos que usa ${nombre}.`,
             textoaceptar: 'Terminar',
         },
         entregar: {
             titulo: '¿Confirmar entrega?',
-            mensaje: `Se registrará la entrega de ${nombre} con la fecha y hora actuales. No se descontará inventario nuevamente.`,
+            mensaje: `Se marcará como entregado ${nombre} y se registrará la fecha y hora.`,
             textoaceptar: 'Marcar como entregado',
         },
         cancelar: {
-            titulo: '¿Cancelar la solicitud?',
-            mensaje: `${nombre} quedará cancelada y ya no se podrá preparar.`,
-            textoaceptar: 'Cancelar solicitud',
+            titulo: '¿Cancelar el encargo?',
+            mensaje: `${nombre} quedará cancelado y ya no se podrá preparar.`,
+            textoaceptar: 'Cancelar encargo',
             peligro: true,
         },
     };
@@ -1553,6 +1694,10 @@ formulario.addEventListener('change', (evento) => {
         dibujarlineas();
         guardarborrador();
         return;
+    }
+
+    if (campo.name === 'tbarreglofloralid') {
+        mostrararregloelegido();
     }
 
     if (['tbsolicitudencargotipo', 'tbsolicitudencargomodalidad', 'tbsolicitudencargoexpress'].includes(campo.name)) {
@@ -1642,17 +1787,6 @@ formulario.addEventListener('click', (evento) => {
     }
 });
 
-document.getElementById('botonagregarlinea').addEventListener('click', () => {
-    lineas.push(lineavacia());
-    formulario.querySelector('[data-error="insumos"]').textContent = '';
-    dibujarlineas();
-    const selects = cuerpolineas.querySelectorAll('select');
-    if (selects.length > 0) {
-        selects[selects.length - 1].focus();
-    }
-    guardarborrador();
-});
-
 document.getElementById('botonproforma').addEventListener('click', abrirproforma);
 document.getElementById('botonimprimirproforma').addEventListener('click', imprimirproforma);
 document.getElementById('botonpdfproforma').addEventListener('click', descargarproformapdf);
@@ -1666,7 +1800,7 @@ formulario.addEventListener('submit', async (evento) => {
     if (esedicion) {
         const aceptado = await confirmar({
             titulo: '¿Guardar los cambios?',
-            mensaje: `Se actualizará la solicitud N.º ${formulario.elements.tbsolicitudencargoid.value}. Total: ${formatearmonto(calcular().total)}.`,
+            mensaje: `Se actualizará el encargo N.º ${formulario.elements.tbsolicitudencargoid.value}. Total: ${formatearmonto(calcular().total)}.`,
             textoaceptar: 'Guardar cambios',
         });
 
@@ -1792,10 +1926,102 @@ filtrofecha.addEventListener('change', cargarencargos);
 filtroestado.addEventListener('change', cargarencargos);
 filtrotipo.addEventListener('change', cargarencargos);
 filtroempleado.addEventListener('change', cargarencargos);
-document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
+// Conserva el borrador antes de ir a registrar un cliente.
+document.getElementById('enlaceregistrarcliente').addEventListener('click', guardarborrador);
+
+// Galería de arreglos: cambia únicamente el valor del select original.
+document.getElementById('botonelegirarreglo').addEventListener('click', () => {
+    document.getElementById('buscararregloencargo').value = '';
+    dibujarcatalogoencargo();
+    dialogocatalogoencargo.showModal();
+});
+document.getElementById('buscararregloencargo').addEventListener('input', dibujarcatalogoencargo);
+document.getElementById('galeriaarreglosencargo').addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-elegirarreglo]');
+    if (!boton) { return; }
+    const campo = formulario.elements.tbarreglofloralid;
+    campo.value = boton.dataset.elegirarreglo;
+    campo.dispatchEvent(new Event('change', { bubbles: true }));
+    limpiarerrorcampo('tbarreglofloralid');
+    dialogocatalogoencargo.close();
+});
+document.getElementById('botoncerrarcatalogoencargo').addEventListener('click', () => dialogocatalogoencargo.close());
+
+// Los productos con foto son exactamente los de Inventario, incluidos los regalos.
+document.getElementById('botonbuscarproductoencargo').addEventListener('click', () => {
+    document.getElementById('buscarproductoencargo').value = '';
+    dibujarproductosencargo();
+    dialogoproductosencargo.showModal();
+});
+const selectorcategoriaencargo = document.getElementById('categoriaproductoencargo');
+categoriasproducto.forEach(([categoria, etiqueta]) => selectorcategoriaencargo.add(new Option(etiqueta, categoria)));
+document.getElementById('buscarproductoencargo').addEventListener('input', dibujarproductosencargo);
+selectorcategoriaencargo.addEventListener('change', dibujarproductosencargo);
+document.getElementById('galeriaproductosencargo').addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-elegirproducto]');
+    if (!boton) { return; }
+    const producto = buscar(opciones.productos, 'tbinventarioid', boton.dataset.elegirproducto);
+    if (!producto) { return; }
+    const existente = lineas.find((linea) => String(linea.tbinventarioid) === String(producto.tbinventarioid));
+    if (presupuesto() !== null && gastopresupuesto() + preciounidad(producto) > presupuesto()) {
+        document.getElementById('galeriaproductosencargo').insertAdjacentHTML('afterbegin',
+            '<p class="aviso aviso-error">Este producto supera el presupuesto disponible.</p>');
+        return;
+    }
+    if (existente) {
+        if (Number(existente.cantidad) >= Number(producto.tbinventariodisponible)) {
+            document.getElementById('galeriaproductosencargo').insertAdjacentHTML('afterbegin',
+                '<p class="aviso aviso-error">No hay más unidades disponibles de este producto.</p>');
+            return;
+        }
+        existente.cantidad = String(Number(existente.cantidad) + 1);
+    } else {
+        lineas.push({ tbinventarioid: String(producto.tbinventarioid), cantidad: '1',
+            nombre: producto.tbinventarionombre, precioguardado: null });
+    }
+    dibujarlineas();
+    guardarborrador();
+    dialogoproductosencargo.close();
+});
+document.getElementById('botoncerrarproductosencargo').addEventListener('click', () => dialogoproductosencargo.close());
+
+// El botón Nuevo encargo muestra primero las dos opciones; no crea otro formulario.
+document.getElementById('botonnuevo').addEventListener('click', () => dialogoelegirencargo.showModal());
+document.getElementById('botoncancelareleccion').addEventListener('click', () => dialogoelegirencargo.close());
+document.getElementById('botoncerrarelegir').addEventListener('click', () => dialogoelegirencargo.close());
+dialogoelegirencargo.addEventListener('click', async (evento) => {
+    const boton = evento.target.closest('button[data-tipoencargo]');
+    if (!boton) {
+        return;
+    }
+
+    const tipo = boton.dataset.tipoencargo;
+    const borrador = leerborrador();
+    dialogoelegirencargo.close();
+
+    // Evita sobrescribir sin aviso un borrador de la otra modalidad.
+    if (borrador && borrador.tbsolicitudencargotipo && borrador.tbsolicitudencargotipo !== tipo) {
+        const descartar = await confirmar({
+            titulo: '¿Cambiar de tipo de encargo?',
+            mensaje: 'Hay un borrador de otro tipo de encargo. Para empezar uno nuevo, se descartará ese borrador.',
+            textoaceptar: 'Empezar nuevo encargo',
+            peligro: true,
+        });
+        if (!descartar) {
+            dialogoelegirencargo.showModal();
+            return;
+        }
+        borrarborrador();
+    }
+
+    abrirnuevo(tipo);
+});
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
+document.getElementById('botoncerrarformulario').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncancelarasignar').addEventListener('click', () => dialogoasignar.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
+// Se activará cuando agreguemos la X al encabezado de encargovista.php.
+document.getElementById('botoncerrardetallearriba')?.addEventListener('click', () => dialogodetalle.close());
 botonfoto.addEventListener('click', () => campofoto.click());
 campofoto.addEventListener('change', subirfoto);
 document.getElementById('botonquitarreferencia').addEventListener('click', () => {
@@ -1805,8 +2031,14 @@ document.getElementById('botonquitarreferencia').addEventListener('click', () =>
     guardarborrador();
 });
 document.getElementById('botondescartarborrador').addEventListener('click', () => {
+    // Al crear uno nuevo, conservar la modalidad elegida antes de recuperar el borrador.
+    const tipo = formulario.elements.tbsolicitudencargotipo.value;
     borrarborrador();
     llenarformulario(datosservidor);
+    if (!datosservidor.tbsolicitudencargoid && ['Predefinido', 'Personalizado'].includes(tipo)) {
+        formulario.elements.tbsolicitudencargotipo.value = tipo;
+        actualizarsecciones();
+    }
     limpiarerrores();
     avisoborrador.hidden = true;
 });

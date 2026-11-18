@@ -47,6 +47,14 @@
     <div id="galeria" class="galeria">
         <p class="vacio-galeria">Cargando catálogo…</p>
     </div>
+
+    <section class="catalogo-regalos">
+        <h2 class="subtitulo-seccion">Regalos y complementos</h2>
+        <p class="nota">Chocolates, peluches, tarjetas y accesorios disponibles en Inventario, con su fotografía y precio de venta.</p>
+        <div id="galeriaregalos" class="galeria-seleccion-encargo">
+            <p class="nota">Cargando productos…</p>
+        </div>
+    </section>
 </main>
 
 <dialog id="dialogoformulario" class="dialogo dialogo-ancho">

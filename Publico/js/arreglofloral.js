@@ -142,6 +142,23 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
 async function cargarproductos() {
     const respuesta = await consultar('productos');
     productos = respuesta.exito ? respuesta.datos : [];
+    dibujarregalos();
+}
+
+// Productos que se venden como regalos: se consultan del mismo Inventario.
+function dibujarregalos() {
+    const contenedor = document.getElementById('galeriaregalos');
+    const regalos = productos.filter((producto) =>
+        ['Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'].includes(producto.tbinventariocategoria));
+    contenedor.innerHTML = regalos.length ? regalos.map((producto) => `
+        <article class="tarjeta-seleccion-encargo">
+            ${producto.tbinventariofoto
+                ? `<img src="${escapar(producto.tbinventariofoto)}" alt="${escapar(producto.tbinventarionombre)}" loading="lazy">`
+                : '<span class="sin-foto-encargo" aria-label="Sin fotografía">✿</span>'}
+            <strong>${escapar(producto.tbinventarionombre)}</strong>
+            <span>${formatearmonto(producto.tbinventariopreciovigente)}</span>
+            <small>${escapar(producto.tbinventariocategoria)} · ${producto.tbinventariodisponible} disponibles</small>
+        </article>`).join('') : '<p class="nota">Los chocolates, peluches y regalos se agregan desde Inventario.</p>';
 }
 
 function buscarproducto(id) {
@@ -911,4 +928,4 @@ if (botonverhistorial) {
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 cargararreglos();
-
+cargarproductos();

@@ -105,7 +105,7 @@
                 <tr>
                     <th>N.º</th>
                     <th>Cliente</th>
-                    <th>Pedido</th>
+                    <th>Arreglo</th>
                     <th>Entrega</th>
                     <th>Total</th>
                     <th>Estado</th>
@@ -119,9 +119,35 @@
     </div>
 </main>
 
+
+<!-- Elección inicial: se utiliza el mismo formulario de encargos. -->
+<dialog id="dialogoelegirencargo" class="dialogo" aria-labelledby="tituloelegirencargo">
+    <div class="cabecera-modal-encargo">
+        <h2 id="tituloelegirencargo">Nuevo encargo</h2>
+        <button type="button" class="boton cerrar-modal-encargo" id="botoncerrarelegir" aria-label="Cerrar" title="Cerrar">&times;</button>
+    </div>
+    <p class="nota">¿Cómo desea preparar el encargo?</p>
+    <div class="resumen-inicio">
+        <button type="button" class="tarjeta-resumen boton" data-tipoencargo="Predefinido">
+            <strong>Del catálogo</strong>
+            <span>Seleccione un arreglo del catálogo y agregue los productos adicionales.</span>
+        </button>
+        <button type="button" class="tarjeta-resumen boton" data-tipoencargo="Personalizado">
+            <strong>Personalizado</strong>
+            <span>Prepare un arreglo con presupuesto o libre y utilice el asistente.</span>
+        </button>
+    </div>
+    <div class="acciones-dialogo">
+        <button type="button" class="boton" id="botoncancelareleccion">Cancelar</button>
+    </div>
+</dialog>
+
 <dialog id="dialogoformulario" class="dialogo dialogo-ancho">
-    <form id="formulario" novalidate>
+    <div class="cabecera-modal-encargo">
         <h2 id="tituloformulario">Nuevo encargo</h2>
+        <button type="button" class="boton cerrar-modal-encargo" id="botoncerrarformulario" aria-label="Cerrar" title="Cerrar">&times;</button>
+    </div>
+    <form id="formulario" novalidate>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
             <span>Se recuperaron datos que no se habían guardado.</span>
@@ -133,35 +159,31 @@
         <input type="hidden" name="tbsolicitudencargoid">
 
         <div class="rejilla">
-            <label class="campo">
+            <label class="campo campo-completo">
                 <span>Cliente *</span>
                 <select name="tbclienteid">
                     <option value="">Seleccione…</option>
                 </select>
-                <small class="nota-campo texto-suave">¿No aparece? Regístrelo en <a href="index.php?modulo=cliente&amp;nuevo=1" target="_blank" rel="noopener">Clientes</a>.</small>
+                <small class="nota-campo texto-suave">¿No aparece? <a id="enlaceregistrarcliente" href="index.php?modulo=cliente&amp;nuevo=1&amp;volver=encargo">Registrar cliente</a> y continuar el encargo.</small>
                 <small class="error" data-error="tbclienteid"></small>
             </label>
-            <label class="campo">
-                <span>Tipo de solicitud *</span>
-                <select name="tbsolicitudencargotipo">
-                    <option value="">Seleccione…</option>
-                    <option value="Predefinido">Predefinido (del catálogo)</option>
-                    <option value="Personalizado">Personalizado</option>
-                </select>
-                <small class="error" data-error="tbsolicitudencargotipo"></small>
-            </label>
+            <!-- El tipo se elige en la ventana anterior y se envía al controlador. -->
+            <input type="hidden" name="tbsolicitudencargotipo">
+            <small class="error" data-error="tbsolicitudencargotipo"></small>
         </div>
 
         <fieldset class="seccion-categoria" id="seccionpredefinido" hidden>
             <legend>Arreglo del catálogo</legend>
             <div class="rejilla">
-                <label class="campo">
+                <div class="campo">
                     <span>Arreglo *</span>
-                    <select name="tbarreglofloralid">
+                    <select name="tbarreglofloralid" hidden aria-label="Arreglo elegido">
                         <option value="">Seleccione…</option>
                     </select>
+                    <button type="button" class="boton boton-elegir-arreglo" id="botonelegirarreglo">Buscar arreglo con foto</button>
+                    <div id="arregloelegido" class="arreglo-elegido" hidden></div>
                     <small class="error" data-error="tbarreglofloralid"></small>
-                </label>
+                </div>
                 <div class="campo">
                     <span>Cantidad de arreglos *</span>
                     <div class="contador">
@@ -213,7 +235,7 @@
                             <button type="button" class="chip" data-porcentaje="150">150%</button>
                         </div>
                     </div>
-                    <small class="nota-campo texto-suave">Cada producto se cobra a su costo más este %. Con 100% el precio es el doble del costo.</small>
+                    <small class="nota-campo texto-suave">El porcentaje se aplica a flores, follajes, papel, cintas y bases. Chocolates, peluches, tarjetas y accesorios conservan su precio de venta.</small>
                     <small class="error" data-error="tbsolicitudencargoporcentaje"></small>
                 </div>
             </div>
@@ -259,7 +281,7 @@
             </div>
             <small class="error" data-error="insumos"></small>
             <div class="pie-lineas">
-                <button type="button" class="boton" id="botonagregarlinea">+ Agregar producto</button>
+                <button type="button" class="boton" id="botonbuscarproductoencargo">+ Agregar producto</button>
                 <span id="restopresupuesto" class="resto-presupuesto" hidden></span>
             </div>
         </section>
@@ -346,6 +368,31 @@
     </form>
 </dialog>
 
+<!-- Galería visual de los mismos arreglos existentes en Catálogo. -->
+<dialog id="dialogocatalogoencargo" class="dialogo dialogo-ancho" aria-labelledby="titulocatalogoencargo">
+    <div class="cabecera-modal-encargo">
+        <h2 id="titulocatalogoencargo">Elegir arreglo del catálogo</h2>
+        <button type="button" class="boton cerrar-modal-encargo" id="botoncerrarcatalogoencargo" aria-label="Cerrar" title="Cerrar">&times;</button>
+    </div>
+    <label class="campo"><span>Buscar por nombre</span>
+        <input type="search" id="buscararregloencargo" placeholder="Rosas, lirios, girasoles…" autocomplete="off">
+    </label>
+    <div id="galeriaarreglosencargo" class="galeria-seleccion-encargo"></div>
+</dialog>
+
+<!-- Regalos y otros productos del mismo Inventario, sin duplicar sus registros. -->
+<dialog id="dialogoproductosencargo" class="dialogo dialogo-ancho" aria-labelledby="tituloproductosencargo">
+    <div class="cabecera-modal-encargo">
+        <h2 id="tituloproductosencargo">Elegir producto</h2>
+        <button type="button" class="boton cerrar-modal-encargo" id="botoncerrarproductosencargo" aria-label="Cerrar" title="Cerrar">&times;</button>
+    </div>
+    <div class="rejilla">
+        <label class="campo"><span>Buscar</span><input type="search" id="buscarproductoencargo" placeholder="Chocolate, peluche, rosa…" autocomplete="off"></label>
+        <label class="campo"><span>Categoría</span><select id="categoriaproductoencargo"><option value="">Todas las categorías</option></select></label>
+    </div>
+    <div id="galeriaproductosencargo" class="galeria-seleccion-encargo"></div>
+</dialog>
+
 <!-- Proforma para el cliente: se descarga en PDF -->
 <dialog id="dialogoproforma" class="dialogo dialogo-proforma" aria-labelledby="tituloproforma">
     <div class="barra-proforma">
@@ -366,7 +413,7 @@
 
 <dialog id="dialogoasignar" class="dialogo dialogo-angosto">
     <form id="formularioasignar" novalidate>
-        <h2>Asignar solicitud</h2>
+        <h2>Asignar encargo</h2>
         <p class="nota" id="resumenasignar"></p>
         <p id="avisoasignar" class="aviso aviso-error" role="alert" hidden></p>
         <input type="hidden" name="tbsolicitudencargoid">
@@ -389,7 +436,15 @@
     </form>
 </dialog>
 
-<dialog id="dialogodetalle" class="dialogo dialogo-ancho">
+<dialog id="dialogodetalle" class="dialogo dialogo-ancho" aria-labelledby="titulodetalle">
+    <header>
+        <div>
+            <h2 id="titulodetalle"></h2>
+            <p class="texto-suave" id="descripciondetalle"></p>
+        </div>
+        <button type="button" class="boton" id="botoncerrardetalle"
+                aria-label="Cerrar detalle del encargo" title="Cerrar">&times;</button>
+    </header>
     <div class="detalle-arreglo">
         <div class="columna-foto" id="columnafoto">
             <img id="fotodetalle" class="foto-detalle" alt="" data-lupa>
@@ -404,10 +459,10 @@
             </figure>
         </div>
         <div>
-            <h2 id="titulodetalle"></h2>
             <dl id="listadetalle" class="detalle"></dl>
         </div>
     </div>
+    <div class="acciones-detalle" id="accionesdetalle"></div>
     <h3 class="subtitulo-seccion">Cobro</h3>
     <div class="tabla-contenedor">
         <table class="tabla">
@@ -448,10 +503,6 @@
             </thead>
             <tbody id="cuerpohistorial"></tbody>
         </table>
-    </div>
-    <div class="acciones-dialogo">
-        <div class="acciones-detalle" id="accionesdetalle"></div>
-        <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
     </div>
 </dialog>
 

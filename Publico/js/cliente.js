@@ -354,6 +354,14 @@ formulario.addEventListener('submit', async (evento) => {
     if (respuesta.exito) {
         borrarborrador(clave);
         avisoborrador.hidden = true;
+
+        // Solo vuelve automáticamente a Encargos si se abrió Clientes desde ese formulario.
+        const parametros = new URLSearchParams(window.location.search);
+        if (!esedicion && parametros.get('volver') === 'encargo' && respuesta.datos?.tbclienteid) {
+            window.location.href = `index.php?modulo=encargo&nuevo=1&clientecreado=${respuesta.datos.tbclienteid}`;
+            return;
+        }
+
         dialogoformulario.close();
         mostraraviso(respuesta.mensaje, 'exito');
         cargarclientes();

@@ -955,12 +955,13 @@ class encargocontrolador
             $costounidad = $costos[$idproducto]['costo'] ?? (float) $producto->getTbinventariopreciounidad();
             $costo += (int) $fila['cantidad'] * $costounidad;
 
-            if ($tipo === 'Personalizado') {
-                // Personalizado: costo + %
+            if ($tipo === 'Personalizado' && !in_array($producto->getTbinventariocategoria(),
+                ['Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'], true)) {
+                // Flores y materiales del personalizado: costo + %
                 $lineas[$idproducto] = $mismoporcentaje && isset($preciosanteriores[$idproducto])
                     ? $preciosanteriores[$idproducto] : self::preciopersonalizado($costounidad, $porcentaje);
             } else {
-                // Adicional: precio de venta
+                // Adicionales y productos del catálogo: precio de venta
                 $lineas[$idproducto] = $preciosanteriores[$idproducto]
                     ?? $this->precioactual('inventario', $idproducto, $producto->getTbinventarioprecioventa());
             }

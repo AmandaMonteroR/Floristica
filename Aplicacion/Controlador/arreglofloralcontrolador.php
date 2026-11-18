@@ -26,6 +26,7 @@ class arreglofloralcontrolador
     public function productos()
     {
         $lista = [];
+        $precios = $this->temporadas->productos();
         foreach ($this->inventario->listar('', '', 1) as $producto) {
             if ($producto->getTbinventariocategoria() === 'Spray') {
                 continue;
@@ -36,7 +37,11 @@ class arreglofloralcontrolador
                 'tbinventariocategoria'    => $producto->getTbinventariocategoria(),
                 'tbinventariopreciounidad' => (float) $producto->getTbinventariopreciounidad(),
                 'tbinventarioprecioventa'  => (float) $producto->getTbinventarioprecioventa(),
+                'tbinventariopreciovigente' => (float) ($precios[(int) $producto->getTbinventarioid()]['venta']
+                    ?? $producto->getTbinventarioprecioventa()),
+                'tbinventariofoto'         => (string) $producto->getTbinventariofoto(),
                 'tbinventariostock'        => (int) $producto->getTbinventariostock(),
+                'tbinventariodisponible'   => (int) $producto->getDisponible(),
             ];
         }
 

@@ -441,6 +441,90 @@ h1 {
     display: none;
 }
 
+/* Detalle de Encargos: cabecera fija con cierre en la esquina. */
+#dialogodetalle {
+    max-height: 90vh;
+    max-height: 90dvh;
+    overflow-y: auto;
+}
+
+#dialogodetalle > header {
+    position: sticky;
+    top: -1.5rem;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin: -1.5rem -1.5rem 1.2rem;
+    padding: 1rem 1.5rem;
+    background: var(--superficie);
+    border-bottom: 1px solid var(--borde);
+}
+
+#dialogodetalle > header > div {
+    min-width: 0;
+}
+
+#dialogodetalle #titulodetalle {
+    margin: 0;
+    font-size: 1.3rem;
+}
+
+#dialogodetalle #descripciondetalle {
+    margin: 0.2rem 0 0;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+#dialogodetalle #botoncerrardetalle {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--principal-oscuro);
+    background: var(--rosa-claro);
+    border: 1px solid var(--borde);
+    border-radius: 50%;
+}
+
+#dialogodetalle #botoncerrardetalle:hover {
+    background: var(--principal);
+    color: #ffffff;
+}
+
+/* Acciones después de los datos principales, antes del cobro. */
+#dialogodetalle .acciones-detalle {
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1.1rem 0 1.25rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--borde);
+    border-bottom: 1px solid var(--borde);
+}
+
+#dialogodetalle .acciones-detalle .boton {
+    padding: 0.45rem 0.9rem;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 760px) {
+    #dialogodetalle > header {
+        top: -1rem;
+        margin: -1rem -1rem 1rem;
+        padding: 0.85rem 1rem;
+    }
+
+    #dialogodetalle #titulodetalle {
+        font-size: 1.15rem;
+    }
+}
+
 .detalle {
     display: grid;
     grid-template-columns: max-content 1fr;
@@ -4452,4 +4536,69 @@ img[data-lupa] {
     .proforma-tabla tr {
         break-inside: avoid;
     }
+}
+
+/* Nuevo encargo: cierre y selección visual, sin cambiar el estilo general de Floristica. */
+.cabecera-modal-encargo { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
+.cabecera-modal-encargo h2 { margin: 0; }
+.cerrar-modal-encargo { display: grid; place-items: center; flex: none; width: 2.4rem; height: 2.4rem;
+    padding: 0; font-size: 1.6rem; font-weight: 400; line-height: 1; color: var(--principal-oscuro);
+    background: var(--rosa-claro); border: 1px solid var(--borde); border-radius: 50%; }
+.cerrar-modal-encargo:hover { color: #fff; background: var(--principal); }
+.boton-elegir-arreglo { width: 100%; text-align: left; }
+.arreglo-elegido { display: flex; gap: 0.75rem; align-items: center; padding: 0.6rem;
+    border: 1px solid var(--borde); border-radius: 0.65rem; background: var(--rosa-claro); }
+.arreglo-elegido img, .arreglo-elegido .sin-foto-encargo { flex: none; width: 64px; height: 64px; object-fit: cover; border-radius: 0.5rem; }
+.arreglo-elegido div { display: grid; gap: 0.2rem; }
+.arreglo-elegido small { color: var(--texto-suave); }
+.galeria-seleccion-encargo { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+    gap: 0.85rem; margin-top: 1rem; max-height: 58vh; overflow-y: auto; }
+.tarjeta-seleccion-encargo { display: flex; flex-direction: column; gap: 0.3rem; align-items: stretch;
+    text-align: left; padding: 0.55rem; border: 1px solid var(--borde); border-radius: 0.7rem;
+    background: var(--superficie); color: var(--texto); cursor: pointer; font: inherit; }
+.tarjeta-seleccion-encargo:hover, .tarjeta-seleccion-encargo:focus-visible,
+.tarjeta-seleccion-encargo.seleccionada { border-color: var(--principal); background: var(--rosa-claro); }
+.tarjeta-seleccion-encargo:disabled { opacity: 0.48; cursor: not-allowed; }
+.tarjeta-seleccion-encargo img, .tarjeta-seleccion-encargo .sin-foto-encargo {
+    width: 100%; height: 135px; object-fit: cover; border-radius: 0.45rem; }
+.sin-foto-encargo { display: grid; place-items: center; font-size: 2.6rem;
+    color: var(--principal); background: var(--rosa-claro); }
+.tarjeta-seleccion-encargo strong { font-size: 0.91rem; overflow-wrap: anywhere; }
+.tarjeta-seleccion-encargo span:not(.sin-foto-encargo) { font-size: 0.9rem; font-weight: 600; color: var(--principal-oscuro); }
+.tarjeta-seleccion-encargo small { font-size: 0.77rem; color: var(--texto-suave); }
+@media (max-width: 520px) { .galeria-seleccion-encargo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* El mismo inventario de regalos aparece también en el catálogo general. */
+.catalogo-regalos { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--borde); }
+
+.catalogo-regalos .galeria-seleccion-encargo { max-height: none; overflow: visible; }
+.catalogo-regalos .tarjeta-seleccion-encargo { cursor: default; }
+
+/* Nuevo encargo: la cabecera permanece visible y solo se desplaza el formulario. */
+#dialogoformulario {
+    max-height: 90vh;
+    max-height: 90dvh;
+    padding: 0;
+    overflow: hidden;
+}
+
+#dialogoformulario[open] {
+    display: flex;
+    flex-direction: column;
+}
+
+#dialogoformulario > .cabecera-modal-encargo {
+    flex-shrink: 0;
+    align-items: center;
+    margin: 0;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--borde);
+    background: var(--superficie);
+}
+
+#dialogoformulario > #formulario {
+    min-height: 0;
+    padding: 1.25rem 1.5rem 1.5rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
