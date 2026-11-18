@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/../Repositorio/abonorepositorio.php';
 require_once __DIR__ . '/../Repositorio/pedidorepositorio.php';
@@ -278,7 +279,9 @@ class creditocontrolador
         $total = (float) $encargo->getTbsolicitudencargototal();
         $abonado = $this->abonos->totalde('cobrar', $encargo->getTbsolicitudencargoid());
         $saldo = max(0, round($total - $abonado, 2));
-        $entregada = $encargo->getTbsolicitudencargoestado() === 'Terminado';
+
+        // Solo se considera entregado cuando el cliente recibe el arreglo.
+        $entregada = $encargo->getTbsolicitudencargoestado() === 'Entregado';
 
         if ($saldo <= 0) {
             $estado = 'Pagado';

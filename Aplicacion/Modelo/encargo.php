@@ -20,6 +20,7 @@ class Encargo
     private $tbsolicitudencargosubtotal;
     private $tbsolicitudencargototal;
     private $tbsolicitudencargofechaentrega;
+    private $tbsolicitudencargofechaentregareal;
     private $tbsolicitudencargonota;
     private $tbsolicitudencargoestado;
     private $tbsolicitudencargofecharegistro;
@@ -51,6 +52,7 @@ class Encargo
         $this->tbsolicitudencargosubtotal         = $datos['tbsolicitudencargosubtotal'] ?? 0;
         $this->tbsolicitudencargototal            = $datos['tbsolicitudencargototal'] ?? 0;
         $this->tbsolicitudencargofechaentrega     = $datos['tbsolicitudencargofechaentrega'] ?? null;
+        $this->tbsolicitudencargofechaentregareal = $datos['tbsolicitudencargofechaentregareal'] ?? null;
         $this->tbsolicitudencargonota             = $datos['tbsolicitudencargonota'] ?? '';
         $this->tbsolicitudencargoestado           = $datos['tbsolicitudencargoestado'] ?? 'Pendiente';
         $this->tbsolicitudencargofecharegistro    = $datos['tbsolicitudencargofecharegistro'] ?? null;
@@ -160,6 +162,12 @@ class Encargo
 
     public function setTbsolicitudencargofechaentrega($valor) {
         $this->tbsolicitudencargofechaentrega = $valor; }
+
+    public function getTbsolicitudencargofechaentregareal() {
+        return $this->tbsolicitudencargofechaentregareal; }
+
+    public function setTbsolicitudencargofechaentregareal($valor) {
+        $this->tbsolicitudencargofechaentregareal = $valor; }
 
     public function getTbsolicitudencargonota() {
         return $this->tbsolicitudencargonota; }

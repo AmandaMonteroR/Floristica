@@ -444,6 +444,40 @@ class encargocontrolador
         return $this->respuesta(true, 'Solicitud terminada. Se descontaron los productos del inventario.');
     }
 
+    // Cualquier empleado con permiso puede entregar un encargo terminado.
+    public function entregar($id, $usuario)
+    {
+        $id = (int) $id;
+        $encargo = $this->repositorio->obtenerporid($id);
+
+        if (!$encargo) {
+            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+        }
+
+        if ($encargo->getTbsolicitudencargoestado() !== 'Terminado') {
+            return $this->respuesta(false, 'Solo se pueden entregar encargos terminados.');
+        }
+
+        $entregado = $this->entransaccion(function () use ($id, $usuario) {
+            // El repositorio también verifica el estado para evitar entregas duplicadas.
+            if (!$this->repositorio->entregar($id)) {
+                return false;
+            }
+
+            if (!$this->historico->registrar('estado', $id, 'Entregado', $usuario['id'])) {
+                throw new RuntimeException('No se pudo registrar la entrega en el historial.');
+            }
+
+            return true;
+        });
+
+        if (!$entregado) {
+            return $this->respuesta(false, 'El encargo ya cambió de estado. Actualice la lista.');
+        }
+
+        return $this->respuesta(true, 'Encargo entregado correctamente.');
+    }
+
     public function cancelar($id, $usuario)
     {
         $id = (int) $id;
@@ -1236,6 +1270,7 @@ class encargocontrolador
             'tbempleadonombre'                   => $empleado ? $empleado->getTbempleadonombre() : '',
             'tbempleadorol'                      => $empleado ? $empleado->getTbempleadorol() : '',
             'tbsolicitudencargofechaentrega'     => $encargo->getTbsolicitudencargofechaentrega(),
+            'tbsolicitudencargofechaentregareal' => $encargo->getTbsolicitudencargofechaentregareal(),
             'tbsolicitudencargonota'             => (string) $encargo->getTbsolicitudencargonota(),
             'tbsolicitudencargoestado'           => $encargo->getTbsolicitudencargoestado(),
             'tbsolicitudencargofecharegistro'    => $encargo->getTbsolicitudencargofecharegistro(),

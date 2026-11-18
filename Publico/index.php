@@ -132,7 +132,7 @@ if ($accion === '') {
 header('Content-Type: application/json; charset=utf-8');
 
 $accionespost = ['crear', 'actualizar', 'inactivar', 'reactivar', 'confirmar', 'recibir',
-    'asignar', 'asignarme', 'iniciar', 'terminar', 'cancelar', 'cambiarclave',
+    'asignar', 'asignarme', 'iniciar', 'terminar', 'entregar', 'cancelar', 'cambiarclave',
     'activar', 'desactivar', 'guardarpreciostemporada', 'guardarprecios', 'subirfoto', 'buscarporfoto', 'sugerir', 'valorar',
     'guardarcatalogo', 'estadocatalogo', 'abonar', 'anularabono', 'movimientostock', 'quitarfoto'];
 
@@ -376,6 +376,9 @@ try {
                     break;
                 case 'terminar':
                     $respuesta = $controlador->terminar($_POST['id'] ?? 0, $usuarioactual);
+                    break;
+                case 'entregar':
+                    $respuesta = $controlador->entregar($_POST['id'] ?? 0, $usuarioactual);
                     break;
                 case 'cancelar':
                     $respuesta = $controlador->cancelar($_POST['id'] ?? 0, $usuarioactual);

@@ -1,3 +1,4 @@
+
 <?php
 require_once __DIR__ . '/../Aplicacion/Repositorio/empleadorepositorio.php';
 
@@ -12,7 +13,7 @@ class Seguridad
         'cliente'    => '*',
         // Los empleados también crean y editan arreglos (sin ver costos); inactivarlos es del propietario
         'catalogo'   => ['', 'listar', 'obtener', 'productos', 'crear', 'actualizar', 'buscarporfoto', 'valorar'],
-        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignar', 'asignarme', 'iniciar', 'terminar', 'subirfoto', 'sugerir'],
+        'encargo'    => ['', 'listar', 'obtener', 'opciones', 'crear', 'asignar', 'asignarme', 'iniciar', 'terminar', 'entregar', 'subirfoto', 'sugerir'],
     ];
 
     private static $usuario = false;

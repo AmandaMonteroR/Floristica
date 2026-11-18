@@ -1,8 +1,10 @@
+
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 require_once __DIR__ . '/../Modelo/encargo.php';
 
-// Ventas: las solicitudes terminadas. La fecha de la venta es cuando se marcó como "Terminado".
+// Ventas: las solicitudes terminadas o entregadas.
+// La fecha de la venta es cuando se marcó como "Terminado".
 class ventarepositorio
 {
     private $conexion;
@@ -23,7 +25,7 @@ class ventarepositorio
                     WHERE tbsolicitudencargoestadohistoricovalor = 'Terminado'
                     GROUP BY tbsolicitudencargoid
                 ) h ON h.tbsolicitudencargoid = s.tbsolicitudencargoid
-                WHERE s.tbsolicitudencargoestado = 'Terminado'
+                WHERE s.tbsolicitudencargoestado IN ('Terminado', 'Entregado')
                   AND DATE(h.fechaventa) BETWEEN ? AND ?
                 ORDER BY h.fechaventa DESC, s.tbsolicitudencargoid DESC";
 

@@ -4,193 +4,317 @@ require_once __DIR__ . '/../Controlador/iniciocontrolador.php';
 $resumen = (new iniciocontrolador())->resumen($usuarioactual);
 $espropietario = Seguridad::espropietario();
 
-$meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
-    'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'];
-$dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+$meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'setiembre', 'octubre', 'noviembre', 'diciembre'
+];
 
+$dias = [
+    'domingo', 'lunes', 'martes', 'miércoles',
+    'jueves', 'viernes', 'sábado'
+];
+
+// Formatea la fecha para el encabezado.
 function fechalarga($fecha, $dias, $meses)
 {
     $tiempo = strtotime($fecha);
-    return $dias[date('w', $tiempo)] . ' ' . date('j', $tiempo) . ' de ' . $meses[date('n', $tiempo) - 1];
+
+    return $dias[date('w', $tiempo)] . ' '
+        . date('j', $tiempo) . ' de '
+        . $meses[date('n', $tiempo) - 1];
 }
 
+// Identifica la fecha de entrega de un encargo.
 function textoentrega($fecha, $hoy)
 {
-    $diferencia = (int) round((strtotime($fecha) - strtotime($hoy)) / 86400);
-
-    if ($diferencia < 0) {
-        return ['Atrasado ' . abs($diferencia) . ($diferencia === -1 ? ' día' : ' días'), 'estado-bajo'];
+    if ($fecha < $hoy) {
+        return ['Atrasado', 'estado-bajo'];
     }
-    if ($diferencia === 0) {
+
+    if ($fecha === $hoy) {
         return ['Hoy', 'estado-pendiente'];
     }
-    if ($diferencia === 1) {
-        return ['Mañana', 'estado-confirmado'];
-    }
 
-    return [date('d/m/Y', strtotime($fecha)), 'estado-empleado'];
+    return [
+        date('d/m/Y', strtotime($fecha)),
+        'estado-confirmado'
+    ];
 }
 
 $primernombre = explode(' ', trim($usuarioactual['nombre']))[0];
-
-// Cada tarjeta abre la lista con el filtro que corresponde a lo que cuenta
+$hoy = $resumen['hoy'];
 $idusuario = (int) $usuarioactual['id'];
-$enlaces = [
-    'mios'       => 'index.php?modulo=encargo&estado=abiertos&empleado=' . $idusuario,
-    'sinasignar' => 'index.php?modulo=encargo&estado=abiertos&empleado=sinasignar',
-    'atrasados'  => 'index.php?modulo=encargo&estado=atrasados' . ($espropietario ? '' : '&empleado=' . $idusuario),
-    'stockbajo'  => 'index.php?modulo=inventario&estado=1&stock=bajo',
-    'sinrecibir' => 'index.php?modulo=pedido&estado=sinrecibir',
-    'abiertos'   => 'index.php?modulo=encargo&estado=abiertos' . ($espropietario ? '' : '&empleado=' . $idusuario),
-];
-$listaencargos = $espropietario ? $resumen['abiertos'] : $resumen['mios'];
 
-// Accesos rápidos: solo se muestran los que el rol puede abrir
+// Enlaces a los módulos y sus filtros.
+$enlaces = [
+    'mios' => 'index.php?modulo=encargo&estado=abiertos&empleado=' . $idusuario,
+    'sinasignar' => 'index.php?modulo=encargo&estado=abiertos&empleado=sinasignar',
+    'atrasados' => 'index.php?modulo=encargo&estado=atrasados'
+        . ($espropietario ? '' : '&empleado=' . $idusuario),
+    'stockbajo' => 'index.php?modulo=inventario&estado=1&stock=bajo',
+    'abiertos' => 'index.php?modulo=encargo&estado=abiertos'
+        . ($espropietario ? '' : '&empleado=' . $idusuario),
+];
+
+// El propietario ve todos los encargos abiertos.
+// El empleado ve los que tiene asignados.
+$listaencargos = $espropietario
+    ? $resumen['abiertos']
+    : $resumen['mios'];
+
+// Separar los encargos por fecha.
+$encargoshoy = [];
+$encargosatrasados = [];
+$encargosproximos = [];
+
+foreach ($listaencargos as $encargo) {
+    $fechaentrega = $encargo['tbsolicitudencargofechaentrega'];
+
+    if ($fechaentrega === $hoy) {
+        $encargoshoy[] = $encargo;
+    } elseif ($fechaentrega < $hoy) {
+        $encargosatrasados[] = $encargo;
+    } else {
+        $encargosproximos[] = $encargo;
+    }
+}
+
+// Ordenar los próximos encargos por fecha de entrega.
+usort($encargosproximos, function ($a, $b) {
+    return strcmp(
+        $a['tbsolicitudencargofechaentrega'],
+        $b['tbsolicitudencargofechaentrega']
+    );
+});
+
+// Mostrar únicamente los accesos más utilizados.
 $accesos = [
-    ['Nueva solicitud', 'encargo', true],
-    ['Ver solicitudes', 'encargo', false],
+    ['Nuevo encargo', 'encargo', true],
+    ['Ver encargos', 'encargo', false],
     ['Clientes', 'cliente', false],
     ['Catálogo', 'catalogo', false],
-    ['Nuevo pedido', 'pedido', true],
-    ['Inventario', 'inventario', false],
-    ['Empleados', 'empleado', false],
 ];
+
+// Cantidades para los indicadores.
+$totalhoy = count($encargoshoy);
+$totalatrasados = count($encargosatrasados);
+$totalsinasignar = count($resumen['sinasignar']);
+$totalstockbajo = $espropietario
+    ? count($resumen['stockbajo'])
+    : 0;
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>Inicio | Floristica</title>
+
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
 </head>
+
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
 
 <main class="contenedor">
+
     <header class="encabezado">
         <div>
             <h1>Hola, <?= e($primernombre) ?></h1>
-            <p class="subtitulo">Hoy es <?= e(fechalarga($resumen['hoy'], $dias, $meses)) ?>.</p>
+            <p class="subtitulo">
+                <?= e(fechalarga($hoy, $dias, $meses)) ?>
+            </p>
         </div>
     </header>
 
-    <section class="resumen-inicio" aria-label="Resumen">
-        <a class="tarjeta-resumen" href="<?= e($enlaces['mios']) ?>">
-            <span class="numero"><?= count($resumen['mios']) ?></span>
-            <span>Mis solicitudes abiertas</span>
+    <!-- Resumen de los encargos del día -->
+    <section class="resumen-inicio" aria-label="Resumen de hoy">
+
+        <a class="tarjeta-resumen"
+           href="<?= e($enlaces['abiertos']) ?>">
+
+            <span class="numero"><?= $totalhoy ?></span>
+            <span>Encargos para hoy</span>
         </a>
-        <a class="tarjeta-resumen" href="<?= e($enlaces['sinasignar']) ?>">
-            <span class="numero"><?= count($resumen['sinasignar']) ?></span>
-            <span>Solicitudes sin asignar</span>
-        </a>
-        <a class="tarjeta-resumen<?= $resumen['atrasados'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['atrasados']) ?>">
-            <span class="numero"><?= count($resumen['atrasados']) ?></span>
-            <span><?= $espropietario ? 'Solicitudes atrasadas' : 'Mis solicitudes atrasadas' ?></span>
-        </a>
-        <?php if ($espropietario): ?>
-            <a class="tarjeta-resumen<?= $resumen['stockbajo'] ? ' tarjeta-alerta' : '' ?>" href="<?= e($enlaces['stockbajo']) ?>">
-                <span class="numero"><?= count($resumen['stockbajo']) ?></span>
-                <span>Productos con stock bajo</span>
-            </a>
-            <a class="tarjeta-resumen" href="<?= e($enlaces['sinrecibir']) ?>">
-                <span class="numero"><?= count($resumen['pedidospendientes']) + count($resumen['pedidosporrecibir']) ?></span>
-                <span>Pedidos sin recibir</span>
+
+        <?php if ($totalatrasados > 0): ?>
+            <a class="tarjeta-resumen tarjeta-alerta"
+               href="<?= e($enlaces['atrasados']) ?>">
+
+                <span class="numero"><?= $totalatrasados ?></span>
+                <span>Encargos atrasados</span>
             </a>
         <?php endif; ?>
+
+        <?php if (!$espropietario && $totalsinasignar > 0): ?>
+            <a class="tarjeta-resumen"
+               href="<?= e($enlaces['sinasignar']) ?>">
+
+                <span class="numero"><?= $totalsinasignar ?></span>
+                <span>Sin asignar</span>
+            </a>
+        <?php endif; ?>
+
+        <?php if ($espropietario && $totalstockbajo > 0): ?>
+            <a class="tarjeta-resumen tarjeta-alerta"
+               href="<?= e($enlaces['stockbajo']) ?>">
+
+                <span class="numero"><?= $totalstockbajo ?></span>
+                <span>Stock bajo</span>
+            </a>
+        <?php endif; ?>
+
     </section>
 
+    <!-- Accesos rápidos -->
     <section class="accesos-inicio" aria-label="Accesos rápidos">
+
         <?php foreach ($accesos as [$texto, $destino, $nuevo]): ?>
             <?php if (Seguridad::permitido($destino)): ?>
-                <a class="boton <?= $nuevo ? 'boton-principal' : '' ?>" href="index.php?modulo=<?= e($destino) ?><?= $nuevo ? '&amp;nuevo=1' : '' ?>"><?= e($texto) ?></a>
+
+                <a class="boton <?= $nuevo ? 'boton-principal' : '' ?>"
+                   href="index.php?modulo=<?= e($destino) ?><?= $nuevo ? '&amp;nuevo=1' : '' ?>">
+
+                    <?= e($texto) ?>
+                </a>
+
             <?php endif; ?>
         <?php endforeach; ?>
+
     </section>
 
+    <!-- Encargos para entregar hoy -->
     <div class="paneles-inicio">
+
         <section class="panel-inicio">
-            <h2><?= $espropietario ? 'Solicitudes por entregar' : 'Mis solicitudes por entregar' ?></h2>
-            <?php if (!$listaencargos): ?>
-                <p class="texto-suave"><?= $espropietario ? 'No hay solicitudes abiertas.' : 'No tiene solicitudes asignadas.' ?></p>
+
+            <h2>
+                <?= $espropietario
+                    ? 'Entregas de hoy'
+                    : 'Mis entregas de hoy' ?>
+            </h2>
+
+            <?php if (!$encargoshoy): ?>
+
+                <p class="texto-suave">
+                    No hay entregas pendientes para hoy.
+                </p>
+
             <?php else: ?>
+
                 <ul class="lista-inicio">
-                    <?php foreach (array_slice($listaencargos, 0, 6) as $encargo): ?>
-                        <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
+
+                    <?php foreach (array_slice($encargoshoy, 0, 5) as $encargo): ?>
+
                         <li>
-                            <a class="enlace-inicio" href="<?= e($enlaces['abiertos'] . '&ver=' . (int) $encargo['tbsolicitudencargoid']) ?>">
-                            <span>
-                                <strong><?= e($encargo['descripcion']) ?></strong>
-                                <small class="texto-suave">
-                                    <?= e($encargo['tbclientenombre']) ?> ·
-                                    <?= e($encargo['tbsolicitudencargoestado']) ?>
-                                    <?php if ($espropietario): ?>
-                                        · <?= $encargo['tbempleadonombre'] !== '' ? e($encargo['tbempleadonombre']) : 'Sin asignar' ?>
-                                    <?php endif; ?>
-                                </small>
-                            </span>
-                            <span class="estado <?= $claseentrega ?>"><?= e($entrega) ?></span>
+                            <a class="enlace-inicio"
+                               href="<?= e($enlaces['abiertos'] . '&ver=' . (int) $encargo['tbsolicitudencargoid']) ?>">
+
+                                <span>
+                                    <strong>
+                                        <?= e($encargo['descripcion']) ?>
+                                    </strong>
+
+                                    <small class="texto-suave">
+                                        <?= e($encargo['tbclientenombre']) ?>
+                                        ·
+                                        <?= e($encargo['tbsolicitudencargoestado']) ?>
+
+                                        <?php if ($espropietario): ?>
+                                            ·
+                                            <?= $encargo['tbempleadonombre'] !== ''
+                                                ? e($encargo['tbempleadonombre'])
+                                                : 'Sin asignar' ?>
+                                        <?php endif; ?>
+                                    </small>
+                                </span>
+
+                                <span class="estado estado-pendiente">
+                                    Hoy
+                                </span>
+
                             </a>
                         </li>
+
                     <?php endforeach; ?>
+
                 </ul>
-                <?php if (count($listaencargos) > 6): ?>
-                    <a class="enlace-panel" href="<?= e($enlaces['abiertos']) ?>">Ver las <?= count($listaencargos) ?> solicitudes</a>
+
+                <?php if ($totalhoy > 5): ?>
+                    <a class="enlace-panel"
+                       href="<?= e($enlaces['abiertos']) ?>">
+
+                        Ver todos los encargos
+                    </a>
                 <?php endif; ?>
+
             <?php endif; ?>
+
         </section>
 
-        <?php if (!$espropietario): ?>
-            <section class="panel-inicio">
-                <h2>Solicitudes que puede tomar</h2>
-                <?php if (!$resumen['sinasignar']): ?>
-                    <p class="texto-suave">No hay solicitudes sin asignar.</p>
-                <?php else: ?>
-                    <ul class="lista-inicio">
-                        <?php foreach (array_slice($resumen['sinasignar'], 0, 6) as $encargo): ?>
-                            <?php [$entrega, $claseentrega] = textoentrega($encargo['tbsolicitudencargofechaentrega'], $resumen['hoy']); ?>
-                            <li>
-                                <a class="enlace-inicio" href="<?= e($enlaces['sinasignar'] . '&ver=' . (int) $encargo['tbsolicitudencargoid']) ?>">
-                                    <span>
-                                        <strong><?= e($encargo['descripcion']) ?></strong>
-                                        <small class="texto-suave"><?= e($encargo['tbclientenombre']) ?> · <?= e($encargo['tbsolicitudencargoestado']) ?></small>
-                                    </span>
-                                    <span class="estado <?= $claseentrega ?>"><?= e($entrega) ?></span>
-                                </a>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <a class="enlace-panel" href="<?= e($enlaces['sinasignar']) ?>">Ir a solicitudes para asignársela</a>
-                <?php endif; ?>
-            </section>
-        <?php else: ?>
-            <section class="panel-inicio">
-                <h2>Productos con stock bajo</h2>
-                <?php if (!$resumen['stockbajo']): ?>
-                    <p class="texto-suave">Todo el inventario está por encima del mínimo.</p>
-                <?php else: ?>
-                    <ul class="lista-inicio">
-                        <?php foreach (array_slice($resumen['stockbajo'], 0, 6) as $producto): ?>
-                            <li>
+        <!-- Próximas entregas -->
+        <section class="panel-inicio">
+
+            <h2>Próximas entregas</h2>
+
+            <?php if (!$encargosproximos): ?>
+
+                <p class="texto-suave">
+                    No hay próximas entregas pendientes.
+                </p>
+
+            <?php else: ?>
+
+                <ul class="lista-inicio">
+
+                    <?php foreach (array_slice($encargosproximos, 0, 3) as $encargo): ?>
+
+                        <?php
+                        [$entrega, $claseentrega] = textoentrega(
+                            $encargo['tbsolicitudencargofechaentrega'],
+                            $hoy
+                        );
+                        ?>
+
+                        <li>
+                            <a class="enlace-inicio"
+                               href="<?= e($enlaces['abiertos'] . '&ver=' . (int) $encargo['tbsolicitudencargoid']) ?>">
+
                                 <span>
-                                    <strong><?= e($producto['nombre']) ?></strong>
-                                    <small class="texto-suave">Mínimo <?= $producto['minimo'] ?><?php if ($producto['reservado'] > 0): ?>
-                                        · hay <?= $producto['stock'] ?>, <?= $producto['reservado'] ?> apartadas para solicitudes<?php endif; ?></small>
-                                    <?php if ($producto['faltante'] > 0): ?>
-                                        <small class="aviso-stock">Faltan <?= $producto['faltante'] ?> para las solicitudes abiertas</small>
-                                    <?php endif; ?>
+                                    <strong>
+                                        <?= e($encargo['descripcion']) ?>
+                                    </strong>
+
+                                    <small class="texto-suave">
+                                        <?= e($encargo['tbclientenombre']) ?>
+                                    </small>
                                 </span>
-                                <span class="stock stock-bajo" title="Disponible"><?= $producto['disponible'] ?></span>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <a class="enlace-panel" href="<?= e($enlaces['stockbajo']) ?>">Ver los productos con stock bajo</a>
-                    <a class="enlace-panel" href="index.php?modulo=pedido&amp;nuevo=1">Hacer un pedido</a>
-                <?php endif; ?>
-            </section>
-        <?php endif; ?>
+
+                                <span class="estado <?= e($claseentrega) ?>">
+                                    <?= e($entrega) ?>
+                                </span>
+
+                            </a>
+                        </li>
+
+                    <?php endforeach; ?>
+
+                </ul>
+
+                <a class="enlace-panel"
+                   href="<?= e($enlaces['abiertos']) ?>">
+                    Ver encargos
+                </a>
+
+            <?php endif; ?>
+
+        </section>
+
     </div>
+
 </main>
 
 <script src="<?= recurso('js/menu.js') ?>"></script>
