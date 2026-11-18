@@ -130,6 +130,21 @@ class encargorepositorio
         return $sentencia->execute([$estado, $id]);
     }
 
+    // Registra la entrega solo si el encargo está terminado.
+    public function entregar($id)
+    {
+        $sql = "UPDATE tbsolicitudencargo
+                SET tbsolicitudencargoestado = 'Entregado',
+                    tbsolicitudencargofechaentregareal = NOW()
+                WHERE tbsolicitudencargoid = ?
+                  AND tbsolicitudencargoestado = 'Terminado'";
+
+        $sentencia = $this->conexion->prepare($sql);
+        $sentencia->execute([(int) $id]);
+
+        return $sentencia->rowCount() === 1;
+    }
+
     public function obtenerporid($id)
     {
         $sentencia = $this->conexion->prepare('SELECT * FROM tbsolicitudencargo WHERE tbsolicitudencargoid = ?');

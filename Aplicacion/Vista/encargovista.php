@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Solicitudes de pedido de arreglo | Floristica</title>
+    <title>Encargos | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
+    <link rel="stylesheet" href="<?= recurso('css/encargo.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -13,18 +14,59 @@
 <main class="contenedor">
     <header class="encabezado">
         <div>
-            <h1>Solicitudes de pedido de arreglo</h1>
-            <p class="subtitulo">Pedidos de los clientes: arreglos del catálogo o personalizados, con o sin servicio express.</p>
+            <h1>Encargos</h1>
         </div>
-        <button type="button" class="boton boton-claro" id="botonnuevo">Nueva solicitud</button>
+        <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo encargo</button>
     </header>
 
-    <nav class="pestanas" aria-label="Secciones del catálogo">
+    <nav class="pestanas" aria-label="Catálogo y encargos">
         <a href="index.php?modulo=catalogo">Catálogo</a>
-        <a href="index.php?modulo=encargo" class="activa" aria-current="page">Solicitudes de pedido de arreglo</a>
+        <a href="index.php?modulo=encargo" class="activa" aria-current="page">Encargos</a>
     </nav>
 
-    <section class="filtros">
+    <!-- Resumen operativo de los encargos programados para hoy. -->
+    <section aria-labelledby="tituloresumenencargos">
+        <div class="encargos-seccion-encabezado">
+            <h2 id="tituloresumenencargos">Resumen de hoy</h2>
+            <span class="texto-suave">Sin encargos cancelados</span>
+        </div>
+        <div class="resumen-inicio resumen-encargos" aria-live="polite">
+            <div class="tarjeta-resumen">
+                <span>Encargos de hoy</span>
+                <strong class="numero" id="totalencargoshoy">0</strong>
+            </div>
+            <div class="tarjeta-resumen">
+                <span>Por preparar</span>
+                <strong class="numero" id="porprepararhoy">0</strong>
+            </div>
+            <div class="tarjeta-resumen">
+                <span>Listos por entregar</span>
+                <strong class="numero" id="listosporentregarhoy">0</strong>
+            </div>
+            <div class="tarjeta-resumen">
+                <span>Entregados</span>
+                <strong class="numero" id="entregadoshoy">0</strong>
+            </div>
+        </div>
+    </section>
+
+    <div class="encargos-seccion-encabezado">
+        <h2 id="titulolistado">Encargos de hoy</h2>
+    </div>
+
+    <section class="filtros" aria-label="Filtros de encargos">
+        <label class="campo">
+            <span>Fecha de entrega</span>
+            <select id="filtroperiodo">
+                <option value="hoy">Hoy</option>
+                <option value="todas">Todas las fechas</option>
+                <option value="personalizada">Elegir fecha</option>
+            </select>
+        </label>
+        <label class="campo" id="campofecha" hidden>
+            <span>Día</span>
+            <input type="date" id="filtrofecha">
+        </label>
         <label class="campo">
             <span>Estado</span>
             <select id="filtroestado">
@@ -33,8 +75,9 @@
                 <option value="atrasados">Atrasadas</option>
                 <option value="Pendiente">Pendientes</option>
                 <option value="En proceso">En proceso</option>
-                <option value="Terminado">Terminadas</option>
-                <option value="Cancelado">Canceladas</option>
+                <option value="Terminado">Terminados</option>
+                <option value="Entregado">Entregados</option>
+                <option value="Cancelado">Cancelados</option>
             </select>
         </label>
         <label class="campo">
@@ -70,7 +113,7 @@
                 </tr>
             </thead>
             <tbody id="cuerpotabla">
-                <tr><td colspan="7" class="vacio">Cargando solicitudes…</td></tr>
+                <tr><td colspan="7" class="vacio">Cargando encargos…</td></tr>
             </tbody>
         </table>
     </div>
@@ -78,8 +121,7 @@
 
 <dialog id="dialogoformulario" class="dialogo dialogo-ancho">
     <form id="formulario" novalidate>
-        <h2 id="tituloformulario">Nueva solicitud de pedido de arreglo</h2>
-        <p class="nota">Los campos con * son obligatorios. Los precios salen del catálogo, del inventario y de las zonas de entrega.</p>
+        <h2 id="tituloformulario">Nuevo encargo</h2>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
             <span>Se recuperaron datos que no se habían guardado.</span>
@@ -299,7 +341,7 @@
 
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>
-            <button type="submit" class="boton boton-principal" id="botonguardar">Guardar solicitud</button>
+            <button type="submit" class="boton boton-principal" id="botonguardar">Guardar encargo</button>
         </div>
     </form>
 </dialog>

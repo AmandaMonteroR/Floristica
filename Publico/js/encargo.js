@@ -19,6 +19,10 @@ const cuerpotabla = document.getElementById('cuerpotabla');
 const filtroestado = document.getElementById('filtroestado');
 const filtrotipo = document.getElementById('filtrotipo');
 const filtroempleado = document.getElementById('filtroempleado');
+const filtroperiodo = document.getElementById('filtroperiodo');
+const campofecha = document.getElementById('campofecha');
+const filtrofecha = document.getElementById('filtrofecha');
+const titulolistado = document.getElementById('titulolistado');
 const aviso = document.getElementById('aviso');
 const dialogoformulario = document.getElementById('dialogoformulario');
 const formulario = document.getElementById('formulario');
@@ -1032,6 +1036,7 @@ function claseestado(estado) {
         Pendiente: 'estado-pendiente',
         'En proceso': 'estado-confirmado',
         Terminado: 'estado-recibido',
+        Entregado: 'estado-activo',
         Cancelado: 'estado-inactivo',
     }[estado] ?? 'estado-inactivo';
 }
@@ -1057,6 +1062,9 @@ function accionesencargo(encargo) {
         if (abierta && (!encargo.tbempleadoid || esmio)) {
             acciones.push(boton('asignar', id, esmio ? 'Pasar a otra persona' : 'Asignar'));
         }
+        if (encargo.tbsolicitudencargoestado === 'Terminado') {
+            acciones.push(boton('entregar', id, 'Marcar como entregado'));
+        }
         return acciones.join(' ');
     }
 
@@ -1074,15 +1082,62 @@ function accionesencargo(encargo) {
         acciones.push(boton('asignar', id, 'Reasignar'));
         acciones.push(boton('terminar', id, 'Terminar'));
         acciones.push(boton('cancelar', id, 'Cancelar', true));
+    } else if (encargo.tbsolicitudencargoestado === 'Terminado') {
+        acciones.push(boton('entregar', id, 'Marcar como entregado'));
     }
 
     return acciones.join(' ');
+}
+
+// En la tabla basta con "Ver"; todas las acciones están en el detalle.
+function accionesencargotabla(encargo) {
+    return boton('ver', encargo.tbsolicitudencargoid, 'Ver');
 }
 
 function textoentrega(encargo) {
     return encargo.tbsolicitudencargoexpress === 1
         ? `Express · ${encargo.tbzonaentreganombre || 'zona eliminada'}`
         : 'Recoge en el local';
+}
+
+// El resumen siempre corresponde a los encargos programados para hoy,
+// independientemente de los filtros usados en la tabla.
+function actualizarresumenencargos(lista) {
+    const deldia = lista.filter((encargo) =>
+        encargo.tbsolicitudencargofechaentrega === hoy()
+        && encargo.tbsolicitudencargoestado !== 'Cancelado');
+
+    const porpreparar = deldia.filter((encargo) =>
+        ['Pendiente', 'En proceso'].includes(encargo.tbsolicitudencargoestado));
+    const listos = deldia.filter((encargo) => encargo.tbsolicitudencargoestado === 'Terminado');
+    const entregados = deldia.filter((encargo) => encargo.tbsolicitudencargoestado === 'Entregado');
+
+    document.getElementById('totalencargoshoy').textContent = deldia.length;
+    document.getElementById('porprepararhoy').textContent = porpreparar.length;
+    document.getElementById('listosporentregarhoy').textContent = listos.length;
+    document.getElementById('entregadoshoy').textContent = entregados.length;
+}
+
+function actualizarfechaencargos() {
+    const periodo = filtroperiodo.value;
+    campofecha.hidden = periodo !== 'personalizada';
+
+    if (periodo === 'personalizada' && !filtrofecha.value) {
+        filtrofecha.value = hoy();
+    }
+
+    titulolistado.textContent = periodo === 'hoy' ? 'Encargos de hoy'
+        : periodo === 'todas' ? 'Todos los encargos'
+            : `Encargos del ${formatearfecha(filtrofecha.value)}`;
+}
+
+function coincidefechaencargo(encargo) {
+    if (filtroperiodo.value === 'todas') {
+        return true;
+    }
+
+    const fecha = filtroperiodo.value === 'hoy' ? hoy() : filtrofecha.value;
+    return encargo.tbsolicitudencargofechaentrega === fecha;
 }
 
 async function cargarencargos() {
@@ -1097,13 +1152,26 @@ async function cargarencargos() {
         return;
     }
 
-    encargos = respuesta.datos;
+    // El resumen consulta todos los estados; no depende de las opciones de la tabla.
+    const sinfiltros = filtroestado.value === '' && filtroempleado.value === '' && filtrotipo.value === '';
+    if (sinfiltros) {
+        actualizarresumenencargos(respuesta.datos);
+    } else {
+        const resumen = await consultar('listar');
+        if (resumen.exito) {
+            actualizarresumenencargos(resumen.datos);
+        }
+    }
+
+    actualizarfechaencargos();
+    encargos = respuesta.datos.filter(coincidefechaencargo);
 
     if (encargos.length === 0) {
-        const sinfiltros = filtroestado.value === '' && filtroempleado.value === '' && filtrotipo.value === '';
-        const mensaje = sinfiltros
-            ? 'Aún no hay solicitudes. Use "Nueva solicitud" para registrar la primera.'
-            : 'No hay solicitudes que coincidan con el filtro.';
+        const mensaje = sinfiltros && filtroperiodo.value === 'hoy'
+            ? 'No hay encargos programados para hoy.'
+            : sinfiltros && filtroperiodo.value === 'todas'
+                ? 'Todavía no hay encargos. Use "Nuevo encargo" para registrar el primero.'
+                : 'No hay encargos que coincidan con los filtros.';
         cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${mensaje}</td></tr>`;
         return;
     }
@@ -1122,7 +1190,7 @@ async function cargarencargos() {
         const asignado = encargo.tbempleadoid ? escapar(encargo.tbempleadonombre) : 'Sin asignar';
 
         return `
-            <tr class="${abierto ? '' : 'fila-inactiva'}">
+            <tr class="${encargo.tbsolicitudencargoestado === 'Cancelado' ? 'fila-inactiva' : ''}">
                 <td>${encargo.tbsolicitudencargoid}</td>
                 <td>${escapar(encargo.tbclientenombre)}</td>
                 <td>
@@ -1134,7 +1202,7 @@ async function cargarencargos() {
                 <td class="${atrasado ? 'texto-peligro' : ''}">${formatearfecha(encargo.tbsolicitudencargofechaentrega)}${atrasado ? ' · Atrasada' : ''}<br><small class="texto-suave">${escapar(textoentrega(encargo))}</small></td>
                 <td>${formatearmonto(encargo.tbsolicitudencargototal)}</td>
                 <td><span class="estado ${claseestado(encargo.tbsolicitudencargoestado)}">${escapar(encargo.tbsolicitudencargoestado)}</span><br><small class="texto-suave">${asignado}</small></td>
-                <td class="columna-acciones">${accionesencargo(encargo)}</td>
+                <td class="columna-acciones">${accionesencargotabla(encargo)}</td>
             </tr>`;
     }).join('');
 }
@@ -1185,8 +1253,8 @@ async function abrirnuevo() {
     limpiarerrores();
     aplicarborrador();
     campoasignar.hidden = false;
-    tituloformulario.textContent = 'Nueva solicitud de pedido de arreglo';
-    botonguardar.textContent = 'Guardar solicitud';
+    tituloformulario.textContent = 'Nuevo encargo';
+    botonguardar.textContent = 'Guardar encargo';
     dialogoformulario.showModal();
 }
 
@@ -1206,7 +1274,7 @@ async function abrireditar(id) {
     limpiarerrores();
     aplicarborrador();
     campoasignar.hidden = true;
-    tituloformulario.textContent = `Editar solicitud N.º ${id}`;
+    tituloformulario.textContent = `Editar encargo N.º ${id}`;
     botonguardar.textContent = 'Guardar cambios';
     dialogoformulario.showModal();
 }
@@ -1240,6 +1308,8 @@ async function verdetalle(id) {
                 + `${encargo.tbsolicitudencargoporcentaje ?? 100}% de ganancia)`
             : 'Predefinido (del catálogo)'],
         ['Fecha de entrega', formatearfecha(encargo.tbsolicitudencargofechaentrega)],
+        ...(encargo.tbsolicitudencargofechaentregareal
+            ? [['Entregado el', formatearfechahora(encargo.tbsolicitudencargofechaentregareal)]] : []),
         ['Entrega', encargo.tbsolicitudencargoexpress === 1
             ? `Express a ${encargo.tbzonaentreganombre}: ${encargo.tbsolicitudencargodireccionentrega}`
             : 'El cliente lo recoge en el local'],
@@ -1389,6 +1459,11 @@ async function ejecutar(accion, id) {
             titulo: '¿Marcar como terminada?',
             mensaje: `Se descontarán del inventario los productos que usa ${nombre}.`,
             textoaceptar: 'Terminar',
+        },
+        entregar: {
+            titulo: '¿Confirmar entrega?',
+            mensaje: `Se registrará la entrega de ${nombre} con la fecha y hora actuales. No se descontará inventario nuevamente.`,
+            textoaceptar: 'Marcar como entregado',
         },
         cancelar: {
             titulo: '¿Cancelar la solicitud?',
@@ -1687,6 +1762,7 @@ function hacer(accion, id) {
         case 'asignarme':
         case 'iniciar':
         case 'terminar':
+        case 'entregar':
         case 'cancelar':
             ejecutar(accion, id);
             break;
@@ -1708,6 +1784,11 @@ accionesdetalle.addEventListener('click', (evento) => {
     }
 });
 
+filtroperiodo.addEventListener('change', () => {
+    actualizarfechaencargos();
+    cargarencargos();
+});
+filtrofecha.addEventListener('change', cargarencargos);
 filtroestado.addEventListener('change', cargarencargos);
 filtrotipo.addEventListener('change', cargarencargos);
 filtroempleado.addEventListener('change', cargarencargos);
@@ -1736,6 +1817,11 @@ const opcioneslistas = cargaropciones();
 
 opcioneslistas.finally(() => {
     filtrosdesdeurl({ estado: filtroestado, tipo: filtrotipo, empleado: filtroempleado });
+    const parametrosiniciales = new URLSearchParams(window.location.search);
+    if (['estado', 'empleado', 'tipo'].some((campo) => parametrosiniciales.has(campo))) {
+        filtroperiodo.value = 'todas';
+    }
+    actualizarfechaencargos();
     cargarencargos();
 
     const parametros = new URLSearchParams(window.location.search);
