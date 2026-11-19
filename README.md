@@ -40,14 +40,13 @@ sudo mariadb -e "ALTER USER 'root'@'localhost' IDENTIFIED VIA mysql_native_passw
 
 No use XAMPP y el MySQL/MariaDB del sistema al mismo tiempo: los dos usan el puerto 3306.
 
-### 3. Crear la base de datos y cargar los datos de prueba
+### 3. Crear la base de datos con los datos de prueba
 
 ```bash
 mysql -u root -h 127.0.0.1 --default-character-set=utf8mb4 < BaseDatos/ScriptsSQL/bdfloristica.sql
-mysql -u root -h 127.0.0.1 --default-character-set=utf8mb4 < BaseDatos/DatosIniciales/datosprueba.sql
 ```
 
-El script `bdfloristica.sql` borra la base y la crea de nuevo, así que también sirve para reiniciarla.
+El script `bdfloristica.sql` crea las tablas y carga los datos de prueba en un solo paso. Borra la base y la crea de nuevo, así que también sirve para reiniciarla.
 
 ### 4. Ejecutar el proyecto
 
@@ -60,7 +59,7 @@ Abrir en el navegador: [http://localhost:8000](http://localhost:8000)
 
 ## Usuarios de prueba
 
-Los crea `datosprueba.sql`:
+Los crea `bdfloristica.sql`:
 
 | Usuario | Contraseña | Nombre | Rol |
 |---------|------------|--------|-----|
@@ -111,8 +110,8 @@ Floristica/
 │   ├── Repositorio/  # Consultas a la base de datos (PDO)
 │   └── Vista/        # Páginas en PHP y el menú
 ├── BaseDatos/
-│   ├── ScriptsSQL/     # bdfloristica.sql (estructura)
-│   └── DatosIniciales/ # datosprueba.sql y ubicaciones de Costa Rica
+│   ├── ScriptsSQL/     # bdfloristica.sql (tablas y datos de prueba)
+│   └── DatosIniciales/ # ubicaciones de Costa Rica
 ├── Configuracion/    # Conexión, países y seguridad (sesión y permisos)
 ├── Documentacion/    # diagramaflujo.html (diagrama de flujo del ciclo) y su PDF
 ├── Pruebas/          # pruebasbackend.php (pruebas automáticas del backend)
@@ -160,7 +159,7 @@ Cada paso tiene el color de quién lo hace: un empleado o el propietario, solo e
 | Temporada alta: precios del proveedor, encenderla y apagarla | ✓ | |
 | Ventas y ganancias | ✓ | |
 | Cuentas por cobrar y por pagar (abonos) | ✓ | |
-| Gastos del negocio y reportes (ganancia neta, trazabilidad) | ✓ | |
+| Gastos del negocio y reportes (balance, trazabilidad) | ✓ | |
 | Proveedores, inventario, pedidos y empleados | ✓ | |
 
 ## Módulos
@@ -207,7 +206,7 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
 - **Fecha de vencimiento (chocolates y sprays):** al menos 30 días después de hoy, para no comprar algo que está por vencer. Al editar, si la fecha no se cambia, no se vuelve a revisar.
 - **Stock:** al registrar el insumo se escribe el **stock inicial**. Después ya no se escribe a mano (al editar solo se muestra):
   - Lo que llega con un pedido se suma solo al marcarlo **Recibido**.
-  - Lo que se compra sin pedido se suma con **Stock** (en la lista) o **Agregar stock** (en Ver y en Editar), o escribiendo el nombre en Nuevo insumo: proveedor y paquetes, y se suma a lo que ya hay.
+  - Lo que se compra sin pedido se suma con **Stock** (en la lista) o **Agregar stock** (en Ver y en Editar), o escribiendo el nombre en Nuevo insumo: proveedor y paquetes, y se suma a lo que ya hay. Lo que se pagó (paquetes × precio del paquete de ese proveedor) queda solo como gasto de hoy en "Compras a proveedores".
   - Lo que sale en los arreglos se rebaja solo al terminar la solicitud.
   - Las flores que **se dañaron o se marchitaron** se rebajan aparte, con **Rebajar dañadas** en Ver. No se puede rebajar más de lo que hay, y la ventana avisa si deja de alcanzar para lo apartado.
   - Cada cambio queda en los movimientos con su motivo, el proveedor de la compra y quién lo hizo.
@@ -233,7 +232,7 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
   - Solo un pedido pendiente se puede editar, confirmar o **cancelar**.
   - Cancelar es para cuando el proveedor no confirma el pedido: queda "Cancelado", no se suma nada
     al inventario y el historial dice quién lo canceló.
-- **Confirmar:** se elige el pago, de contado o a crédito. A crédito el plazo es de 1 a 365 días.
+- **Confirmar:** se elige el pago, de contado o a crédito. A crédito el plazo es de 1 a 365 días. De contado, la compra queda sola como gasto de ese día; a crédito, cada abono queda como gasto del día en que se paga (ver Gastos del negocio).
 - **Recibir:** suma al stock las unidades de cada paquete.
 
 ### Catálogo de arreglos
@@ -366,10 +365,13 @@ Si sobra dinero, la propuesta lo dice, avisa si fue porque no hay más de alguna
 
 ### Ventas y ganancias
 
-- **Qué muestra:** las solicitudes **terminadas** de un período (hoy, esta semana, este mes, el mes pasado, todo o las fechas que se elijan). La fecha de la venta es el día en que se marcó como terminada.
-- **Totales:** lo vendido, lo que costaron las flores y productos, y la **ganancia** (vendido − costo), con el % que representa.
-- **Lista:** cada venta con su total, su costo y su ganancia. Las que se cotizaron en temporada alta lo indican.
-- Solo el propietario la ve.
+Muestra lo que entró y lo que salió de la caja en un período (hoy, esta semana, este mes, el mes pasado, este año, todo o las fechas que se elijan). Solo el propietario la ve.
+
+- **Vendido:** los encargos **terminados**, el día en que se marcaron como terminados, con cuántos arreglos y cuánto fue de express.
+- **Gastos:** lo que se pagó ese día: los gastos registrados en **Gastos** (luz, alquiler, salarios…) y las **compras a proveedores**, que se registran solas (ver Gastos del negocio). Ya no se resta "lo que costaron las flores de lo que se vendió": las flores se cuentan el día en que se le pagan al proveedor, así no se cuentan dos veces.
+- **Balance = vendido − gastos**, en verde si quedó dinero o en rojo si se gastó más de lo que se vendió.
+- **Ver el balance por día, semana o mes:** una tabla con cada día (o cada semana de lunes a domingo, o cada mes) que tuvo ventas o gastos: cuántas ventas, cuánto se vendió, cuánto se gastó y el balance, con el total abajo. **Ver detalle** de una semana o un mes muestra esos días uno por uno.
+- **Lo que se vendió:** cada venta con la fecha, el cliente, qué se vendió y el total, 7 por página. El detalle de cada gasto está en **Gastos**.
 
 ### Cuentas por cobrar y por pagar
 
@@ -383,7 +385,13 @@ En **Finanzas → Cuentas por cobrar y por pagar** (solo el propietario), con do
 
 ### Gastos del negocio
 
-En **Finanzas → Gastos** (solo el propietario). Son los pagos que no son mercadería: alquiler, electricidad, agua, internet y teléfono, salarios, transporte, mantenimiento, publicidad u otros (tabla `tbgasto`).
+En **Finanzas → Gastos** (solo el propietario). Es todo lo que sale de la caja (tabla `tbgasto`): alquiler, electricidad, agua, internet y teléfono, salarios, transporte, mantenimiento, publicidad u otros, y las **compras a proveedores**.
+
+- **Compras a proveedores (se registran solas):** no hay que registrarlas a mano. Quedan en la categoría "Compras a proveedores" con la etiqueta **Automático**, y `tbgastoorigen` y `tbgastoreferencia` dicen de dónde salieron:
+  - **Pedido de contado:** al confirmarlo se registra el monto de la compra como gasto de ese día (origen `Pedido`, con el id del pedido).
+  - **Pedido a crédito:** al confirmarlo no se registra nada; **cada abono** al proveedor es el gasto del día en que se paga (origen `Abono`, con el id del abono). Si el abono se anula, su gasto también queda anulado.
+  - **Compra sin pedido:** en **Inventario → Agregar stock**, los paquetes × el precio del paquete de ese proveedor quedan como gasto de hoy (origen `Compra`, con el id del movimiento de inventario).
+  - Estos gastos no se editan ni se anulan desde Gastos (se corrigen desde el pedido o el abono), y la categoría "Compras a proveedores" no se puede elegir al registrar un gasto a mano.
 
 - **Registrar y editar:** categoría (de la lista), descripción (3 a 100 caracteres, con letras), monto (mayor que 0, máximo 2 decimales) y fecha del pago (no futura ni de hace más de 2 años). No deja registrar dos veces el mismo gasto (misma categoría, descripción, monto y fecha).
 - **Anular:** un gasto mal registrado no se borra: se anula, deja de sumar y queda en el historial. Se puede "volver a contar" si no hay otro igual.
@@ -393,7 +401,7 @@ En **Finanzas → Gastos** (solo el propietario). Son los pagos que no son merca
 
 En **Finanzas → Reportes** (solo el propietario), con dos pestañas y un botón **Imprimir**:
 
-- **Ganancia neta:** para el período elegido, vendido (solicitudes terminadas) − costo de las flores y productos = ganancia bruta; − gastos del negocio (con el detalle por categoría) = **ganancia neta**, en verde si es positiva o en rojo si hubo pérdida, con el % de lo vendido. Al lado, una tabla con los últimos 6 meses para comparar.
+- **Balance:** para el período elegido, vendido (encargos terminados) − gastos (con el detalle por categoría, incluidas las compras a proveedores) = **balance**, en verde si es positivo o en rojo si hubo pérdida, con el % de lo vendido. Es la misma cuenta de **Ventas y ganancias**. Al lado, una tabla con los últimos 6 meses para comparar.
 - **Trazabilidad:** se elige una solicitud de arreglo o un pedido al proveedor y se ve todo lo que pasó, en orden, con fecha, hora y **responsable**: registro, asignación, cuándo empezó a prepararse, cuándo se terminó (y qué salió del inventario), cancelación, cada pago de la clienta; en los pedidos, cuándo se pidió, se confirmó (contado o crédito), se recibió (qué entró al inventario) y cada abono al proveedor. Si se anuló un abono, aparece cuándo, quién y por qué. Arriba dice cuánto tardó de principio a fin. El enlace se puede compartir (`index.php?modulo=reporte&ver=trazabilidad&tipo=solicitud&id=17`).
 
 ### Empleados
