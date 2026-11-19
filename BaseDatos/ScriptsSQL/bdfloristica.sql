@@ -18,7 +18,6 @@ CREATE TABLE tbproveedor (
     PRIMARY KEY (tbproveedorid)
 );
 
--- En los históricos de proveedor, tbempleadoid es quien hizo el cambio
 CREATE TABLE tbproveedornombreempresahistorico (
     tbproveedornombreempresahistoricoid INT,
     tbproveedorid INT,
@@ -55,7 +54,6 @@ CREATE TABLE tbproveedorcorreohistorico (
     PRIMARY KEY (tbproveedorcorreohistoricoid)
 );
 
--- Guarda provincia, cantón, distrito y dirección juntos, separados por " / "
 CREATE TABLE tbproveedorubicacionhistorico (
     tbproveedorubicacionhistoricoid INT,
     tbproveedorid INT,
@@ -74,11 +72,6 @@ CREATE TABLE tbproveedorestadohistorico (
     PRIMARY KEY (tbproveedorestadohistoricoid)
 );
 
--- ---------- Inventario (insumos) ----------
--- Datos que tienen todos los insumos. Lo propio de cada tipo va en su tabla de categoría.
--- Categoría: Flor, Envoltura (papel o cinta), Base, Chocolate, Peluche o Tarjeta.
--- preciounidad es lo que le cuesta a la floristería; precioventa es lo que se le cobra a la clienta
--- por una unidad cuando la pide en un arreglo personalizado o como adicional.
 CREATE TABLE tbinventario (
     tbinventarioid INT,
     tbproveedorid INT,
@@ -90,18 +83,12 @@ CREATE TABLE tbinventario (
     tbinventarioprecioventa DECIMAL(10,2),
     tbinventariostock INT,
     tbinventariostockminimo INT,
-    -- Stock reservado: unidades apartadas para solicitudes pendientes o en proceso.
-    -- Disponible = stock - reservado. No se puede pedir más de lo disponible.
     tbinventariostockreservado INT DEFAULT 0,
     tbinventarioestado TINYINT(1),
-    -- Foto del producto (chocolates, tarjetas, peluches...): sale en la proforma que se le manda al cliente
     tbinventariofoto VARCHAR(255),
     PRIMARY KEY (tbinventarioid)
 );
 
--- Otros proveedores de un insumo: el mismo insumo (el mismo paquete) también se le puede comprar
--- a otros proveedores, cada uno con su precio. El proveedor principal sigue en tbinventario.tbproveedorid
--- y su precio es el que se usa para el costo del insumo.
 CREATE TABLE tbinventariootroproveedor (
     tbinventariootroproveedorid INT,
     tbinventarioid INT,
@@ -110,7 +97,6 @@ CREATE TABLE tbinventariootroproveedor (
     PRIMARY KEY (tbinventariootroproveedorid)
 );
 
--- Catálogo de colores: los colores que se pueden elegir en los productos del inventario
 CREATE TABLE tbcolor (
     tbcolorid INT,
     tbcolornombre VARCHAR(30),
@@ -118,8 +104,6 @@ CREATE TABLE tbcolor (
     PRIMARY KEY (tbcolorid)
 );
 
--- Catálogo de tipos de flor (Rosa, Girasol...) y de follaje (Eucalipto, Helecho...).
--- Clase: Flor o Follaje.
 CREATE TABLE tbtipoflor (
     tbtipoflorid INT,
     tbtipoflornombre VARCHAR(50),
@@ -128,8 +112,6 @@ CREATE TABLE tbtipoflor (
     PRIMARY KEY (tbtipoflorid)
 );
 
--- Flores y follaje. Tipo: Flor o Follaje.
--- El tipo de flor (Rosa, Eucalipto...) y el color vienen de las tablas catálogo tbtipoflor y tbcolor.
 CREATE TABLE tbinventariocategoriaflor (
     tbinventariocategoriaflorid INT,
     tbinventarioid INT,
@@ -141,13 +123,6 @@ CREATE TABLE tbinventariocategoriaflor (
     PRIMARY KEY (tbinventariocategoriaflorid)
 );
 
--- Papel y cinta van en una sola tabla porque comparten casi todos sus atributos.
--- Clase: Papel o Cinta.
--- Tipo de papel: Coreano, Kraft, Seda, Celofán, Encerado; tipo de cinta: Satín, Organza, Yute, Raso, Papel.
--- Medida en cm: el papel lleva ancho x largo del pliego ("60 x 60"); la cinta, solo el ancho ("2.5").
--- Acabado (Mate, Brillante, Metalizado, Transparente) solo aplica al papel; en la cinta queda NULL.
--- Personalizable (1 = sí, 0 = no: si se le puede imprimir un nombre o mensaje) solo aplica a la cinta;
--- en el papel queda NULL.
 CREATE TABLE tbinventariocategoriaenvoltura (
     tbinventariocategoriaenvolturaid INT,
     tbinventarioid INT,
@@ -162,9 +137,6 @@ CREATE TABLE tbinventariocategoriaenvoltura (
     PRIMARY KEY (tbinventariocategoriaenvolturaid)
 );
 
--- Tipo: Plástica, Canasta, Caja, Florero, Madera, Espuma floral...
--- Material: Plástico, Madera, Vidrio, Cerámica, Cartón, Mimbre...
--- Medida en cm: alto, ancho, largo o diámetro ("20 x 20 x 15")
 CREATE TABLE tbinventariocategoriabase (
     tbinventariocategoriabaseid INT,
     tbinventarioid INT,
@@ -177,8 +149,6 @@ CREATE TABLE tbinventariocategoriabase (
     PRIMARY KEY (tbinventariocategoriabaseid)
 );
 
--- Tipo: Con leche, Oscuro, Blanco, Relleno... Presentación: Barra, Bombón, Trufa, Caja...
--- Peso en gramos
 CREATE TABLE tbinventariocategoriachocolate (
     tbinventariocategoriachocolateid INT,
     tbinventarioid INT,
@@ -191,7 +161,6 @@ CREATE TABLE tbinventariocategoriachocolate (
     PRIMARY KEY (tbinventariocategoriachocolateid)
 );
 
--- Tipo: Oso, Conejo, Perro, Corazón... Tamaño: alto en cm. Material: Felpa, Algodón, Poliéster...
 CREATE TABLE tbinventariocategoriapeluche (
     tbinventariocategoriapelucheid INT,
     tbinventarioid INT,
@@ -203,12 +172,6 @@ CREATE TABLE tbinventariocategoriapeluche (
     PRIMARY KEY (tbinventariocategoriapelucheid)
 );
 
--- Tipo: Felicitación, Dedicatoria, Mensaje, Etiqueta colgante...
--- Temática: Cumpleaños, Amor, Aniversario, Graduación, Condolencias...
--- Material: Cartulina, Papel kraft, Papel perlado, Opalina...
--- Medida en cm: ancho x largo ("10 x 7").
--- Personalizable: 1 si se le puede escribir o imprimir un mensaje, 0 si no.
--- Elaboración: Hecha en el negocio o Comprada.
 CREATE TABLE tbinventariocategoriatarjeta (
     tbinventariocategoriatarjetaid INT,
     tbinventarioid INT,
@@ -222,9 +185,6 @@ CREATE TABLE tbinventariocategoriatarjeta (
     PRIMARY KEY (tbinventariocategoriatarjetaid)
 );
 
--- Tipo: Pintura floral, Abrillantador de follaje o Aromatizante floral.
--- Color solo en la pintura y aroma solo en el aromatizante (lo demás queda NULL).
--- Cobro por flor: lo que se le cobra al cliente por cada flor pintada (solo la pintura floral).
 CREATE TABLE tbinventariocategoriaspray (
     tbinventariocategoriasprayid INT,
     tbinventarioid INT,
@@ -238,8 +198,6 @@ CREATE TABLE tbinventariocategoriaspray (
     PRIMARY KEY (tbinventariocategoriasprayid)
 );
 
--- Accesorios que se le agregan a un arreglo: corona, perfume, splash, moño...
--- Tipo: Corona, Perfume, Splash, Moño, Topper u Otro. Tamaño: Pequeño, Mediano, Grande o Único.
 CREATE TABLE tbinventariocategoriaaccesorio (
     tbinventariocategoriaaccesorioid INT,
     tbinventarioid INT,
@@ -277,11 +235,6 @@ CREATE TABLE tbconfirmacioncompra (
     PRIMARY KEY (tbconfirmacioncompraid)
 );
 
--- ---------- Cuentas por pagar y por cobrar ----------
--- Abonos a un pedido comprado a crédito (cuenta por pagar al proveedor).
--- Saldo del pedido = monto de la confirmación de compra - lo abonado. Vence: fecha de confirmación + plazo.
--- Método: Efectivo, SINPE Móvil, Transferencia o Tarjeta.
--- Estado: 1 cuenta, 0 anulado (un abono mal registrado no se borra: se anula con su motivo y deja de sumar).
 CREATE TABLE tbpedidoabono (
     tbpedidoabonoid INT,
     tbpedidoid INT,
@@ -295,9 +248,6 @@ CREATE TABLE tbpedidoabono (
     PRIMARY KEY (tbpedidoabonoid)
 );
 
--- Abonos de la clienta a una solicitud (cuenta por cobrar). Saldo = total de la solicitud - lo abonado.
--- Puede pagar un adelanto al pedir y el resto después; si se entrega sin pagar todo, es una venta a crédito.
--- Estado y motivo de anulación: igual que en tbpedidoabono.
 CREATE TABLE tbsolicitudencargoabono (
     tbsolicitudencargoabonoid INT,
     tbsolicitudencargoid INT,
@@ -311,7 +261,6 @@ CREATE TABLE tbsolicitudencargoabono (
     PRIMARY KEY (tbsolicitudencargoabonoid)
 );
 
--- Históricos de los abonos: cuándo y quién anuló cada uno (el valor es el estado: 0 anulado)
 CREATE TABLE tbpedidoabonoestadohistorico (
     tbpedidoabonoestadohistoricoid INT,
     tbpedidoabonoid INT,
@@ -330,10 +279,6 @@ CREATE TABLE tbsolicitudencargoabonoestadohistorico (
     PRIMARY KEY (tbsolicitudencargoabonoestadohistoricoid)
 );
 
--- ---------- Gastos del negocio ----------
--- Lo que se paga para que la floristería funcione y no es mercadería: alquiler, luz, agua, internet,
--- salarios, transporte, mantenimiento, publicidad u otros. Ganancia neta = ventas - costo de lo vendido - gastos.
--- Estado: 1 cuenta, 0 anulado (no se borra: queda en el historial).
 CREATE TABLE tbgasto (
     tbgastoid INT,
     tbgastocategoria VARCHAR(30),
@@ -342,10 +287,11 @@ CREATE TABLE tbgasto (
     tbgastofecha DATE,
     tbempleadoid INT,
     tbgastoestado TINYINT(1),
+    tbgastoorigen VARCHAR(20) DEFAULT 'Manual',
+    tbgastoreferencia INT,
     PRIMARY KEY (tbgastoid)
 );
 
--- Históricos de los gastos
 CREATE TABLE tbgastocategoriahistorico (
     tbgastocategoriahistoricoid INT,
     tbgastoid INT,
@@ -397,7 +343,6 @@ CREATE TABLE tbarreglofloral (
     PRIMARY KEY (tbarreglofloralid)
 );
 
--- Insumos que lleva un arreglo del catálogo y cuántas unidades de cada uno
 CREATE TABLE tbarreglofloralinsumo (
     tbarreglofloralinsumoid INT,
     tbarreglofloralid INT,
@@ -416,7 +361,6 @@ CREATE TABLE tbempleado (
     PRIMARY KEY (tbempleadoid)
 );
 
--- Clientas que hacen solicitudes de encargo
 CREATE TABLE tbcliente (
     tbclienteid INT,
     tbclientenombre VARCHAR(100),
@@ -428,8 +372,6 @@ CREATE TABLE tbcliente (
     PRIMARY KEY (tbclienteid)
 );
 
--- Zonas del servicio express y lo que se cobra por llevar el arreglo.
--- El propietario las crea y les cambia el precio cuando quiera.
 CREATE TABLE tbzonaentrega (
     tbzonaentregaid INT,
     tbzonaentreganombre VARCHAR(100),
@@ -439,16 +381,6 @@ CREATE TABLE tbzonaentrega (
     PRIMARY KEY (tbzonaentregaid)
 );
 
--- Solicitud de encargo: lo que pide una clienta y quién lo prepara.
--- Tipo: Predefinido (un arreglo del catálogo, con adicionales si quiere) o
---       Personalizado (la clienta escoge los insumos uno por uno).
--- Modalidad (solo personalizado):
---   Presupuesto: la clienta da un monto y se agregan insumos hasta llegar a ese límite.
---   Libre: se agregan insumos hasta que la clienta decide que ya está; el total sale de lo escogido.
--- Express: si se lleva a domicilio, con la zona, la dirección y el costo de la zona en ese momento.
--- Los precios se copian al registrar la solicitud, así un cambio de precio después no cambia lo cobrado.
--- subtotal = precioarreglo x cantidad + insumos; total = subtotal + costoexpress.
--- Estado: Pendiente, En proceso, Terminado o Cancelado.
 CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargoid INT,
     tbclienteid INT,
@@ -470,26 +402,17 @@ CREATE TABLE tbsolicitudencargo (
     tbsolicitudencargoestado VARCHAR(20),
     tbsolicitudencargofecharegistro DATE,
     tbtemporadaid INT,
-    -- Flores pintadas: el spray (producto de inventario), cuántas flores, el cobro por flor y el total
     tbsolicitudencargosprayid INT,
     tbsolicitudencargoflorespintadas INT,
     tbsolicitudencargopreciopintura DECIMAL(10,2),
     tbsolicitudencargocostopintura DECIMAL(10,2),
-    -- Personalizados: % de ganancia sobre el costo (100 = el precio es el doble del costo)
     tbsolicitudencargoporcentaje DECIMAL(6,2),
-    -- Lo que costaron las flores y productos (para calcular la ganancia en Ventas)
     tbsolicitudencargocosto DECIMAL(10,2),
-    -- Foto de cómo quedó el arreglo (personalizados); se puede agregar después de registrarla
     tbsolicitudencargofoto VARCHAR(255),
-    -- Foto de referencia de lo que quiere la clienta (personalizados): la del arreglo del catálogo
-    -- de la propuesta que se usó, o la foto que mandó la clienta cuando se valoró el ramo
     tbsolicitudencargoreferencia VARCHAR(255),
     PRIMARY KEY (tbsolicitudencargoid)
 );
 
--- Insumos de una solicitud: en un predefinido son los adicionales (chocolates, peluches,
--- cintas...); en un personalizado, todo lo que lleva el arreglo.
--- preciounitario es el precio de venta del insumo cuando se agregó.
 CREATE TABLE tbsolicitudencargoinsumo (
     tbsolicitudencargoinsumoid INT,
     tbsolicitudencargoid INT,
@@ -499,10 +422,6 @@ CREATE TABLE tbsolicitudencargoinsumo (
     PRIMARY KEY (tbsolicitudencargoinsumoid)
 );
 
--- ---------- Históricos y movimientos ----------
--- En todos, tbempleadoid es quien hizo el cambio (el propietario o un empleado)
-
--- Cada cambio de estado de una solicitud: Pendiente, En proceso, Terminado o Cancelado
 CREATE TABLE tbsolicitudencargoestadohistorico (
     tbsolicitudencargoestadohistoricoid INT,
     tbsolicitudencargoid INT,
@@ -512,7 +431,6 @@ CREATE TABLE tbsolicitudencargoestadohistorico (
     PRIMARY KEY (tbsolicitudencargoestadohistoricoid)
 );
 
--- Cada asignación de una solicitud. El valor es el id del empleado al que se le asignó
 CREATE TABLE tbsolicitudencargoempleadohistorico (
     tbsolicitudencargoempleadohistoricoid INT,
     tbsolicitudencargoid INT,
@@ -522,11 +440,6 @@ CREATE TABLE tbsolicitudencargoempleadohistorico (
     PRIMARY KEY (tbsolicitudencargoempleadohistoricoid)
 );
 
--- Cada vez que cambia el stock de un producto y por qué.
--- Tipo: Inicial, Entrada (pedido recibido), Salida (solicitud de encargo terminada), Compra (stock que se
--- compró sin pedido; tbproveedorid dice a quién) o Dañado (se dañaron o se marchitaron).
--- Ajuste es de antes, cuando el stock se corregía editando el producto.
--- La cantidad es positiva si entra y negativa si sale.
 CREATE TABLE tbinventariomovimiento (
     tbinventariomovimientoid INT,
     tbinventarioid INT,
@@ -541,8 +454,6 @@ CREATE TABLE tbinventariomovimiento (
     PRIMARY KEY (tbinventariomovimientoid)
 );
 
--- ---------- Históricos de inventario ----------
--- Precio: guarda el precio del paquete y las unidades juntos, por ejemplo "12000.00 / 24"
 CREATE TABLE tbinventariopreciohistorico (
     tbinventariopreciohistoricoid INT,
     tbinventarioid INT,
@@ -552,7 +463,6 @@ CREATE TABLE tbinventariopreciohistorico (
     PRIMARY KEY (tbinventariopreciohistoricoid)
 );
 
--- Precio de venta por unidad (lo que se le cobra a la clienta)
 CREATE TABLE tbinventarioprecioventahistorico (
     tbinventarioprecioventahistoricoid INT,
     tbinventarioid INT,
@@ -571,7 +481,6 @@ CREATE TABLE tbinventariostockminimohistorico (
     PRIMARY KEY (tbinventariostockminimohistoricoid)
 );
 
--- El valor es el id del proveedor
 CREATE TABLE tbinventarioproveedorhistorico (
     tbinventarioproveedorhistoricoid INT,
     tbinventarioid INT,
@@ -599,7 +508,6 @@ CREATE TABLE tbinventarionombrehistorico (
     PRIMARY KEY (tbinventarionombrehistoricoid)
 );
 
--- Cuándo se agregó, cambió o quitó la foto del producto (el valor es la ruta; vacío si se quitó)
 CREATE TABLE tbinventariofotohistorico (
     tbinventariofotohistoricoid INT,
     tbinventarioid INT,
@@ -609,7 +517,6 @@ CREATE TABLE tbinventariofotohistorico (
     PRIMARY KEY (tbinventariofotohistoricoid)
 );
 
--- ---------- Históricos del catálogo de arreglos ----------
 CREATE TABLE tbarreglofloralpreciohistorico (
     tbarreglofloralpreciohistoricoid INT,
     tbarreglofloralid INT,
@@ -637,9 +544,6 @@ CREATE TABLE tbarreglofloralnombrehistorico (
     PRIMARY KEY (tbarreglofloralnombrehistoricoid)
 );
 
--- ---------- Históricos de empleados ----------
--- Aquí tbempleadoid es el empleado al que se le hizo el cambio
--- y tbempleadoidresponsable es quien lo hizo (normalmente el propietario)
 CREATE TABLE tbempleadonombrehistorico (
     tbempleadonombrehistoricoid INT,
     tbempleadoid INT,
@@ -676,7 +580,6 @@ CREATE TABLE tbempleadousuariohistorico (
     PRIMARY KEY (tbempleadousuariohistoricoid)
 );
 
--- De la contraseña NUNCA se guarda el valor: solo "Asignada" o "Cambiada"
 CREATE TABLE tbempleadoclavehistorico (
     tbempleadoclavehistoricoid INT,
     tbempleadoid INT,
@@ -695,8 +598,6 @@ CREATE TABLE tbempleadoestadohistorico (
     PRIMARY KEY (tbempleadoestadohistoricoid)
 );
 
--- ---------- Históricos de pedidos y solicitudes de encargo ----------
--- Pendiente, Confirmado o Recibido (así queda la fecha en que se recibió)
 CREATE TABLE tbpedidoestadohistorico (
     tbpedidoestadohistoricoid INT,
     tbpedidoid INT,
@@ -715,7 +616,6 @@ CREATE TABLE tbsolicitudencargofechaentregahistorico (
     PRIMARY KEY (tbsolicitudencargofechaentregahistoricoid)
 );
 
--- El total cobrado: cambia si se agregan o quitan insumos o si cambia el express
 CREATE TABLE tbsolicitudencargototalhistorico (
     tbsolicitudencargototalhistoricoid INT,
     tbsolicitudencargoid INT,
@@ -724,8 +624,6 @@ CREATE TABLE tbsolicitudencargototalhistorico (
     tbsolicitudencargototalhistoricofecha DATETIME,
     PRIMARY KEY (tbsolicitudencargototalhistoricoid)
 );
--- Huella de la foto de cada arreglo del catálogo, para la búsqueda por foto.
--- Se calcula sola la primera vez que se busca y otra vez si cambia la foto.
 CREATE TABLE tbarreglofloralhuella (
     tbarreglofloralid INT,
     tbarreglofloralhuellafoto VARCHAR(255),
@@ -749,7 +647,6 @@ CREATE TABLE tbsolicitudencargoreferenciahistorico (
     PRIMARY KEY (tbsolicitudencargoreferenciahistoricoid)
 );
 
--- ---------- Históricos de clientes ----------
 CREATE TABLE tbclientenombrehistorico (
     tbclientenombrehistoricoid INT,
     tbclienteid INT,
@@ -786,7 +683,6 @@ CREATE TABLE tbclienteestadohistorico (
     PRIMARY KEY (tbclienteestadohistoricoid)
 );
 
--- ---------- Históricos de zonas de entrega (servicio express) ----------
 CREATE TABLE tbzonaentreganombrehistorico (
     tbzonaentreganombrehistoricoid INT,
     tbzonaentregaid INT,
@@ -814,10 +710,6 @@ CREATE TABLE tbzonaentregaestadohistorico (
     PRIMARY KEY (tbzonaentregaestadohistoricoid)
 );
 
-
--- ---------- Temporada alta ----------
--- Hay una sola: "Temporada alta". tbtemporadavigente = 1 cuando está encendida.
--- Apagada, se usan los precios normales (temporada baja).
 CREATE TABLE tbtemporada (
     tbtemporadaid INT,
     tbtemporadanombre VARCHAR(100),
@@ -827,9 +719,6 @@ CREATE TABLE tbtemporada (
     PRIMARY KEY (tbtemporadaid)
 );
 
--- Lo que cobra el proveedor por el paquete de un producto en temporada alta.
--- El precio de venta del producto y el de los arreglos que lo llevan se calculan solos:
--- suben lo mismo que subió el costo (se mantiene la ganancia en colones).
 CREATE TABLE tbinventariotemporada (
     tbinventariotemporadaid INT,
     tbinventarioid INT,
@@ -838,7 +727,6 @@ CREATE TABLE tbinventariotemporada (
     PRIMARY KEY (tbinventariotemporadaid)
 );
 
--- ---------- Históricos de temporadas ----------
 CREATE TABLE tbtemporadanombrehistorico (
     tbtemporadanombrehistoricoid INT,
     tbtemporadaid INT,
@@ -848,7 +736,6 @@ CREATE TABLE tbtemporadanombrehistorico (
     PRIMARY KEY (tbtemporadanombrehistoricoid)
 );
 
--- Cuándo se activaron (1) y desactivaron (0) los precios de la temporada
 CREATE TABLE tbtemporadavigentehistorico (
     tbtemporadavigentehistoricoid INT,
     tbtemporadaid INT,
@@ -867,8 +754,6 @@ CREATE TABLE tbtemporadaestadohistorico (
     PRIMARY KEY (tbtemporadaestadohistoricoid)
 );
 
--- Precio del paquete de cada producto en cada temporada.
--- El valor es "idtemporada|precio"; si se quitó el precio queda "idtemporada|".
 CREATE TABLE tbinventariopreciotemporadahistorico (
     tbinventariopreciotemporadahistoricoid INT,
     tbinventarioid INT,
@@ -878,7 +763,6 @@ CREATE TABLE tbinventariopreciotemporadahistorico (
     PRIMARY KEY (tbinventariopreciotemporadahistoricoid)
 );
 
--- Otros proveedores de cada insumo. El valor es "idproveedor|precio"; si se quitó queda "idproveedor|".
 CREATE TABLE tbinventariootroproveedorhistorico (
     tbinventariootroproveedorhistoricoid INT,
     tbinventarioid INT,
