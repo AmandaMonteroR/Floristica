@@ -14,7 +14,7 @@
     <header class="encabezado">
         <div>
             <h1>Clientes</h1>
-            <p class="subtitulo">Personas que hacen encargos, casi siempre por WhatsApp.</p>
+            
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo cliente</button>
     </header>

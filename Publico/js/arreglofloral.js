@@ -137,6 +137,368 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
     });
 }
 
+/* ---------- Catálogo en PDF para clientes ---------- */
+
+const dialogoexportarcatalogo = document.getElementById('dialogoexportarcatalogo');
+const hojacatalogo = document.getElementById('hojacatalogo');
+const avisoexportarcatalogo = document.getElementById('avisoexportarcatalogo');
+
+// Usa las mismas rutas que las fotografías de la galería de Catálogo.
+function fotocatalogo(ruta) {
+    if (!ruta) {
+        return '';
+    }
+    try {
+        const url = new URL(String(ruta), document.baseURI);
+        return (url.protocol === 'http:' || url.protocol === 'https:') && url.origin === location.origin
+            ? url.href : '';
+    } catch (error) {
+        return '';
+    }
+}
+
+function fichaexportacion(nombre, precio, foto, descripcion = '') {
+    const url = fotocatalogo(foto);
+    return `
+        <article class="catalogo-ficha">
+            <div class="catalogo-imagen">
+                <span class="catalogo-sinfoto" aria-label="Sin fotografía">✿<small>Sin fotografía</small></span>
+                ${url ? `<img src="${escapar(url)}" alt="${escapar(nombre)}" loading="eager">` : ''}
+            </div>
+            <div class="catalogo-info">
+                <strong>${escapar(nombre)}</strong>
+                ${descripcion ? `<p>${escapar(descripcion)}</p>` : ''}
+                <span class="catalogo-precio">${formatearmonto(precio)}</span>
+            </div>
+        </article>`;
+}
+
+function seccionexportacion(titulo, items) {
+    if (!items.length) {
+        return '';
+    }
+    return `<section class="catalogo-seccion">
+        <h4>${escapar(titulo)}</h4>
+        <div class="catalogo-productos">${items.join('')}</div>
+    </section>`;
+}
+
+function documentocatalogo(arreglos, adicionales) {
+    const nombres = (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' });
+    const tarjetasarreglos = [...arreglos]
+        .sort((a, b) => nombres(a.tbarreglofloralnombre, b.tbarreglofloralnombre))
+        .map((arreglo) => fichaexportacion(
+            arreglo.tbarreglofloralnombre,
+            arreglo.precioactual,
+            arreglo.tbarreglofloralfoto,
+            arreglo.tbarreglofloraldescripcion
+        ));
+
+    const grupos = [
+        ['Chocolates', 'Chocolate'],
+        ['Peluches', 'Peluche'],
+        ['Tarjetas y mensajes', 'Tarjeta'],
+        ['Coronas, perfumes y accesorios', 'Accesorio'],
+    ];
+
+    let contenido = seccionexportacion('Arreglos florales', tarjetasarreglos);
+    grupos.forEach(([titulo, categoria]) => {
+        const items = adicionales.filter((producto) => producto.tbinventariocategoria === categoria)
+            .sort((a, b) => nombres(a.tbinventarionombre, b.tbinventarionombre))
+            .map((producto) => fichaexportacion(
+                producto.tbinventarionombre,
+                producto.tbinventariopreciovigente,
+                producto.tbinventariofoto
+            ));
+        contenido += seccionexportacion(titulo, items);
+    });
+
+    const cintas = adicionales.filter((producto) => producto.tbinventariocategoria === 'Envoltura'
+        && /cinta|frase|personalizad|moño|lazo/i.test(producto.tbinventarionombre))
+        .sort((a, b) => nombres(a.tbinventarionombre, b.tbinventarionombre))
+        .map((producto) => fichaexportacion(
+            producto.tbinventarionombre,
+            producto.tbinventariopreciovigente,
+            producto.tbinventariofoto
+        ));
+    contenido += seccionexportacion('Cintas y personalizaciones', cintas);
+
+    const fecha = new Date().toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric' });
+    return `<div class="catalogo-portada">
+            <div class="catalogo-marca"><img src="imagenes/logo.png" alt="">Floristica</div>
+            <div><h3>Flores y regalos para cada ocasión</h3>
+                <p class="catalogo-fecha">Catálogo actualizado el ${escapar(fecha)}</p></div>
+        </div>
+        ${contenido}
+        <footer class="catalogo-pie">Precios en colones costarricenses, sujetos a disponibilidad.<br>
+            ¡Gracias por preferirnos!</footer>`;
+}
+
+// La foto se oculta si ya no existe en el servidor y se ve el indicador Sin fotografía.
+function revisarfotosexportacion() {
+    hojacatalogo.querySelectorAll('.catalogo-imagen img').forEach((imagen) => {
+        imagen.addEventListener('error', () => { imagen.remove(); }, { once: true });
+        if (imagen.complete && imagen.naturalWidth === 0) {
+            imagen.remove();
+        }
+    });
+}
+
+async function exportarcatalogo() {
+    const [respuestaarreglos, respuestaproductos] = await Promise.all([
+        consultar('listar', { texto: '', estado: '1' }),
+        consultar('productos'),
+    ]);
+
+    if (!respuestaarreglos.exito || !respuestaproductos.exito) {
+        mostraraviso('No se pudo cargar el catálogo para exportarlo. Intente de nuevo.', 'error');
+        return;
+    }
+
+    const arreglos = respuestaarreglos.datos.filter((arreglo) => Number(arreglo.tbarreglofloralestado) === 1);
+    const disponibles = respuestaproductos.datos.filter((producto) =>
+        Number(producto.tbinventariodisponible) > 0 && Number(producto.tbinventariopreciovigente) > 0);
+    const adicionales = disponibles.filter((producto) =>
+        ['Chocolate', 'Peluche', 'Tarjeta', 'Accesorio', 'Envoltura'].includes(producto.tbinventariocategoria));
+
+    if (arreglos.length === 0 && adicionales.length === 0) {
+        mostraraviso('No hay arreglos ni regalos disponibles para exportar.', 'error');
+        return;
+    }
+
+    avisoexportarcatalogo.hidden = true;
+    hojacatalogo.innerHTML = documentocatalogo(arreglos, adicionales);
+    revisarfotosexportacion();
+    dialogoexportarcatalogo.showModal();
+    dialogoexportarcatalogo.scrollTop = 0;
+}
+
+// Generación segura: reutiliza jsPDF (como la proforma), sin capturar el catálogo entero.
+// Las fotografías se reducen individualmente; nunca se crea un lienzo de varias páginas.
+function imagenparapdf(url) {
+    return new Promise((resolver) => {
+        if (!url) { resolver(null); return; }
+        const imagen = new Image();
+        let finalizado = false;
+        const terminar = (resultado) => {
+            if (finalizado) { return; }
+            finalizado = true;
+            clearTimeout(limite);
+            imagen.onload = null;
+            imagen.onerror = null;
+            resolver(resultado);
+        };
+        const limite = setTimeout(() => terminar(null), 8000);
+        imagen.onload = () => terminar(imagen);
+        imagen.onerror = () => terminar(null);
+        imagen.src = url;
+    });
+}
+
+function fichasparapdf() {
+    return [...hojacatalogo.querySelectorAll('.catalogo-seccion')].map((seccion) => ({
+        titulo: seccion.querySelector('h4')?.textContent || 'Productos',
+        productos: [...seccion.querySelectorAll('.catalogo-ficha')].map((ficha) => ({
+            nombre: ficha.querySelector('.catalogo-info strong')?.textContent || 'Producto',
+            descripcion: ficha.querySelector('.catalogo-info p')?.textContent || '',
+            precio: ficha.querySelector('.catalogo-precio')?.textContent || '',
+            foto: ficha.querySelector('.catalogo-imagen img')?.src || '',
+        })),
+    }));
+}
+
+async function generarcatalogopdf() {
+    if (!window.jspdf?.jsPDF) {
+        throw new Error('No se pudo cargar la biblioteca de PDF. Recargue la página.');
+    }
+    const secciones = fichasparapdf();
+    if (!secciones.some((seccion) => seccion.productos.length)) {
+        throw new Error('No hay productos para generar el PDF.');
+    }
+
+    const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter', compress: true });
+    const ancho = pdf.internal.pageSize.getWidth();
+    const alto = pdf.internal.pageSize.getHeight();
+    const margen = 36;
+    const separacion = 12;
+    const anchoFicha = (ancho - margen * 2 - separacion) / 2;
+    const altoFicha = 192;
+    let filaY = 99;
+    let columna = 0;
+    let pagina = 1;
+
+    function cabecerapagina() {
+        pdf.setFillColor(176, 33, 84);
+        pdf.rect(0, 0, ancho, 8, 'F');
+        pdf.setTextColor(164, 32, 82);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(19);
+        pdf.text('Floristica', margen, 40);
+        pdf.setTextColor(60, 41, 52);
+        pdf.setFontSize(12);
+        pdf.text('Catálogo de flores y regalos', margen, 57);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(125, 95, 110);
+        pdf.text(new Date().toLocaleDateString('es-CR'), ancho - margen, 42, { align: 'right' });
+        pdf.setDrawColor(235, 195, 212);
+        pdf.line(margen, 68, ancho - margen, 68);
+    }
+
+    function nuevapagina() {
+        pdf.addPage();
+        pagina += 1;
+        filaY = 99;
+        columna = 0;
+        cabecerapagina();
+    }
+
+    function escribirtitulo(titulo) {
+        if (columna !== 0) { columna = 0; filaY += altoFicha + separacion; }
+        if (filaY + 31 + altoFicha > alto - 53) { nuevapagina(); }
+        pdf.setTextColor(176, 33, 84);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        pdf.text(titulo, margen, filaY);
+        pdf.setDrawColor(237, 201, 216);
+        pdf.line(margen, filaY + 6, ancho - margen, filaY + 6);
+        filaY += 22;
+    }
+
+    async function dibujarficha(producto) {
+        if (columna === 0 && filaY + altoFicha > alto - 53) { nuevapagina(); }
+        const x = margen + columna * (anchoFicha + separacion);
+        const y = filaY;
+        const imagenX = x + 8;
+        const imagenY = y + 8;
+        const imagenAncho = anchoFicha - 16;
+        const imagenAlto = 115;
+
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(236, 210, 221);
+        pdf.roundedRect(x, y, anchoFicha, altoFicha, 6, 6, 'FD');
+        pdf.setFillColor(255, 240, 245);
+        pdf.roundedRect(imagenX, imagenY, imagenAncho, imagenAlto, 4, 4, 'F');
+
+        const imagen = await imagenparapdf(producto.foto);
+        if (imagen) {
+            try {
+                // Máximo 360 × 190 píxeles por fotografía; se libera tras agregarla al PDF.
+                const lienzo = document.createElement('canvas');
+                lienzo.width = 360;
+                lienzo.height = 190;
+                const contexto = lienzo.getContext('2d');
+                const escala = Math.max(lienzo.width / imagen.naturalWidth, lienzo.height / imagen.naturalHeight);
+                const anchoReal = imagen.naturalWidth * escala;
+                const altoReal = imagen.naturalHeight * escala;
+                contexto.fillStyle = '#fff0f5';
+                contexto.fillRect(0, 0, lienzo.width, lienzo.height);
+                contexto.drawImage(imagen, (lienzo.width - anchoReal) / 2, (lienzo.height - altoReal) / 2,
+                    anchoReal, altoReal);
+                pdf.addImage(lienzo.toDataURL('image/jpeg', 0.7), 'JPEG', imagenX, imagenY, imagenAncho, imagenAlto);
+                lienzo.width = 0;
+                lienzo.height = 0;
+            } catch (error) {
+                // Una foto dañada no impide exportar los demás productos.
+            }
+        } else {
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(160, 80, 112);
+            pdf.text('Sin fotografía', x + anchoFicha / 2, imagenY + 61, { align: 'center' });
+        }
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        pdf.setTextColor(55, 39, 49);
+        const lineasNombre = pdf.splitTextToSize(producto.nombre, anchoFicha - 20).slice(0, 2);
+        pdf.text(lineasNombre, x + 10, y + 140);
+        if (producto.descripcion) {
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(8);
+            pdf.setTextColor(128, 100, 113);
+            const descripcion = pdf.splitTextToSize(producto.descripcion, anchoFicha - 20).slice(0, 1);
+            pdf.text(descripcion, x + 10, y + 162);
+        }
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(12);
+        pdf.setTextColor(176, 33, 84);
+        pdf.text(producto.precio.replace('₡', 'CRC '), x + 10, y + 182);
+
+        if (columna === 0) { columna = 1; }
+        else { columna = 0; filaY += altoFicha + separacion; }
+    }
+
+    cabecerapagina();
+    for (const seccion of secciones) {
+        if (!seccion.productos.length) { continue; }
+        escribirtitulo(seccion.titulo);
+        for (const producto of seccion.productos) {
+            await dibujarficha(producto);
+            // Permite que el navegador siga respondiendo durante catálogos grandes.
+            await new Promise((resolver) => setTimeout(resolver, 0));
+        }
+    }
+
+    const totalPaginas = pdf.internal.getNumberOfPages();
+    for (let indice = 1; indice <= totalPaginas; indice += 1) {
+        pdf.setPage(indice);
+        pdf.setDrawColor(237, 201, 216);
+        pdf.line(margen, alto - 40, ancho - margen, alto - 40);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(130, 101, 118);
+        pdf.text('Precios en colones, sujetos a disponibilidad.', margen, alto - 27);
+        pdf.text(`${indice} / ${totalPaginas}`, ancho - margen, alto - 27, { align: 'right' });
+    }
+    pdf.setProperties({ title: 'Catálogo Floristica', creator: 'Floristica' });
+    return pdf;
+}
+
+async function descargarcatalogopdf(compartir = false) {
+    const boton = document.getElementById(compartir ? 'botoncompartircatalogo' : 'botonpdfcatalogo');
+    const aviso = avisoexportarcatalogo;
+    aviso.hidden = true;
+    document.getElementById('botonpdfcatalogo').disabled = true;
+    document.getElementById('botoncompartircatalogo').disabled = true;
+    const textoAnterior = boton.textContent;
+    boton.textContent = 'Generando PDF…';
+
+    try {
+        const pdf = await generarcatalogopdf();
+        const nombre = `Catalogo_Floristica_${new Date().toISOString().slice(0, 10)}.pdf`;
+        if (compartir && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+            const archivo = new File([pdf.output('blob')], nombre, { type: 'application/pdf' });
+            if (navigator.canShare({ files: [archivo] })) {
+                try { await navigator.share({ files: [archivo], title: 'Catálogo Floristica' }); }
+                catch (error) { if (error.name !== 'AbortError') { throw error; } }
+                return;
+            }
+        }
+        pdf.save(nombre);
+        if (compartir) {
+            aviso.textContent = 'Se descargó el PDF. Puede adjuntarlo en WhatsApp o compartirlo desde Descargas.';
+            aviso.className = 'aviso aviso-info';
+            aviso.hidden = false;
+        }
+    } catch (error) {
+        aviso.textContent = error.message || 'No se pudo generar el PDF. Use Imprimir como alternativa.';
+        aviso.className = 'aviso aviso-error';
+        aviso.hidden = false;
+    } finally {
+        boton.textContent = textoAnterior;
+        document.getElementById('botonpdfcatalogo').disabled = false;
+        document.getElementById('botoncompartircatalogo').disabled = false;
+    }
+}
+
+function imprimircatalogo() {
+    const titulo = document.title;
+    document.title = 'Catálogo Floristica';
+    window.addEventListener('afterprint', () => { document.title = titulo; }, { once: true });
+    window.print();
+}
+
 /* ---------- Productos del inventario ---------- */
 
 async function cargarproductos() {
@@ -926,6 +1288,12 @@ if (botonverhistorial) {
 }
 
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
+
+document.getElementById('botonexportarcatalogo').addEventListener('click', exportarcatalogo);
+document.getElementById('botonpdfcatalogo').addEventListener('click', () => descargarcatalogopdf());
+document.getElementById('botoncompartircatalogo').addEventListener('click', () => descargarcatalogopdf(true));
+document.getElementById('botonimprimircatalogo').addEventListener('click', imprimircatalogo);
+document.getElementById('botoncerrarcatalogo').addEventListener('click', () => dialogoexportarcatalogo.close());
 
 cargararreglos();
 cargarproductos();

@@ -14,7 +14,6 @@
     <header class="encabezado">
         <div>
             <h1>Temporada alta</h1>
-            <p class="subtitulo">Cuando suben las flores (San Valentín, Día de la Madre…). Se enciende y se apaga a mano.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonhistorial">Historial</button>
     </header>

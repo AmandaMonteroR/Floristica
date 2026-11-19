@@ -17,7 +17,6 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
     <header class="encabezado">
         <div>
             <h1>Reportes</h1>
-            <p class="subtitulo">Cuánto queda después de pagar todo (lo vendido menos los gastos), y la historia completa de cada encargo y cada pedido.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonimprimir">Imprimir</button>
     </header>

@@ -6,6 +6,55 @@
     <title>Catálogo | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
+    <!-- Diseño propio de la vista previa para el cliente; no modifica los estilos de otras pantallas. -->
+    <style>
+        #dialogoexportarcatalogo { width: min(930px, calc(100% - 2rem)); }
+        #dialogoexportarcatalogo .barra-proforma { align-items: center; margin: 0.75rem 0 1rem; }
+        #dialogoexportarcatalogo .cabecera-modal-inventario { margin-bottom: 0; }
+        #hojacatalogo { background: #fff; color: #392733; }
+        #hojacatalogo .catalogo-portada { display: flex; align-items: center; justify-content: space-between;
+            gap: 1rem; border-bottom: 3px solid #bf295f; padding-bottom: 1rem; }
+        #hojacatalogo .catalogo-marca { display: flex; align-items: center; gap: 0.65rem; color: #a62052;
+            font-weight: 700; font-size: 1.35rem; }
+        #hojacatalogo .catalogo-marca img { height: 52px; width: 52px; object-fit: contain; }
+        #hojacatalogo .catalogo-portada h3 { margin: 0; font-size: 1.5rem; color: #3a2230; }
+        #hojacatalogo .catalogo-fecha { font-size: 0.76rem; color: #856675; margin-top: 0.3rem; }
+        #hojacatalogo .catalogo-seccion { margin-top: 1.55rem; }
+        #hojacatalogo .catalogo-seccion h4 { margin: 0 0 0.8rem; padding-bottom: 0.45rem;
+            border-bottom: 1px solid #edc9d8; color: #ad2455; font-size: 1.1rem; }
+        #hojacatalogo .catalogo-productos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
+        #hojacatalogo .catalogo-ficha { display: flex; flex-direction: column; border: 1px solid #ecd2dc;
+            border-radius: 0.65rem; overflow: hidden; background: white; break-inside: avoid; }
+        #hojacatalogo .catalogo-imagen { position: relative; height: 150px; background: #fff0f5; }
+        #hojacatalogo .catalogo-imagen img { display: block; position: absolute; inset: 0;
+            width: 100%; height: 100%; object-fit: cover; }
+        #hojacatalogo .catalogo-sinfoto { position: absolute; inset: 0; display: grid; place-content: center;
+            gap: 0.25rem; text-align: center; color: #a54a70; font-size: 1.5rem; }
+        #hojacatalogo .catalogo-sinfoto small { font-size: 0.7rem; }
+        #hojacatalogo .catalogo-info { display: flex; flex: 1; flex-direction: column; gap: 0.4rem; padding: 0.75rem; }
+        #hojacatalogo .catalogo-info strong { font-size: 0.86rem; line-height: 1.3; overflow-wrap: anywhere; }
+        #hojacatalogo .catalogo-info p { color: #856675; font-size: 0.71rem; line-height: 1.35; margin: 0; }
+        #hojacatalogo .catalogo-precio { margin-top: auto; color: #b02154; font-size: 0.95rem; font-weight: 700; }
+        #hojacatalogo .catalogo-pie { margin-top: 1.6rem; padding-top: 0.85rem; border-top: 1px solid #eccbd8;
+            text-align: center; color: #826576; font-size: 0.76rem; }
+        @media (max-width: 650px) {
+            #hojacatalogo { padding: 1rem; }
+            #hojacatalogo .catalogo-productos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            #hojacatalogo .catalogo-imagen { height: 125px; }
+            #hojacatalogo .catalogo-portada h3 { font-size: 1.1rem; }
+        }
+        @media print {
+            body:has(#dialogoexportarcatalogo[open]) > :not(#dialogoexportarcatalogo) { display: none !important; }
+            #dialogoexportarcatalogo[open] { display: block; position: static; width: auto; max-width: none;
+                max-height: none; margin: 0; padding: 0; border: none; overflow: visible; background: white; }
+            #dialogoexportarcatalogo::backdrop, #dialogoexportarcatalogo .cabecera-modal-inventario,
+            #dialogoexportarcatalogo .barra-proforma, #avisoexportarcatalogo { display: none !important; }
+            #hojacatalogo { padding: 0; box-shadow: none; }
+            #hojacatalogo .catalogo-imagen { height: 115px; }
+            #hojacatalogo .catalogo-ficha { page-break-inside: avoid; }
+            @page { size: A4; margin: 12mm; }
+        }
+    </style>
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -14,9 +63,9 @@
     <header class="encabezado">
         <div>
             <h1>Catálogo</h1>
-            <p class="subtitulo">Arreglos florales que ofrece la floristería, armados con productos del inventario.</p>
         </div>
         <div class="botones-encabezado">
+            <button type="button" class="boton boton-borde-claro" id="botonexportarcatalogo">Exportar catálogo</button>
             <button type="button" class="boton boton-borde-claro" id="botonbuscarfoto">Buscar por foto</button>
             <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo arreglo</button>
         </div>
@@ -56,6 +105,24 @@
         </div>
     </section>
 </main>
+
+<!-- Vista previa y PDF del catálogo para clientes, dentro de Floristica. -->
+<dialog id="dialogoexportarcatalogo" class="dialogo dialogo-proforma" aria-labelledby="tituloexportarcatalogo">
+    <header class="cabecera-modal-inventario">
+        <h2 id="tituloexportarcatalogo">Catálogo para el cliente</h2>
+        <button type="button" class="cerrar-modal-inventario" id="botoncerrarcatalogo" aria-label="Cerrar catálogo">&times;</button>
+    </header>
+    <div class="barra-proforma">
+        <p class="nota">Fotografías y precios de los arreglos y regalos disponibles.</p>
+        <div class="acciones-grupo">
+            <button type="button" class="boton" id="botonimprimircatalogo">Imprimir</button>
+            <button type="button" class="boton" id="botoncompartircatalogo">Compartir PDF</button>
+            <button type="button" class="boton boton-principal" id="botonpdfcatalogo">Descargar PDF</button>
+        </div>
+    </div>
+    <p id="avisoexportarcatalogo" class="aviso aviso-error" role="alert" hidden></p>
+    <article class="hoja-proforma" id="hojacatalogo"></article>
+</dialog>
 
 <dialog id="dialogoformulario" class="dialogo dialogo-ancho">
     <form id="formulario" novalidate>
@@ -267,6 +334,8 @@
 
 <script src="<?= recurso('js/menu.js') ?>"></script>
 <script src="<?= recurso('js/historial.js') ?>"></script>
+<script src="<?= recurso('js/librerias/html2canvas.min.js') ?>"></script>
+<script src="<?= recurso('js/librerias/jspdf.umd.min.js') ?>"></script>
 <script src="<?= recurso('js/arreglofloral.js') ?>"></script>
 <script src="<?= recurso('js/buscarfoto.js') ?>"></script>
 <script src="<?= recurso('js/valorarramo.js') ?>"></script>

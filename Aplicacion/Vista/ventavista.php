@@ -14,7 +14,6 @@
     <header class="encabezado">
         <div>
             <h1>Ventas y ganancias</h1>
-            <p class="subtitulo">Lo que se vendió, lo que se gastó ese mismo día (los gastos y las compras a proveedores) y el balance que queda.</p>
         </div>
     </header>
 

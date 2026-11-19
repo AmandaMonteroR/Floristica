@@ -1,6 +1,6 @@
 const rutabase = 'index.php?modulo=empleado';
 const clavebase = 'floristica.borrador.empleado.';
-const camposformulario = ['tbempleadonombre', 'tbempleadotelefono', 'tbempleadorol', 'tbempleadousuario'];
+const camposformulario = ['tbempleadonombre', 'tbempleadotelefono', 'tbempleadousuario'];
 
 const cuerpotabla = document.getElementById('cuerpotabla');
 const busqueda = document.getElementById('busqueda');
@@ -19,7 +19,7 @@ const iconoconfirmacion = document.getElementById('iconoconfirmacion');
 const tituloconfirmacion = document.getElementById('tituloconfirmacion');
 const mensajeconfirmacion = document.getElementById('mensajeconfirmacion');
 const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmacion');
-const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
+const botoncerrarconfirmacion = document.getElementById('botoncerrarconfirmacion');
 
 let temporizadorbusqueda;
 let temporizadoraviso;
@@ -89,14 +89,14 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
         };
 
         botonaceptarconfirmacion.onclick = () => terminar(true);
-        botoncancelarconfirmacion.onclick = () => terminar(false);
+        botoncerrarconfirmacion.onclick = () => terminar(false);
         dialogoconfirmacion.oncancel = (evento) => {
             evento.preventDefault();
             terminar(false);
         };
 
         dialogoconfirmacion.showModal();
-        botoncancelarconfirmacion.focus();
+        botoncerrarconfirmacion.focus();
     });
 }
 
@@ -199,7 +199,7 @@ async function cargarempleados() {
     if (respuesta.datos.length === 0) {
         const sinfiltros = busqueda.value.trim() === '' && filtroestado.value === '';
         const mensaje = sinfiltros
-            ? 'Aún no hay empleados registrados. Empiece registrando al propietario con "Nuevo empleado".'
+            ? 'Aún no hay empleados registrados. Use "Nuevo empleado" para agregar uno.'
             : 'No hay empleados que coincidan con la búsqueda.';
         cuerpotabla.innerHTML = `<tr><td colspan="7" class="vacio">${mensaje}</td></tr>`;
         return;
@@ -417,7 +417,7 @@ busqueda.addEventListener('input', () => {
 
 filtroestado.addEventListener('change', cargarempleados);
 document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
-document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
+document.getElementById('botoncerrarformulario').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
 cargarempleados();

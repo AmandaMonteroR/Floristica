@@ -36,6 +36,23 @@ $categoriasinventario = [
     <title>Inventario | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
+    <style>
+        #campounidadespaquete[hidden], #resultadocostounidad[hidden] { display: none !important; }
+        /* Proveedores: filas compactas, sin columnas reservadas para precios. */
+        #dialogoformulario #seccionotrosproveedores { margin-top: -0.5rem; }
+        #dialogoformulario #otrosproveedores { margin-bottom: 0.5rem; }
+        #dialogoformulario #otrosproveedores .fila-otro {
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 0.5rem;
+            padding: 0.5rem 0.65rem;
+        }
+        #dialogoformulario #otrosproveedores .fila-otro [data-quitarotro] {
+            align-self: end;
+            margin: 0;
+            padding: 0.65rem 0.25rem;
+        }
+        #dialogoformulario #botonotroproveedor { width: 100%; }
+    </style>
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
@@ -44,9 +61,6 @@ $categoriasinventario = [
     <header class="encabezado">
         <div>
             <h1>Inventario de insumos</h1>
-            <p class="subtitulo">Los insumos son lo que se le compra a los proveedores para armar los arreglos o agregarlos como
-                adicionales: flores, papel, cintas, bases, chocolates, peluches, tarjetas, sprays y accesorios.
-                Los arreglos que se venden están en el Catálogo.</p>
         </div>
         <div class="botones-encabezado">
             <button type="button" class="boton boton-borde-claro" id="botoncatalogos">Colores y tipos de flor</button>
@@ -144,12 +158,18 @@ $categoriasinventario = [
                 <small class="error" data-error="tbinventarionombre"></small>
             </label>
             <label class="campo">
-                <span id="etiquetaproveedor">Proveedor *</span>
+                <span id="etiquetaproveedor">Proveedor principal *</span>
                 <select name="tbproveedorid">
                     <option value="">Seleccione…</option>
                 </select>
                 <small class="error" data-error="tbproveedorid"></small>
+                <small class="nota-campo texto-suave"><a href="index.php?modulo=proveedor&amp;nuevo=1&amp;volver=inventario" class="enlaceregistrarproveedor" data-proveedor-destino="automatico">+ Registrar nuevo proveedor</a></small>
             </label>
+            <div class="campo campo-completo" id="seccionotrosproveedores">
+                <div class="lista-otros" id="otrosproveedores"></div>
+                <small class="error" data-error="otrosproveedores"></small>
+                <button type="button" class="boton" id="botonotroproveedor">+ Agregar otro proveedor</button>
+            </div>
             <label class="campo">
                 <span>Categoría *</span>
                 <select name="tbinventariocategoria">
@@ -160,12 +180,20 @@ $categoriasinventario = [
                 </select>
                 <small class="error" data-error="tbinventariocategoria"></small>
             </label>
-            <label class="campo">
-                <span>Precio del paquete (₡) *</span>
+            <label class="campo campo-completo" id="campomodalidadcompra">
+                <span>¿Cómo compra este insumo? *</span>
+                <select id="modalidadcompra" aria-label="Modalidad de compra">
+                    <option value="unidad">Por unidad</option>
+                    <option value="paquete">Por paquete</option>
+                </select>
+                <small class="nota">En la compra por unidad solo indique el costo de una pieza; el sistema calculará la ganancia como siempre.</small>
+            </label>
+            <label class="campo" id="campopreciocompra">
+                <span id="etiquetapreciocompra">Precio del paquete (₡) *</span>
                 <input type="text" name="tbinventariopreciopaquete" inputmode="decimal" maxlength="11" placeholder="12000" autocomplete="off" data-filtro="decimal">
                 <small class="error" data-error="tbinventariopreciopaquete"></small>
             </label>
-            <div class="campo">
+            <div class="campo" id="campounidadespaquete">
                 <span>Unidades por paquete *</span>
                 <div class="contador">
                     <button type="button" class="boton-contador" data-paso="-1" data-campo="tbinventariounidadespaquete" aria-label="Quitar una unidad por paquete">−</button>
@@ -174,7 +202,7 @@ $categoriasinventario = [
                 </div>
                 <small class="error" data-error="tbinventariounidadespaquete"></small>
             </div>
-            <p class="campo-completo precio-unidad">Costo por unidad: <strong id="preciounidad">—</strong></p>
+            <p class="campo-completo precio-unidad" id="resultadocostounidad">Costo por unidad: <strong id="preciounidad">—</strong></p>
             <label class="campo">
                 <span>Precio de venta por unidad (₡) *</span>
                 <input type="text" name="tbinventarioprecioventa" inputmode="decimal" maxlength="11" placeholder="1000" autocomplete="off" data-filtro="decimal">
@@ -216,7 +244,7 @@ $categoriasinventario = [
             <p class="campo resultado-stock" id="resultadocompra" aria-live="polite" hidden></p>
         </div>
 
-        <!-- La fotografía se administra solo al editar un insumo existente -->
+        <!-- La fotografía se selecciona al crear y se puede modificar al editar -->
         <fieldset class="seccion-categoria" id="seccionfoto" hidden>
             <legend>Fotografía del producto</legend>
             <div class="detalle-arreglo">
@@ -229,7 +257,7 @@ $categoriasinventario = [
                     <small class="nota-foto texto-suave">JPG, PNG o WEBP · Máximo 2 MB.</small>
                     <small class="error" id="errorfoto" role="alert"></small>
                 </div>
-                <p class="nota">Se guarda al seleccionarla.</p>
+                <p class="nota" id="notafoto">Se guarda al seleccionarla.</p>
             </div>
         </fieldset>
 
@@ -594,12 +622,6 @@ $categoriasinventario = [
             </div>
         </fieldset>
 
-        <fieldset class="seccion-categoria">
-            <legend>Otros proveedores</legend>
-            <div class="lista-otros" id="otrosproveedores"></div>
-            <small class="error" data-error="otrosproveedores"></small>
-            <button type="button" class="boton" id="botonotroproveedor">+ Agregar otro proveedor</button>
-        </fieldset>
 
         <fieldset class="seccion-categoria">
             <legend>Precio del proveedor en temporada alta</legend>

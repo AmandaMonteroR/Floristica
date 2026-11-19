@@ -79,6 +79,7 @@ const etiquetascategoria = {
     },
 };
 
+
 const cuerpotabla = document.getElementById('cuerpotabla');
 const busqueda = document.getElementById('busqueda');
 const filtrocategoria = document.getElementById('filtrocategoria');
@@ -115,6 +116,25 @@ const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmaci
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 const selectproveedor = formulario.elements.tbproveedorid;
 const selectcategoria = formulario.elements.tbinventariocategoria;
+const modalidadcompra = document.getElementById('modalidadcompra');
+
+// Se mantienen los campos y las columnas actuales: por unidad equivale a un paquete de 1.
+function actualizarmodalidadcompra() {
+    const porunidad = modalidadcompra.value === 'unidad';
+    const unidades = formulario.elements.tbinventariounidadespaquete;
+    document.getElementById('campounidadespaquete').hidden = porunidad;
+    document.getElementById('etiquetapreciocompra').textContent = porunidad
+        ? 'Precio de compra por unidad (₡) *' : 'Precio del paquete (₡) *';
+    if (porunidad) {
+        unidades.value = '1';
+    }
+    unidades.required = !porunidad;
+    document.getElementById('resultadocostounidad').hidden = porunidad;
+    calcularpreciounidad();
+    compararotros();
+}
+
+
 
 let temporizadorbusqueda;
 let temporizadoraviso;
@@ -124,11 +144,13 @@ let catalogos = { colores: [], tiposflor: [] };
 let proveedoresactivos = [];
 let filaotros = 0;
 
+
 function escapar(texto) {
     const div = document.createElement('div');
     div.textContent = texto ?? '';
     return div.innerHTML;
 }
+
 
 function formatearfechahora(fechahora) {
     if (!fechahora) {
@@ -142,6 +164,7 @@ function formatearfechahora(fechahora) {
     return `${dia}/${mes}/${anio} ${horas}:${String(minutos).padStart(2, '0')} ${sufijo}`;
 }
 
+
 function formatearfecha(fecha) {
     if (!fecha) {
         return '';
@@ -150,9 +173,11 @@ function formatearfecha(fecha) {
     return `${dia}/${mes}/${anio}`;
 }
 
+
 function formatearmonto(monto) {
     return '₡' + Number(monto).toLocaleString('es-CR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
 
 async function peticion(accion, opciones = {}, parametros = {}) {
     const url = `${rutabase}&accion=${accion}&${new URLSearchParams(parametros)}`;
@@ -164,13 +189,16 @@ async function peticion(accion, opciones = {}, parametros = {}) {
     }
 }
 
+
 function consultar(accion, parametros) {
     return peticion(accion, {}, parametros);
 }
 
+
 function enviar(accion, datos) {
     return peticion(accion, { method: 'POST', body: datos });
 }
+
 
 function mostraraviso(mensaje, tipo) {
     aviso.textContent = mensaje;
@@ -182,6 +210,7 @@ function mostraraviso(mensaje, tipo) {
     }, 4000);
 }
 
+
 function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
     return new Promise((resolver) => {
         tituloconfirmacion.textContent = titulo;
@@ -191,10 +220,12 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
         dialogoconfirmacion.classList.toggle('peligro', peligro);
         botonaceptarconfirmacion.className = peligro ? 'boton boton-peligro' : 'boton boton-principal';
 
+
         const terminar = (respuesta) => {
             dialogoconfirmacion.close();
             resolver(respuesta);
         };
+
 
         botonaceptarconfirmacion.onclick = () => terminar(true);
         botoncancelarconfirmacion.onclick = () => terminar(false);
@@ -203,22 +234,27 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
             terminar(false);
         };
 
+
         dialogoconfirmacion.showModal();
         botoncancelarconfirmacion.focus();
     });
 }
 
+
 async function cargarproveedores() {
     const respuesta = await consultar('proveedores');
+
 
     if (!respuesta.exito) {
         mostraraviso(respuesta.mensaje || 'No se pudieron cargar los proveedores.', 'error');
         return;
     }
 
+
     proveedoresactivos = respuesta.datos;
     llenarproveedores();
 }
+
 
 function llenarproveedores() {
     selectproveedor.innerHTML = '';
@@ -227,6 +263,7 @@ function llenarproveedores() {
         selectproveedor.add(new Option(proveedor.tbproveedornombreempresa, proveedor.tbproveedorid));
     });
 }
+
 
 function mostrarseccioncategoria() {
     formulario.querySelectorAll('.seccion-categoria[data-categoria]').forEach((seccion) => {
@@ -237,6 +274,7 @@ function mostrarseccioncategoria() {
     actualizarspray();
 }
 
+
 function actualizarspray() {
     const tipo = formulario.elements.tbinventariocategoriaspraytipo.value;
     campospraycolor.hidden = tipo !== 'Pintura floral';
@@ -244,12 +282,14 @@ function actualizarspray() {
     camposprayaroma.hidden = tipo !== 'Aromatizante floral';
 }
 
+
 async function cargarcatalogos() {
     const respuesta = await consultar('catalogos');
     if (respuesta.exito) {
         catalogos = respuesta.datos;
     }
 }
+
 
 function prepararcolores(datos = {}) {
     formulario.querySelectorAll('select[data-lista="colores"]').forEach((select) => {
@@ -264,11 +304,13 @@ function prepararcolores(datos = {}) {
     });
 }
 
+
 function actualizarvariedades(elegido = formulario.elements.tbinventariocategoriaflorvariedad.value) {
     const clase = formulario.elements.tbinventariocategoriaflortipo.value;
     const select = formulario.elements.tbinventariocategoriaflorvariedad;
     const lista = catalogos.tiposflor.filter((tipo) => tipo.clase === clase
         && (tipo.estado === 1 || String(tipo.id) === String(elegido)));
+
 
     select.innerHTML = '';
     select.add(new Option(clase ? 'Seleccione…' : 'Primero elija flor o follaje', ''));
@@ -276,15 +318,18 @@ function actualizarvariedades(elegido = formulario.elements.tbinventariocategori
     select.value = lista.some((tipo) => String(tipo.id) === String(elegido)) ? String(elegido) : '';
 }
 
+
 function actualizarenvoltura(tipoelegido = formulario.elements.tbinventariocategoriaenvolturatipo.value) {
     const clase = formulario.elements.tbinventariocategoriaenvolturaclase.value;
     const selecttipo = formulario.elements.tbinventariocategoriaenvolturatipo;
     const tipos = JSON.parse(selecttipo.dataset.opciones)[clase] ?? [];
 
+
     selecttipo.innerHTML = '';
     selecttipo.add(new Option(clase ? 'Seleccione…' : 'Primero elija papel o cinta', ''));
     tipos.forEach((tipo) => selecttipo.add(new Option(tipo, tipo)));
     selecttipo.value = tipos.includes(tipoelegido) ? tipoelegido : '';
+
 
     etiquetatipoenvoltura.textContent = clase === 'Cinta' ? 'Tipo de cinta *' : clase === 'Papel' ? 'Tipo de papel *' : 'Tipo *';
     campoacabado.hidden = clase !== 'Papel';
@@ -293,9 +338,11 @@ function actualizarenvoltura(tipoelegido = formulario.elements.tbinventariocateg
     formulario.elements.tbinventariocategoriaenvolturamedida.placeholder = clase === 'Cinta' ? '2.5' : '60 x 60';
 }
 
+
 function numero(valor) {
     return parseFloat(String(valor).replace(',', '.'));
 }
+
 
 function calcularpreciounidad() {
     const precio = numero(formulario.elements.tbinventariopreciopaquete.value);
@@ -303,10 +350,12 @@ function calcularpreciounidad() {
     const venta = numero(formulario.elements.tbinventarioprecioventa.value);
     const costo = precio > 0 && unidades > 0 ? precio / unidades : null;
 
+
     preciounidad.textContent = costo !== null ? formatearmonto(costo) : '—';
     gananciaunidad.textContent = costo !== null && venta > 0 ? formatearmonto(venta - costo) : '—';
     gananciaunidad.classList.toggle('texto-peligro', costo !== null && venta > 0 && venta < costo);
 }
+
 
 function agregarotro(otro = {}) {
     const numerofila = filaotros++;
@@ -318,45 +367,32 @@ function agregarotro(otro = {}) {
     const opciones = lista.map((proveedor) => `<option value="${proveedor.tbproveedorid}"${String(proveedor.tbproveedorid) === elegido ? ' selected' : ''}>`
         + `${escapar(proveedor.tbproveedornombreempresa)}</option>`).join('');
 
+
     contenedorotros.insertAdjacentHTML('beforeend', `
         <div class="fila-otro">
             <label class="campo">
-                <span>Proveedor</span>
+                <span>Proveedor adicional</span>
                 <select name="otrosproveedores[${numerofila}][tbproveedorid]"><option value="">Seleccione…</option>${opciones}</select>
             </label>
-            <label class="campo">
-                <span>Precio del paquete (₡)</span>
-                <input type="text" name="otrosproveedores[${numerofila}][preciopaquete]" inputmode="decimal" maxlength="11"
-                       autocomplete="off" data-filtro="decimal" value="${otro.preciopaquete !== undefined ? escapar(String(otro.preciopaquete)) : ''}">
-            </label>
+            <input type="hidden" name="otrosproveedores[${numerofila}][preciopaquete]" value="${otro.preciopaquete !== undefined ? escapar(String(otro.preciopaquete)) : ''}">
             <button type="button" class="enlace enlace-peligro" data-quitarotro>Quitar</button>
-            <small class="comparacion-otro" data-comparacion></small>
-        </div>`);
+                </div>`);
 }
+
 
 function dibujarotros(lista) {
     contenedorotros.innerHTML = '';
     (lista ?? []).forEach((otro) => agregarotro(otro));
-    compararotros();
+    actualizarmodalidadcompra();
 }
 
+
+// Los proveedores adicionales usan el costo registrado en la sección Compra y venta.
+// Se mantiene el campo oculto para respetar la estructura actual de la base de datos.
 function compararotros() {
-    const unidades = parseInt(formulario.elements.tbinventariounidadespaquete.value, 10);
-    const principal = numero(formulario.elements.tbinventariopreciopaquete.value);
-    contenedorotros.querySelectorAll('.fila-otro').forEach((fila) => {
-        const salida = fila.querySelector('[data-comparacion]');
-        const precio = numero(fila.querySelector('input').value);
-        if (!(precio > 0) || !(unidades > 0)) {
-            salida.textContent = '';
-            return;
-        }
-        const diferencia = (precio - principal) / unidades;
-        let texto = `${formatearmonto(precio / unidades)} la unidad`;
-        if (principal > 0 && Math.abs(diferencia) >= 0.01) {
-            texto += diferencia < 0 ? ` · ${formatearmonto(-diferencia)} más barato` : ` · ${formatearmonto(diferencia)} más caro`;
-        }
-        salida.textContent = texto;
-        salida.classList.toggle('mas-barato', principal > 0 && diferencia <= -0.01);
+    const precio = formulario.elements.tbinventariopreciopaquete.value;
+    contenedorotros.querySelectorAll('input[name$="[preciopaquete]"]').forEach((campo) => {
+        campo.value = precio;
     });
 }
 
@@ -366,10 +402,12 @@ function revisartemporadas() {
         numero(formulario.elements.tbinventarioprecioventa.value));
 }
 
+
 function claveborrador() {
     const id = formulario.elements.tbinventarioid.value;
     return clavebase + (id !== '' ? id : 'nuevo');
 }
+
 
 function leerformulario() {
     const datos = {};
@@ -380,6 +418,7 @@ function leerformulario() {
     });
     return datos;
 }
+
 
 function guardarborrador() {
     if (existente) {
@@ -392,6 +431,7 @@ function guardarborrador() {
     }
 }
 
+
 function leerborrador() {
     try {
         const texto = localStorage.getItem(claveborrador());
@@ -401,6 +441,7 @@ function leerborrador() {
     }
 }
 
+
 function borrarborrador(clave = claveborrador()) {
     try {
         localStorage.removeItem(clave);
@@ -409,6 +450,7 @@ function borrarborrador(clave = claveborrador()) {
     }
 }
 
+
 function asignarcampos(datos) {
     Object.entries(datos).forEach(([campo, valor]) => {
         if (campo !== 'tbinventarioid' && formulario.elements[campo]) {
@@ -416,11 +458,13 @@ function asignarcampos(datos) {
         }
     });
 
+
     mostrarseccioncategoria();
     actualizarenvoltura(datos.tbinventariocategoriaenvolturatipo ?? '');
     actualizarvariedades(datos.tbinventariocategoriaflorvariedad ?? '');
     calcularpreciounidad();
 }
+
 
 function llenarformulario(datos) {
     formulario.reset();
@@ -429,10 +473,15 @@ function llenarformulario(datos) {
     formulario.elements.tbinventarioid.value = datos.tbinventarioid ?? '';
     dibujarotros(datos.otrosproveedores);
 
+
     if (datos.tbproveedorid && !selectproveedor.querySelector(`option[value="${datos.tbproveedorid}"]`)) {
         selectproveedor.add(new Option(`${datos.tbproveedornombreempresa} (inactivo)`, datos.tbproveedorid));
     }
 
+
+    // Los productos antiguos conservan su modo de compra según sus unidades por paquete.
+    modalidadcompra.value = Number(datos.tbinventariounidadespaquete) > 1 ? 'paquete'
+        : (datos.tbinventarioid ? 'unidad' : (datos.tbinventariocategoria === 'Flor' ? 'paquete' : 'unidad'));
     asignarcampos({
         tbinventarionombre: datos.tbinventarionombre,
         tbproveedorid: datos.tbproveedorid,
@@ -445,42 +494,54 @@ function llenarformulario(datos) {
         ...(datos.categoria ?? {}),
     });
 
+
+    actualizarmodalidadcompra();
     preciostemporada.ventas(contenedortemporadas, Number(datos.tbinventariopreciopaquete), Number(datos.tbinventarioprecioventa));
     compararotros();
     datosoriginales = leerformulario();
 }
 
+
 function aplicarborrador() {
     const borrador = leerborrador();
     avisoborrador.hidden = true;
+
 
     if (!borrador) {
         return;
     }
 
+
     const haycambios = Object.keys(borrador).some(
         (campo) => (borrador[campo] ?? '') !== (datosoriginales[campo] ?? '')
     );
+
 
     if (!haycambios) {
         borrarborrador();
         return;
     }
 
+
     asignarcampos(borrador);
     avisoborrador.hidden = false;
 }
 
+
 function descartarborrador() {
     borrarborrador();
     llenarformulario(datosservidor);
+    limpiarfototemporal();
+    mostrarfoto({ tbinventariofoto: datosservidor.tbinventariofoto || '', tbinventarionombre: datosservidor.tbinventarionombre || '' });
     limpiarerrores();
     avisoborrador.hidden = true;
 }
 
+
 function nivelstock(producto) {
     const stock = producto.tbinventariodisponible;
     const minimo = producto.tbinventariostockminimo;
+
 
     if (stock <= minimo) {
         return { clase: 'stock-bajo', texto: 'Bajo el mínimo' };
@@ -490,6 +551,7 @@ function nivelstock(producto) {
     }
     return { clase: 'stock-bien', texto: 'Suficiente' };
 }
+
 
 function textoapartado(producto) {
     if (producto.tbinventariostockreservado <= 0) {
@@ -501,6 +563,7 @@ function textoapartado(producto) {
     return `<small class="texto-suave nota-apartado" title="Apartado para encargos abiertos">${producto.tbinventariostockreservado} ${producto.tbinventariostockreservado === 1 ? 'apartada' : 'apartadas'} · ${texto}</small>`;
 }
 
+
 async function cargarinventario() {
     const respuesta = await consultar('listar', {
         texto: busqueda.value,
@@ -508,14 +571,17 @@ async function cargarinventario() {
         estado: filtroestado.value,
     });
 
+
     if (!respuesta.exito) {
         cuerpotabla.innerHTML = `<tr><td colspan="9" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
         return;
     }
 
+
     const productos = filtrostock.value === ''
         ? respuesta.datos
         : respuesta.datos.filter((producto) => nivelstock(producto).clase === `stock-${filtrostock.value}`);
+
 
     if (productos.length === 0) {
         const sinfiltros = busqueda.value.trim() === '' && filtrocategoria.value === ''
@@ -527,14 +593,16 @@ async function cargarinventario() {
         return;
     }
 
+
     cuerpotabla.innerHTML = productos.map((producto) => {
         const activo = producto.tbinventarioestado === 1;
         const nivel = nivelstock(producto);
 
+
         return `
             <tr class="${activo ? '' : 'fila-inactiva'}">
                 <td class="celda-foto-inventario" data-etiqueta="Foto">${producto.tbinventariofoto
-                    ? `<img class="miniatura-inventario" src="${escapar(producto.tbinventariofoto).replace(/"/g, '&quot;')}" alt="" loading="lazy">`
+                    ? `<img class="miniatura-inventario" src="${escapar(producto.tbinventariofoto).replace(/"/g, '"')}" alt="" loading="lazy">`
                     : '<span class="miniatura-vacia-inventario" title="Sin foto" aria-label="Sin foto">✿</span>'}</td>
                 <td>${escapar(producto.tbinventarionombre)}</td>
                 <td>${escapar(producto.tbinventariocategoria)}</td>
@@ -552,6 +620,7 @@ async function cargarinventario() {
     }).join('');
 }
 
+
 function limpiarerrores() {
     formulario.querySelectorAll('[data-error]').forEach((error) => {
         error.textContent = '';
@@ -561,6 +630,7 @@ function limpiarerrores() {
     });
     avisoformulario.hidden = true;
 }
+
 
 function mostrarerrores(errores) {
     Object.entries(errores).forEach(([campo, mensaje]) => {
@@ -573,11 +643,13 @@ function mostrarerrores(errores) {
         }
     });
 
+
     const primero = formulario.querySelector('[aria-invalid="true"]');
     if (primero) {
         primero.focus();
     }
 }
+
 
 function modostock(producto) {
     const editando = producto !== null;
@@ -590,6 +662,97 @@ function modostock(producto) {
     }
 }
 
+
+// Retorno desde el registro de Proveedores sin perder el insumo que se estaba creando.
+const claveregresoproveedor = 'floristica.inventario.regresoproveedor';
+async function registrarproveedordesdeinsumo(enlace) {
+    if (formulario.elements.tbinventarioid.value) {
+        // En edición se mantiene el formulario actual: los nuevos proveedores se registran aparte.
+        guardarborrador();
+    }
+    // Un solo enlace: si falta el principal, se completa ese primero.
+    // Si ya existe y hay un proveedor adicional sin elegir, se completa el adicional.
+    const filasotros = [...contenedorotros.querySelectorAll('.fila-otro')];
+    const indicevacio = filasotros.findIndex((fila) => !fila.querySelector('select').value);
+    const destino = !selectproveedor.value || indicevacio < 0 ? 'principal' : String(indicevacio);
+    const campos = leerformulario();
+    const otros = [...contenedorotros.querySelectorAll('.fila-otro')].map((fila) => ({
+        tbproveedorid: fila.querySelector('select').value,
+        preciopaquete: formulario.elements.tbinventariopreciopaquete.value,
+    }));
+    const estado = { campos, otros, destino, modalidad: modalidadcompra.value };
+    const foto = campofoto.files[0];
+    if (foto && !formulario.elements.tbinventarioid.value) {
+        try {
+            estado.foto = await new Promise((resolver, rechazar) => {
+                const lector = new FileReader();
+                lector.onload = () => resolver({ nombre: foto.name, tipo: foto.type, datos: lector.result });
+                lector.onerror = rechazar;
+                lector.readAsDataURL(foto);
+            });
+        } catch (error) {
+            // El resto del formulario se conserva incluso si la foto no puede leerse.
+        }
+    }
+    try {
+        sessionStorage.setItem(claveregresoproveedor, JSON.stringify(estado));
+    } catch (error) {
+        // Si el navegador no admite guardar la foto, conservar al menos los campos.
+        delete estado.foto;
+        try { sessionStorage.setItem(claveregresoproveedor, JSON.stringify(estado)); } catch (_) { return; }
+    }
+    window.location.href = enlace.href;
+}
+
+async function restaurarinsumodesdeproveedor() {
+    const params = new URLSearchParams(location.search);
+    if (params.get('volver') !== 'proveedor') return;
+    let estado;
+    try { estado = JSON.parse(sessionStorage.getItem(claveregresoproveedor) || 'null'); }
+    catch (_) { estado = null; }
+    if (!estado) return;
+    await abrirnuevo();
+    modalidadcompra.value = estado.modalidad === 'paquete' ? 'paquete' : 'unidad';
+    dibujarotros(estado.otros || []);
+    asignarcampos(estado.campos || {});
+    actualizarmodalidadcompra();
+    const id = params.get('proveedorid');
+    if (id && proveedoresactivos.some((p) => String(p.tbproveedorid) === id)) {
+        if (estado.destino === 'principal') {
+            selectproveedor.value = id;
+        } else {
+            const selectores = [...contenedorotros.querySelectorAll('.fila-otro select')];
+            const indice = Number(estado.destino);
+            const destino = selectores[indice];
+            if (destino) destino.value = id;
+        }
+    }
+    if (estado.foto && !formulario.elements.tbinventarioid.value) {
+        try {
+            const respuesta = await fetch(estado.foto.datos);
+            const blob = await respuesta.blob();
+            const archivo = new File([blob], estado.foto.nombre, { type: estado.foto.tipo });
+            const transferencia = new DataTransfer();
+            transferencia.items.add(archivo);
+            campofoto.files = transferencia.files;
+            campofoto.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (_) {
+            errorfoto.textContent = 'Vuelva a seleccionar la fotografía para guardarla.';
+        }
+    }
+    sessionStorage.removeItem(claveregresoproveedor);
+    params.delete('nuevo'); params.delete('volver'); params.delete('proveedorid');
+    history.replaceState(null, '', `${location.pathname}?${params}`);
+    guardarborrador();
+}
+
+dialogoformulario.addEventListener('click', (evento) => {
+    const enlace = evento.target.closest('a.enlaceregistrarproveedor');
+    if (!enlace) return;
+    evento.preventDefault();
+    registrarproveedordesdeinsumo(enlace);
+});
+
 async function abrirnuevo() {
     await proveedoreslistos;
     await catalogoslistos;
@@ -600,21 +763,27 @@ async function abrirnuevo() {
     aplicarborrador();
     salirexistente();
     modostock(null);
-    document.getElementById('seccionfoto').hidden = true;
+    limpiarfototemporal();
+    document.getElementById('seccionfoto').hidden = false;
+    document.getElementById('notafoto').textContent = 'Se guardará al registrar el insumo.';
+    mostrarfoto({ tbinventariofoto: '', tbinventarionombre: '' });
     tituloformulario.textContent = 'Nuevo insumo';
     botonguardar.textContent = 'Guardar insumo';
     dialogoformulario.showModal();
 }
+
 
 async function abrireditar(id) {
     await proveedoreslistos;
     await catalogoslistos;
     const respuesta = await consultar('obtener', { id });
 
+
     if (!respuesta.exito) {
         mostraraviso(respuesta.mensaje, 'error');
         return;
     }
+
 
     datosservidor = respuesta.datos;
     llenarformulario(datosservidor);
@@ -622,21 +791,26 @@ async function abrireditar(id) {
     aplicarborrador();
     salirexistente();
     modostock(datosservidor);
+    limpiarfototemporal();
     document.getElementById('seccionfoto').hidden = false;
+    document.getElementById('notafoto').textContent = 'Se guarda al seleccionarla.';
     mostrarfoto(datosservidor);
     tituloformulario.textContent = 'Editar insumo';
     botonguardar.textContent = 'Guardar cambios';
     dialogoformulario.showModal();
 }
 
+
 async function verdetalle(id) {
     iddetalle = id;
     const respuesta = await consultar('obtener', { id });
+
 
     if (!respuesta.exito) {
         mostraraviso(respuesta.mensaje, 'error');
         return;
     }
+
 
     const producto = respuesta.datos;
     const nombrecategoria = { Flor: 'la flor o follaje', Envoltura: 'la envoltura', Base: 'la base', Chocolate: 'el chocolate',
@@ -676,6 +850,7 @@ async function verdetalle(id) {
         ['§', `Datos de ${nombrecategoria[producto.tbinventariocategoria] ?? 'la categoría'}`],
     ];
 
+
     const etiquetas = etiquetascategoria[producto.tbinventariocategoria] ?? {};
     Object.entries(etiquetas).forEach(([campo, etiqueta]) => {
         let valor = producto.categoria[campo];
@@ -701,6 +876,7 @@ async function verdetalle(id) {
         filas.push([etiqueta, valor === null || valor === undefined ? '' : String(valor)]);
     });
 
+
     titulodetalle.textContent = producto.tbinventarionombre;
     mostrarfoto(producto);
     listadetalle.innerHTML = filas
@@ -714,6 +890,7 @@ async function verdetalle(id) {
     botonestado.dataset.accion = producto.tbinventarioestado === 1 ? 'inactivar' : 'reactivar';
     botonestado.textContent = producto.tbinventarioestado === 1 ? 'Inactivar' : 'Reactivar';
     botonestado.classList.toggle('boton-peligro', producto.tbinventarioestado === 1);
+
 
     cuerpomovimientos.innerHTML = producto.movimientos.length === 0
         ? '<tr><td colspan="5" class="vacio">Este producto todavía no tiene movimientos registrados.</td></tr>'
@@ -729,8 +906,10 @@ async function verdetalle(id) {
             </tr>`;
         }).join('');
 
+
     dialogodetalle.showModal();
 }
+
 
 const fotodetalle = document.getElementById('fotodetalle');
 const fotovacia = document.getElementById('fotovacia');
@@ -740,7 +919,14 @@ const campofoto = document.getElementById('campofoto');
 const botonfoto = document.getElementById('botonfoto');
 const botonquitarfoto = document.getElementById('botonquitarfoto');
 const errorfoto = document.getElementById('errorfoto');
-
+let urlfototemporal = null;
+function limpiarfototemporal() {
+    if (urlfototemporal) {
+        URL.revokeObjectURL(urlfototemporal);
+        urlfototemporal = null;
+    }
+    campofoto.value = '';
+}
 function mostrarfoto(producto) {
     const foto = producto.tbinventariofoto;
     fotodetalle.hidden = !foto;
@@ -757,6 +943,7 @@ function mostrarfoto(producto) {
     errorfoto.textContent = '';
     errorfoto.className = 'error';
 }
+
 
 async function terminarfoto(respuesta) {
     if (!respuesta.exito) {
@@ -775,18 +962,40 @@ async function terminarfoto(respuesta) {
     errorfoto.className = 'texto-exito';
 }
 
+
 async function subirfoto() {
     const archivo = campofoto.files[0];
     if (!archivo) {
         return;
     }
     if (archivo.size > 2 * 1024 * 1024) {
+        if (formulario.elements.tbinventarioid.value === '') {
+            limpiarfototemporal();
+            mostrarfoto({ tbinventariofoto: '', tbinventarionombre: '' });
+        } else {
+            campofoto.value = '';
+        }
         errorfoto.textContent = 'La foto no puede pesar más de 2 MB.';
         errorfoto.className = 'error';
-        campofoto.value = '';
         return;
     }
 
+
+    if (formulario.elements.tbinventarioid.value === '') {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
+            limpiarfototemporal();
+            mostrarfoto({ tbinventariofoto: '', tbinventarionombre: '' });
+            errorfoto.textContent = 'La foto debe ser JPG, PNG o WEBP.';
+            errorfoto.className = 'error';
+            return;
+        }
+        if (urlfototemporal) {
+            URL.revokeObjectURL(urlfototemporal);
+        }
+        urlfototemporal = URL.createObjectURL(archivo);
+        mostrarfoto({ tbinventariofoto: urlfototemporal, tbinventarionombre: formulario.elements.tbinventarionombre.value || 'Foto del producto' });
+        return;
+    }
     const datos = new FormData();
     datos.append('id', formulario.elements.tbinventarioid.value);
     datos.append('tbinventariofoto', archivo);
@@ -797,7 +1006,13 @@ async function subirfoto() {
     await terminarfoto(respuesta);
 }
 
+
 async function quitarfoto() {
+    if (formulario.elements.tbinventarioid.value === '') {
+        limpiarfototemporal();
+        mostrarfoto({ tbinventariofoto: '', tbinventarionombre: '' });
+        return;
+    }
     const datos = new FormData();
     datos.append('id', formulario.elements.tbinventarioid.value);
     botonquitarfoto.disabled = true;
@@ -806,9 +1021,11 @@ async function quitarfoto() {
     await terminarfoto(respuesta);
 }
 
+
 botonfoto.addEventListener('click', () => campofoto.click());
 campofoto.addEventListener('change', subirfoto);
 botonquitarfoto.addEventListener('click', quitarfoto);
+
 
 async function cambiarestado(accion, id, nombre) {
     const configuracion = accion === 'inactivar'
@@ -824,15 +1041,19 @@ async function cambiarestado(accion, id, nombre) {
             textoaceptar: 'Reactivar',
         };
 
+
     if (!(await confirmar(configuracion))) {
         return false;
     }
 
+
     const datos = new FormData();
     datos.append('id', id);
 
+
     const respuesta = await enviar(accion, datos);
     mostraraviso(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
+
 
     if (respuesta.exito) {
         cargarinventario();
@@ -840,9 +1061,11 @@ async function cambiarestado(accion, id, nombre) {
     return respuesta.exito;
 }
 
+
 formulario.addEventListener('input', (evento) => {
     const campo = evento.target;
     const filtro = filtros[campo.dataset.filtro];
+
 
     if (filtro) {
         const valor = filtro(campo.value);
@@ -851,13 +1074,16 @@ formulario.addEventListener('input', (evento) => {
         }
     }
 
+
     preciostemporada.filtrar(campo);
+
 
     const error = formulario.querySelector(`[data-error="${campo.name}"]`);
     if (error) {
         error.textContent = '';
     }
     campo.removeAttribute('aria-invalid');
+
 
     if (campo.name.startsWith('temporadas[') || campo.name === 'tbinventariopreciopaquete'
         || campo.name === 'tbinventarioprecioventa') {
@@ -871,7 +1097,9 @@ formulario.addEventListener('input', (evento) => {
     guardarborrador();
 });
 
+
 formulario.addEventListener('change', guardarborrador);
+
 
 const limitescontador = {
     tbinventariounidadespaquete: [1, 10000],
@@ -879,16 +1107,19 @@ const limitescontador = {
     tbinventariostockminimo: [0, 999999],
 };
 
+
 formulario.addEventListener('click', (evento) => {
     const boton = evento.target.closest('button[data-paso][data-campo]');
     if (!boton) {
         return;
     }
 
+
     const campo = formulario.elements[boton.dataset.campo];
     const [minimo, maximo] = limitescontador[boton.dataset.campo];
     const actual = parseInt(campo.value, 10);
     const nuevo = Number.isNaN(actual) ? minimo : actual + Number(boton.dataset.paso);
+
 
     campo.value = String(Math.min(maximo, Math.max(minimo, nuevo)));
     campo.dispatchEvent(new Event('input', { bubbles: true }));
@@ -905,7 +1136,22 @@ contenedorotros.addEventListener('click', (evento) => {
         guardarborrador();
     }
 });
-selectcategoria.addEventListener('change', mostrarseccioncategoria);
+modalidadcompra.addEventListener('change', () => {
+    // Al cambiar de modalidad, evitar que costos de paquete se interpreten como costos unitarios.
+    formulario.elements.tbinventariopreciopaquete.value = '';
+    contenedorotros.querySelectorAll('input[name$="[preciopaquete]"]').forEach((campo) => { campo.value = ''; });
+    actualizarmodalidadcompra();
+    revisartemporadas();
+    guardarborrador();
+});
+selectcategoria.addEventListener('change', () => {
+    mostrarseccioncategoria();
+    // En un insumo nuevo, las flores empiezan por paquete y los regalos por unidad.
+    if (!formulario.elements.tbinventarioid.value && !formulario.elements.tbinventariopreciopaquete.value) {
+        modalidadcompra.value = selectcategoria.value === 'Flor' ? 'paquete' : 'unidad';
+        actualizarmodalidadcompra();
+    }
+});
 formulario.elements.tbinventariocategoriaflortipo.addEventListener('change', () => actualizarvariedades());
 formulario.elements.tbinventariocategoriaenvolturaclase.addEventListener('change', () => actualizarenvoltura());
 formulario.elements.tbinventariocategoriaspraytipo.addEventListener('change', actualizarspray);
@@ -913,15 +1159,19 @@ formulario.elements.tbinventariopreciopaquete.addEventListener('input', calcular
 formulario.elements.tbinventariounidadespaquete.addEventListener('input', calcularpreciounidad);
 formulario.elements.tbinventarioprecioventa.addEventListener('input', calcularpreciounidad);
 
+
 formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
+
 
     if (existente) {
         guardarcompra();
         return;
     }
 
+
     const esedicion = formulario.elements.tbinventarioid.value !== '';
+
 
     if (esedicion) {
         const nombre = formulario.elements.tbinventarionombre.value.trim() || 'este producto';
@@ -931,20 +1181,38 @@ formulario.addEventListener('submit', async (evento) => {
             textoaceptar: 'Guardar cambios',
         });
 
+
         if (!aceptado) {
             return;
         }
     }
 
+
     const clave = claveborrador();
 
+
     limpiarerrores();
+    // Evita duplicar precios visibles, manteniendo el campo requerido por el controlador.
+    compararotros();
     botonguardar.disabled = true;
-
+    const fotonueva = !esedicion ? campofoto.files[0] : null;
     const respuesta = await enviar(esedicion ? 'actualizar' : 'crear', new FormData(formulario));
-
+    if (respuesta.exito && fotonueva) {
+        const datosfoto = new FormData();
+        datosfoto.append('id', respuesta.datos.tbinventarioid);
+        datosfoto.append('tbinventariofoto', fotonueva);
+        const resultadofoto = await enviar('subirfoto', datosfoto);
+        if (!resultadofoto.exito) {
+            borrarborrador(clave);
+            avisoborrador.hidden = true;
+            botonguardar.disabled = false;
+            dialogoformulario.close();
+            mostraraviso('El insumo se registró, pero no se guardó su fotografía: ' + resultadofoto.mensaje + ' Puede agregarla desde Editar.', 'error');
+            cargarinventario();
+            return;
+        }
+    }
     botonguardar.disabled = false;
-
     if (respuesta.exito) {
         borrarborrador(clave);
         avisoborrador.hidden = true;
@@ -954,12 +1222,15 @@ formulario.addEventListener('submit', async (evento) => {
         return;
     }
 
+
     if (respuesta.datos && respuesta.datos.errores) {
         mostrarerrores(respuesta.datos.errores);
     }
 
+
     avisoformulario.textContent = respuesta.mensaje;
     avisoformulario.hidden = false;
+
 
     if (respuesta.datos && respuesta.datos.existente) {
         avisoformulario.hidden = true;
@@ -967,21 +1238,25 @@ formulario.addEventListener('submit', async (evento) => {
     }
 });
 
+
 cuerpotabla.addEventListener('click', (evento) => {
     const boton = evento.target.closest('button[data-accion]');
     if (!boton) {
         return;
     }
 
+
     if (boton.dataset.accion === 'ver') {
         verdetalle(boton.dataset.id);
     }
 });
 
+
 busqueda.addEventListener('input', () => {
     clearTimeout(temporizadorbusqueda);
     temporizadorbusqueda = setTimeout(cargarinventario, 300);
 });
+
 
 filtrocategoria.addEventListener('change', cargarinventario);
 filtroestado.addEventListener('change', cargarinventario);
@@ -1003,6 +1278,7 @@ document.getElementById('botonestadodetalle').addEventListener('click', async (e
     }
 });
 
+
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {
@@ -1010,16 +1286,19 @@ if (botonverhistorial) {
 }
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
+
 const vencimientominimo = new Date();
 vencimientominimo.setDate(vencimientominimo.getDate() + 30);
 formulario.elements.tbinventariocategoriachocolatefechavencimiento.min = vencimientominimo.toLocaleDateString('en-CA');
 formulario.elements.tbinventariocategoriasprayfechavencimiento.min = vencimientominimo.toLocaleDateString('en-CA');
+
 
 const normalizar = (texto) => String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
 const avisoexistente = document.getElementById('avisoexistente');
 const campopaquetes = document.getElementById('campopaquetes');
 const resultadocompra = document.getElementById('resultadocompra');
 let existente = null;
+
 
 function vendedores(producto) {
     return [
@@ -1030,12 +1309,14 @@ function vendedores(producto) {
     ];
 }
 
+
 function llenarvendedores(select, producto) {
     select.innerHTML = '';
     vendedores(producto).forEach((vendedor) => {
         select.add(new Option(`${vendedor.nombre}${vendedor.principal ? ' (principal)' : ''} · ${formatearmonto(vendedor.precio)} el paquete`, vendedor.id));
     });
 }
+
 
 async function entrarexistente(id) {
     const respuesta = await consultar('obtener', { id });
@@ -1050,12 +1331,16 @@ async function entrarexistente(id) {
         return;
     }
 
+
     borrarborrador();
     existente = producto;
     llenarformulario(producto);
+    limpiarfototemporal();
+    document.getElementById('seccionfoto').hidden = true;
     modostock(producto);
     formulario.elements.tbinventarioid.value = '';
     limpiarerrores();
+
 
     Array.from(formulario.elements).forEach((campo) => {
         const libre = ['tbinventarionombre', 'tbproveedorid', 'paquetescompra'].includes(campo.name)
@@ -1081,6 +1366,7 @@ async function entrarexistente(id) {
     formulario.elements.paquetescompra.select();
 }
 
+
 function salirexistente(nombre = null) {
     Array.from(formulario.elements).forEach((campo) => {
         if (campo.dataset.bloqueadoexistente) {
@@ -1095,17 +1381,22 @@ function salirexistente(nombre = null) {
     avisoexistente.hidden = true;
     formulario.querySelector('[data-error="paquetes"]').textContent = '';
 
+
     if (!existente) {
         return;
     }
     existente = null;
     llenarproveedores();
     llenarformulario({ preciostemporada: datosservidor.preciostemporada ?? [] });
+    limpiarfototemporal();
+    document.getElementById('seccionfoto').hidden = false;
+    mostrarfoto({ tbinventariofoto: '', tbinventarionombre: '' });
     modostock(null);
     formulario.elements.tbinventarionombre.value = nombre ?? '';
     tituloformulario.textContent = 'Nuevo insumo';
     botonguardar.textContent = 'Guardar insumo';
 }
+
 
 function calcularcompra() {
     if (!existente) {
@@ -1122,6 +1413,7 @@ function calcularcompra() {
         + (vendedor ? ` · ${formatearmonto(vendedor.precio * paquetes)} a ${vendedor.nombre}` : '');
 }
 
+
 async function guardarcompra() {
     limpiarerrores();
     const datos = new FormData();
@@ -1130,9 +1422,11 @@ async function guardarcompra() {
     datos.append('tbproveedorid', selectproveedor.value);
     datos.append('paquetes', formulario.elements.paquetescompra.value);
 
+
     botonguardar.disabled = true;
     const respuesta = await enviar('movimientostock', datos);
     botonguardar.disabled = false;
+
 
     if (respuesta.exito) {
         salirexistente();
@@ -1142,10 +1436,12 @@ async function guardarcompra() {
         return;
     }
 
+
     mostrarerrores((respuesta.datos && respuesta.datos.errores) || {});
     avisoformulario.textContent = respuesta.mensaje;
     avisoformulario.hidden = false;
 }
+
 
 formulario.elements.tbinventarionombre.addEventListener('change', async () => {
     const campo = formulario.elements.tbinventarionombre;
@@ -1161,6 +1457,7 @@ formulario.elements.tbinventarionombre.addEventListener('change', async () => {
         }
     }
 
+
     const respuesta = await consultar('listar', { texto: nombre, estado: '' });
     const igual = respuesta.exito
         ? respuesta.datos.find((producto) => normalizar(producto.tbinventarionombre) === normalizar(nombre))
@@ -1169,6 +1466,7 @@ formulario.elements.tbinventarionombre.addEventListener('change', async () => {
         entrarexistente(igual.tbinventarioid);
     }
 });
+
 
 selectproveedor.addEventListener('change', calcularcompra);
 formulario.elements.paquetescompra.addEventListener('input', (evento) => {
@@ -1191,10 +1489,12 @@ document.getElementById('botonotroinsumo').addEventListener('click', () => {
     formulario.elements.tbinventarionombre.focus();
 });
 dialogoformulario.addEventListener('close', () => {
+    limpiarfototemporal();
     if (existente) {
         salirexistente();
     }
 });
+
 
 const dialogostock = document.getElementById('dialogostock');
 const formulariostock = document.getElementById('formulariostock');
@@ -1204,6 +1504,7 @@ const resultadostock = document.getElementById('resultadostock');
 const botonguardarstock = document.getElementById('botonguardarstock');
 let productostock = null;
 
+
 function limpiarerroresstock() {
     formulariostock.querySelectorAll('[data-error]').forEach((error) => {
         error.textContent = '';
@@ -1212,7 +1513,9 @@ function limpiarerroresstock() {
     avisostock.hidden = true;
 }
 
+
 const sumando = () => formulariostock.elements.sentido.value === 'sumar';
+
 
 function calcularresultadostock() {
     if (!productostock) {
@@ -1221,6 +1524,7 @@ function calcularresultadostock() {
     const vendedor = vendedores(productostock).find((item) => item.id === formulariostock.elements.tbproveedorid.value);
     document.getElementById('preciocompra').textContent = sumando() && vendedor
         ? `${formatearmonto(vendedor.precio)} el paquete de ${productostock.tbinventariounidadespaquete} unidades` : '';
+
 
     const numero = parseInt(sumando() ? formulariostock.elements.paquetes.value : formulariostock.elements.cantidad.value, 10);
     if (Number.isNaN(numero) || numero < 1) {
@@ -1241,12 +1545,14 @@ function calcularresultadostock() {
     resultadostock.className = `resultado-stock${falta ? ' texto-peligro' : ''}`;
 }
 
+
 async function abrirstock(id, sentido = 'sumar') {
     const respuesta = await consultar('obtener', { id });
     if (!respuesta.exito) {
         mostraraviso(respuesta.mensaje, 'error');
         return;
     }
+
 
     productostock = respuesta.datos;
     formulariostock.reset();
@@ -1272,7 +1578,9 @@ async function abrirstock(id, sentido = 'sumar') {
     (suma ? formulariostock.elements.paquetes : formulariostock.elements.cantidad).focus();
 }
 
+
 formulariostock.addEventListener('change', calcularresultadostock);
+
 
 formulariostock.addEventListener('input', (evento) => {
     const campo = evento.target;
@@ -1283,6 +1591,7 @@ formulariostock.addEventListener('input', (evento) => {
     }
     calcularresultadostock();
 });
+
 
 formulariostock.addEventListener('click', (evento) => {
     const boton = evento.target.closest('button[data-pasostock]');
@@ -1296,14 +1605,17 @@ formulariostock.addEventListener('click', (evento) => {
     campo.dispatchEvent(new Event('input', { bubbles: true }));
 });
 
+
 formulariostock.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     limpiarerroresstock();
     botonguardarstock.disabled = true;
 
+
     const datos = new FormData(formulariostock);
     const respuesta = await enviar('movimientostock', datos);
     botonguardarstock.disabled = false;
+
 
     if (respuesta.exito) {
         dialogostock.close();
@@ -1314,6 +1626,7 @@ formulariostock.addEventListener('submit', async (evento) => {
         }
         return;
     }
+
 
     Object.entries((respuesta.datos && respuesta.datos.errores) || {}).forEach(([campo, mensaje]) => {
         const error = formulariostock.querySelector(`[data-error="${campo}"]`);
@@ -1329,6 +1642,7 @@ formulariostock.addEventListener('submit', async (evento) => {
     avisostock.hidden = false;
 });
 
+
 document.getElementById('botoncancelarstock').addEventListener('click', () => dialogostock.close());
 document.getElementById('botonstockdetalle').addEventListener('click', () => abrirstock(iddetalle, 'sumar'));
 document.getElementById('botondanadasdetalle').addEventListener('click', () => abrirstock(iddetalle, 'restar'));
@@ -1338,8 +1652,10 @@ document.getElementById('botonstockformulario').addEventListener('click', () => 
     abrirstock(id, 'sumar');
 });
 
+
 const dialogocatalogos = document.getElementById('dialogocatalogos');
 const avisocatalogos = document.getElementById('avisocatalogos');
+
 
 function filacatalogo(catalogo, item) {
     const activo = item.estado === 1;
@@ -1355,16 +1671,19 @@ function filacatalogo(catalogo, item) {
         </li>`;
 }
 
+
 function dibujarcatalogos() {
     document.getElementById('listacolores').innerHTML = catalogos.colores.map((color) => filacatalogo('color', color)).join('');
     document.getElementById('listatiposflor').innerHTML = catalogos.tiposflor.map((tipo) => filacatalogo('tipoflor', tipo)).join('');
 }
+
 
 function avisarcatalogos(mensaje, tipo) {
     avisocatalogos.textContent = mensaje;
     avisocatalogos.className = `aviso aviso-${tipo}`;
     avisocatalogos.hidden = false;
 }
+
 
 async function abrircatalogos() {
     await cargarcatalogos();
@@ -1373,11 +1692,13 @@ async function abrircatalogos() {
     dialogocatalogos.showModal();
 }
 
+
 dialogocatalogos.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     const formulariocatalogo = evento.target;
     const datos = new FormData(formulariocatalogo);
     datos.append('catalogo', formulariocatalogo.dataset.catalogo);
+
 
     const respuesta = await enviar('guardarcatalogo', datos);
     avisarcatalogos(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
@@ -1387,6 +1708,7 @@ dialogocatalogos.addEventListener('submit', async (evento) => {
         dibujarcatalogos();
     }
 });
+
 
 dialogocatalogos.addEventListener('click', async (evento) => {
     const boton = evento.target.closest('button[data-catalogo]');
@@ -1398,6 +1720,7 @@ dialogocatalogos.addEventListener('click', async (evento) => {
     datos.append('id', boton.dataset.id);
     datos.append('estado', boton.dataset.estado);
 
+
     const respuesta = await enviar('estadocatalogo', datos);
     avisarcatalogos(respuesta.mensaje, respuesta.exito ? 'exito' : 'error');
     if (respuesta.exito) {
@@ -1406,21 +1729,26 @@ dialogocatalogos.addEventListener('click', async (evento) => {
     }
 });
 
+
 dialogocatalogos.addEventListener('input', (evento) => {
     if (evento.target.name === 'nombre') {
         evento.target.value = filtros.letras(evento.target.value);
     }
 });
 
+
 document.getElementById('botoncatalogos').addEventListener('click', abrircatalogos);
 document.getElementById('botoncerrarcatalogos').addEventListener('click', () => dialogocatalogos.close());
+
 
 const proveedoreslistos = cargarproveedores();
 const catalogoslistos = cargarcatalogos();
 filtrosdesdeurl({ categoria: filtrocategoria, estado: filtroestado, stock: filtrostock });
 cargarinventario();
 
+
 abrirformulariosipide(abrirnuevo);
+
 
 preciostemporada.aviso({
     modulo: 'inventario',
@@ -1431,3 +1759,4 @@ preciostemporada.aviso({
         cargarinventario();
     },
 });
+restaurarinsumodesdeproveedor();
