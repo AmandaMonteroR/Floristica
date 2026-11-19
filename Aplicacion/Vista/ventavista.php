@@ -14,7 +14,7 @@
     <header class="encabezado">
         <div>
             <h1>Ventas y ganancias</h1>
-            <p class="subtitulo">Encargos terminados: lo que se vendió y lo que queda después de pagar las flores y productos.</p>
+            <p class="subtitulo">Lo que se vendió, lo que se gastó ese mismo día (los gastos y las compras a proveedores) y el balance que queda.</p>
         </div>
     </header>
 
@@ -26,6 +26,7 @@
                 <button type="button" class="chip" data-periodo="semana">Esta semana</button>
                 <button type="button" class="chip" data-periodo="mes">Este mes</button>
                 <button type="button" class="chip" data-periodo="mespasado">Mes pasado</button>
+                <button type="button" class="chip" data-periodo="anio">Este año</button>
                 <button type="button" class="chip" data-periodo="todo">Todo</button>
             </div>
         </div>
@@ -37,6 +38,14 @@
             <span>Hasta</span>
             <input type="date" id="hasta">
         </label>
+        <div class="campo">
+            <span>Ver el balance por</span>
+            <div class="chips-periodo" id="chipsagrupar">
+                <button type="button" class="chip" data-agrupar="dia">Día</button>
+                <button type="button" class="chip" data-agrupar="semana">Semana</button>
+                <button type="button" class="chip" data-agrupar="mes">Mes</button>
+            </div>
+        </div>
     </section>
 
     <div id="aviso" class="aviso" role="status" hidden></div>
@@ -47,36 +56,58 @@
             <strong id="datovendido">—</strong>
             <small id="notavendido"></small>
         </article>
-        <article class="tarjeta-dato">
-            <span>Costo de flores y productos</span>
-            <strong id="datocosto">—</strong>
-            <small>Lo que se le pagó al proveedor</small>
+        <article class="tarjeta-dato tarjeta-gastos">
+            <span>Gastos</span>
+            <strong id="datogastos">—</strong>
+            <small id="notagastos"></small>
         </article>
-        <article class="tarjeta-dato tarjeta-ganancia">
-            <span>Ganancia</span>
-            <strong id="datoganancia">—</strong>
-            <small id="notaganancia"></small>
+        <article class="tarjeta-dato" id="tarjetabalance">
+            <span>Balance</span>
+            <strong id="datobalance">—</strong>
+            <small>Vendido − gastos</small>
         </article>
     </section>
 
+    <section class="seccion-balance">
+    <h2 class="subtitulo-seccion" id="titulobalance">Balance por día</h2>
     <div class="tabla-contenedor">
-        <table class="tabla tabla-ventas">
+        <table class="tabla tabla-balance">
             <thead>
                 <tr>
-                    <th>N.º</th>
-                    <th>Fecha</th>
-                    <th>Cliente</th>
-                    <th>Pedido</th>
-                    <th>Total</th>
-                    <th>Costo</th>
-                    <th>Ganancia</th>
+                    <th id="columnaperiodo">Día</th>
+                    <th class="numero">Ventas</th>
+                    <th class="numero">Vendido</th>
+                    <th class="numero">Gastos</th>
+                    <th class="numero">Balance</th>
+                    <th class="columna-acciones"><span class="solo-lector">Ver detalle</span></th>
                 </tr>
             </thead>
-            <tbody id="cuerpotabla">
-                <tr><td colspan="7" class="vacio">Cargando ventas…</td></tr>
+            <tbody id="cuerpobalance">
+                <tr><td colspan="6" class="vacio">Cargando…</td></tr>
             </tbody>
+            <tfoot id="piebalance"></tfoot>
         </table>
     </div>
+    <nav class="paginacion" id="paginacionbalance" aria-label="Páginas del balance" hidden></nav>
+    </section>
+
+    <section class="detalle-ventas">
+        <h2 class="subtitulo-seccion">Lo que se vendió</h2>
+        <div class="tabla-contenedor">
+            <table class="tabla tabla-ventas">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Qué se vendió</th>
+                        <th class="numero">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="cuerpoventas"></tbody>
+            </table>
+        </div>
+        <nav class="paginacion" id="paginacionventas" aria-label="Páginas de lo que se vendió" hidden></nav>
+    </section>
 </main>
 
 <script src="<?= recurso('js/menu.js') ?>"></script>

@@ -32,15 +32,12 @@ function responderjson($respuesta, $codigo = 200)
     exit;
 }
 
-// Ruta de un script o estilo con su versión (la fecha en que se modificó), por ejemplo "js/login.js?v=1763270000".
-// Así, cuando el archivo cambia, el navegador carga el nuevo y no se queda con el que tenía guardado.
 function recurso($ruta)
 {
     $archivo = __DIR__ . '/' . $ruta;
     return $ruta . (is_file($archivo) ? '?v=' . filemtime($archivo) : '');
 }
 
-// ---------- Iniciar y cerrar sesión (no requieren estar conectado) ----------
 if ($modulo === 'sesion') {
     if ($accion === 'cerrar') {
         Seguridad::cerrar();
@@ -70,7 +67,6 @@ if ($modulo === 'sesion') {
     }
 }
 
-// ---------- Sin sesión: se muestra el login ----------
 $usuarioactual = Seguridad::usuario();
 
 if ($usuarioactual === null) {
@@ -85,12 +81,10 @@ if ($usuarioactual === null) {
     exit;
 }
 
-// Si no se pide un módulo, se muestra la página de inicio
 if ($modulo === '') {
     $modulo = 'inicio';
 }
 
-// ---------- Permisos por rol ----------
 if (!Seguridad::permitido($modulo, $accion)) {
     if ($accion === '') {
         http_response_code(403);
@@ -226,7 +220,6 @@ try {
                 case 'movimientostock':
                     $respuesta = $controlador->movimientostock($_POST, $usuarioactual);
                     break;
-                // Foto del producto (para la proforma)
                 case 'subirfoto':
                     $respuesta = $controlador->subirfoto($_POST['id'] ?? 0, $_FILES['tbinventariofoto'] ?? null, $usuarioactual);
                     break;
@@ -393,7 +386,6 @@ try {
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
             }
             break;
-        // Clientes y zonas de entrega tienen las mismas acciones
         case 'cliente':
         case 'zonaentrega':
             $controlador = $modulo === 'cliente' ? new clientecontrolador() : new zonaentregacontrolador();
@@ -428,7 +420,6 @@ try {
         case 'temporada':
             $controlador = new temporadacontrolador();
 
-            // Temporada alta: hay una sola; se enciende, se apaga y se le ponen los precios del proveedor
             switch ($accion) {
                 case 'estado':
                     $respuesta = $controlador->estado();
@@ -450,20 +441,18 @@ try {
             }
             break;
 
-        // Ventas y ganancias (solo el propietario)
         case 'venta':
             $controlador = new ventacontrolador();
 
             switch ($accion) {
                 case 'resumen':
-                    $respuesta = $controlador->resumen($_GET['desde'] ?? '', $_GET['hasta'] ?? '');
+                    $respuesta = $controlador->resumen($_GET['desde'] ?? '', $_GET['hasta'] ?? '', $_GET['agrupar'] ?? 'dia');
                     break;
                 default:
                     $respuesta = ['exito' => false, 'mensaje' => 'Acción no válida.', 'datos' => []];
             }
             break;
 
-        // Gastos del negocio (alquiler, luz, salarios...)
         case 'gasto':
             $controlador = new gastocontrolador();
 
@@ -494,7 +483,6 @@ try {
             }
             break;
 
-        // Reportes: ganancia neta y trazabilidad de solicitudes y pedidos
         case 'reporte':
             $controlador = new reportecontrolador();
 
@@ -513,7 +501,6 @@ try {
             }
             break;
 
-        // Cuentas por pagar (pedidos a crédito) y por cobrar (solicitudes con saldo)
         case 'credito':
             $controlador = new creditocontrolador();
 
@@ -535,7 +522,6 @@ try {
             }
             break;
 
-        // Cuenta del usuario conectado: cada uno cambia solo su propia contraseña
         case 'cuenta':
             $controlador = new empleadocontrolador();
 
@@ -558,8 +544,6 @@ try {
     $respuesta = ['exito' => false, 'mensaje' => $excepcion->getMessage(), 'datos' => []];
 }
 
-// Las empleadas no reciben los costos ni las ganancias de los arreglos
-// (la búsqueda por foto no trae costos y tiene otra forma, así que no se toca)
 if ($modulo === 'catalogo' && !in_array($accion, ['buscarporfoto', 'valorar'], true) && !Seguridad::espropietario() && !empty($respuesta['datos'])) {
     $quitarcostos = function ($arreglo) {
         unset($arreglo['costo']);

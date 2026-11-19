@@ -1,4 +1,3 @@
-
 <?php
 require_once __DIR__ . '/../Repositorio/abonorepositorio.php';
 require_once __DIR__ . '/../Repositorio/pedidorepositorio.php';
@@ -8,13 +7,10 @@ require_once __DIR__ . '/../Repositorio/encargorepositorio.php';
 require_once __DIR__ . '/../Repositorio/clienterepositorio.php';
 require_once __DIR__ . '/../Repositorio/empleadorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
+require_once __DIR__ . '/gastocontrolador.php';
 
-// Cuentas por pagar y por cobrar (solo el propietario).
-// - Por pagar: los pedidos que se compraron a crédito. Saldo = monto de la compra - abonos; vence a los días del plazo.
-// - Por cobrar: las solicitudes que la clienta todavía no ha pagado completas (adelantos y ventas a crédito).
 class creditocontrolador
 {
-    // Cuántos días antes del vencimiento se avisa "Por vencer"
     const DIASAVISO = 7;
 
     private $abonos;
@@ -24,6 +20,7 @@ class creditocontrolador
     private $encargos;
     private $clientes;
     private $empleados;
+    private $gastos;
     private $metodos = ['Efectivo', 'SINPE Móvil', 'Transferencia', 'Tarjeta'];
 
     public function __construct()
@@ -35,9 +32,9 @@ class creditocontrolador
         $this->encargos = new encargorepositorio();
         $this->clientes = new clienterepositorio();
         $this->empleados = new empleadorepositorio();
+        $this->gastos = new gastocontrolador();
     }
 
-    // Las dos listas y los totales. Sin $todas, solo las que tienen saldo.
     public function listar($todas = false)
     {
         $todas = $todas === true || $todas === '1';
@@ -59,7 +56,6 @@ class creditocontrolador
                 $porcobrar[] = $cuenta;
             }
         }
-        // Primero las entregadas sin pagar (ventas a crédito), luego por fecha de entrega
         usort($porcobrar, function ($a, $b) {
             return [$a['saldo'] <= 0, !$a['entregada'], $a['fechaentrega']] <=> [$b['saldo'] <= 0, !$b['entregada'], $b['fechaentrega']];
         });
@@ -84,7 +80,6 @@ class creditocontrolador
         ]);
     }
 
-    // Una cuenta con todos sus abonos
     public function obtener($tipo, $id)
     {
         $cuenta = $this->buscar((string) $tipo, (int) $id);
@@ -106,7 +101,6 @@ class creditocontrolador
         return $this->respuesta(true, '', $cuenta);
     }
 
-    // Registra un abono: a un proveedor (tipo "pagar", id del pedido) o de una clienta (tipo "cobrar", id de la solicitud)
     public function abonar($datos, $usuario)
     {
         $tipo = trim((string) ($datos['tipo'] ?? ''));
@@ -157,7 +151,20 @@ class creditocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
-        $this->abonos->insertar($tipo, $id, $fecha, number_format((float) $monto, 2, '.', ''), $metodo, $nota, $usuario['id']);
+        $monto = number_format((float) $monto, 2, '.', '');
+        $conexion = Basedatos::conectar();
+        $conexion->beginTransaction();
+        try {
+            $idabono = $this->abonos->insertar($tipo, $id, $fecha, $monto, $metodo, $nota, $usuario['id']);
+            if ($tipo === 'pagar') {
+                $this->gastos->registrarcompra('Abono', $idabono, 'Abono al pedido N.º ' . $id . ' a ' . $cuenta['nombre']
+                    . ' (a crédito)', $monto, $fecha, $usuario['id']);
+            }
+            $conexion->commit();
+        } catch (Throwable $excepcion) {
+            $conexion->rollBack();
+            throw $excepcion;
+        }
         $saldo = round($cuenta['saldo'] - (float) $monto, 2);
 
         return $this->respuesta(true, $saldo > 0
@@ -166,9 +173,6 @@ class creditocontrolador
             ['saldo' => $saldo]);
     }
 
-    // Anula un abono mal registrado (monto o cuenta equivocada, registrado dos veces...).
-    // No se borra: deja de sumar, el saldo vuelve a subir y queda el motivo, quién y cuándo.
-    // Si el abono quedó mal, se anula y se registra otro correcto.
     public function anular($datos, $usuario)
     {
         $tipo = trim((string) ($datos['tipo'] ?? ''));
@@ -202,10 +206,12 @@ class creditocontrolador
         if (!$this->abonos->anular($tipo, $idabono, $motivo, $usuario['id'])) {
             return $this->respuesta(false, 'Ese abono ya está anulado.');
         }
+        if ($tipo === 'pagar') {
+            $this->gastos->anularcompra('Abono', $idabono, $usuario['id']);
+        }
 
         $monto = (float) $abono->{$prefijo . 'monto'}();
         $saldo = round($cuenta['saldo'] + $monto, 2);
-        // Si el abono era más de lo que faltaba (no debería pasar), el saldo no puede pasar del total
         $saldo = min($saldo, round($cuenta['monto'], 2));
 
         return $this->respuesta(true, 'Abono de ' . historicocontrolador::monto($monto) . ' anulado. El saldo ahora es '
@@ -226,7 +232,6 @@ class creditocontrolador
         return null;
     }
 
-    // Un pedido comprado a crédito (los de contado ya se pagaron al confirmar)
     private function cuentapagar(Pedido $pedido)
     {
         $confirmacion = $this->confirmaciones->obtenerporpedido($pedido->getTbpedidoid());
@@ -268,7 +273,6 @@ class creditocontrolador
         ];
     }
 
-    // Lo que debe la clienta de una solicitud (las canceladas no cuentan)
     private function cuentacobrar(Encargo $encargo)
     {
         if ($encargo->getTbsolicitudencargoestado() === 'Cancelado') {
@@ -280,13 +284,11 @@ class creditocontrolador
         $abonado = $this->abonos->totalde('cobrar', $encargo->getTbsolicitudencargoid());
         $saldo = max(0, round($total - $abonado, 2));
 
-        // Solo se considera entregado cuando el cliente recibe el arreglo.
         $entregada = $encargo->getTbsolicitudencargoestado() === 'Entregado';
 
         if ($saldo <= 0) {
             $estado = 'Pagado';
         } elseif ($entregada) {
-            // Se entregó sin pagar completo: venta a crédito
             $estado = 'Entregada sin pagar';
         } else {
             $estado = $abonado > 0 ? 'Con adelanto' : 'Sin pagar';

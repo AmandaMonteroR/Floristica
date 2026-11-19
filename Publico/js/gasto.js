@@ -1,4 +1,3 @@
-// Gastos del negocio: lista por período y categoría, formulario para registrar o editar, anular y volver a contar
 const rutabase = 'index.php?modulo=gasto';
 const clavebase = 'floristica.borrador.gasto.';
 const camposformulario = ['tbgastocategoria', 'tbgastomonto', 'tbgastodescripcion', 'tbgastofecha'];
@@ -43,7 +42,6 @@ function montocorto(monto) {
     return '₡' + Number(monto).toLocaleString('es-CR', { maximumFractionDigits: 0 });
 }
 
-// "2026-10-11" -> "11/10/2026"
 function formatearfecha(fecha) {
     const [anio, mes, dia] = String(fecha).slice(0, 10).split('-');
     return `${dia}/${mes}/${anio}`;
@@ -53,14 +51,12 @@ function fechatexto(fecha) {
     return fecha.toLocaleDateString('en-CA');
 }
 
-// Solo números y un punto con máximo 2 decimales
 function filtrardecimal(valor) {
     const limpio = valor.replace(/,/g, '.').replace(/[^\d.]/g, '');
     const [entera, ...resto] = limpio.split('.');
     return resto.length > 0 ? `${entera}.${resto.join('').slice(0, 2)}` : entera;
 }
 
-// Fechas de cada botón de período
 function periodo(nombre) {
     const hoy = new Date();
     switch (nombre) {
@@ -137,8 +133,6 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
     });
 }
 
-/* ---------- Borrador ---------- */
-
 function claveborrador() {
     const id = formulario.elements.tbgastoid.value;
     return clavebase + (id !== '' ? id : 'nuevo');
@@ -213,8 +207,6 @@ function descartarborrador() {
     avisoborrador.hidden = true;
 }
 
-/* ---------- Lista ---------- */
-
 async function cargargastos(desde = desdeactual, hasta = hastaactual) {
     const respuesta = await consultar('listar', {
         desde,
@@ -240,7 +232,6 @@ async function cargargastos(desde = desdeactual, hasta = hastaactual) {
         ? 'Sin gastos en este período'
         : `${cuentan} ${cuentan === 1 ? 'gasto' : 'gastos'}` + (datos.anulados > 0 ? ` · ${datos.anulados} anulado${datos.anulados === 1 ? '' : 's'}` : '');
 
-    // Barras por categoría (las más grandes primero)
     const categorias = Object.entries(datos.porcategoria);
     const mayor = categorias.length ? categorias[0][1] : 0;
     listacategorias.innerHTML = categorias.length
@@ -264,22 +255,20 @@ async function cargargastos(desde = desdeactual, hasta = hastaactual) {
             <tr class="${cuenta ? '' : 'fila-inactiva'}">
                 <td>${formatearfecha(gasto.tbgastofecha)}</td>
                 <td>${escapar(gasto.tbgastocategoria)}</td>
-                <td>${escapar(gasto.tbgastodescripcion)}</td>
+                <td>${escapar(gasto.tbgastodescripcion)}${gasto.automatico ? ' <span class="estado estado-vigente" title="Se registró solo al comprarle al proveedor">Automático</span>' : ''}</td>
                 <td class="numero">${formatearmonto(gasto.tbgastomonto)}</td>
                 <td>${gasto.registradopor ? escapar(gasto.registradopor) : '<span class="texto-suave">—</span>'}</td>
                 <td><span class="estado ${cuenta ? 'estado-activo' : 'estado-inactivo'}">${cuenta ? 'Cuenta' : 'Anulado'}</span></td>
                 <td class="columna-acciones">
-                    ${cuenta ? `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>` : ''}
+                    ${cuenta && !gasto.automatico ? `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>` : ''}
                     <button type="button" class="enlace" data-accion="historial" data-id="${id}">Historial</button>
-                    ${cuenta
+                    ${gasto.automatico ? '' : cuenta
                         ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Anular</button>`
                         : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Volver a contar</button>`}
                 </td>
             </tr>`;
     }).join('');
 }
-
-/* ---------- Formulario ---------- */
 
 function limpiarerrores() {
     formulario.querySelectorAll('[data-error]').forEach((error) => {
@@ -341,13 +330,13 @@ async function cambiarestado(accion, id, descripcion) {
     const configuracion = accion === 'inactivar'
         ? {
             titulo: '¿Anular el gasto?',
-            mensaje: `"${descripcion}" ya no se sumará en los totales ni en la ganancia neta. No se borra: queda en el historial y puede volver a contarlo.`,
+            mensaje: `"${descripcion}" ya no se sumará en los totales ni en el balance. No se borra: queda en el historial y puede volver a contarlo.`,
             textoaceptar: 'Anular',
             peligro: true,
         }
         : {
             titulo: '¿Volver a contar el gasto?',
-            mensaje: `"${descripcion}" se sumará otra vez en los totales y en la ganancia neta.`,
+            mensaje: `"${descripcion}" se sumará otra vez en los totales y en el balance.`,
             textoaceptar: 'Volver a contar',
         };
 
@@ -365,8 +354,6 @@ async function cambiarestado(accion, id, descripcion) {
         cargargastos();
     }
 }
-
-/* ---------- Eventos ---------- */
 
 formulario.addEventListener('input', (evento) => {
     const campo = evento.target;
@@ -433,7 +420,7 @@ cuerpotabla.addEventListener('click', (evento) => {
     }
 
     const id = boton.dataset.id;
-    const descripcion = boton.closest('tr').cells[2].textContent;
+    const descripcion = boton.closest('tr').cells[2].firstChild.textContent.trim();
 
     switch (boton.dataset.accion) {
         case 'editar':
@@ -474,5 +461,4 @@ document.getElementById('botondescartarborrador').addEventListener('click', desc
 marcarchip('mes');
 cargargastos(...periodo('mes'));
 
-// Si se entró desde "Registrar un gasto" del menú, abre el formulario
 abrirformulariosipide(abrirnuevo);

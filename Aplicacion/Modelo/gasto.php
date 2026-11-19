@@ -1,6 +1,5 @@
 <?php
 
-// Gasto del negocio que no es mercadería (alquiler, luz, salarios...). Estado: 1 cuenta, 0 anulado.
 class Gasto
 {
     private $tbgastoid;
@@ -10,6 +9,8 @@ class Gasto
     private $tbgastofecha;
     private $tbempleadoid;
     private $tbgastoestado;
+    private $tbgastoorigen;
+    private $tbgastoreferencia;
 
     public function __construct($datos = [])
     {
@@ -20,6 +21,8 @@ class Gasto
         $this->tbgastofecha       = $datos['tbgastofecha'] ?? '';
         $this->tbempleadoid       = $datos['tbempleadoid'] ?? 0;
         $this->tbgastoestado      = $datos['tbgastoestado'] ?? 1;
+        $this->tbgastoorigen      = $datos['tbgastoorigen'] ?? 'Manual';
+        $this->tbgastoreferencia  = $datos['tbgastoreferencia'] ?? null;
     }
 
     public function getTbgastoid() {
@@ -66,4 +69,19 @@ class Gasto
 
     public function estaActivo() {
         return (int) $this->tbgastoestado === 1; }
+
+    public function getTbgastoorigen() {
+        return $this->tbgastoorigen; }
+
+    public function setTbgastoorigen($valor) {
+        $this->tbgastoorigen = $valor; }
+
+    public function getTbgastoreferencia() {
+        return $this->tbgastoreferencia; }
+
+    public function setTbgastoreferencia($valor) {
+        $this->tbgastoreferencia = $valor; }
+
+    public function esAutomatico() {
+        return $this->tbgastoorigen !== 'Manual'; }
 }

@@ -23,8 +23,8 @@ class gastorepositorio
         $gasto->setTbgastoestado(1);
 
         $sql = 'INSERT INTO tbgasto (tbgastoid, tbgastocategoria, tbgastodescripcion, tbgastomonto, tbgastofecha,
-                tbempleadoid, tbgastoestado)
-                VALUES (?, ?, ?, ?, ?, ?, ?)';
+                tbempleadoid, tbgastoestado, tbgastoorigen, tbgastoreferencia)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
         $sentencia = $this->conexion->prepare($sql);
         $sentencia->execute([
@@ -35,6 +35,8 @@ class gastorepositorio
             $gasto->getTbgastofecha(),
             $gasto->getTbempleadoid(),
             $gasto->getTbgastoestado(),
+            $gasto->getTbgastoorigen(),
+            $gasto->getTbgastoreferencia(),
         ]);
 
         return $gasto->getTbgastoid();
@@ -70,7 +72,15 @@ class gastorepositorio
         return $fila ? new Gasto($fila) : null;
     }
 
-    // Gastos entre dos fechas (AAAA-MM-DD), del más nuevo al más viejo. $categoria '' = todas; $estado null = todos.
+    public function obtenerpororigen($origen, $referencia)
+    {
+        $sentencia = $this->conexion->prepare('SELECT * FROM tbgasto WHERE tbgastoorigen = ? AND tbgastoreferencia = ?');
+        $sentencia->execute([$origen, (int) $referencia]);
+        $fila = $sentencia->fetch();
+
+        return $fila ? new Gasto($fila) : null;
+    }
+
     public function listar($desde, $hasta, $categoria = '', $estado = null)
     {
         $sql = 'SELECT * FROM tbgasto WHERE tbgastofecha BETWEEN ? AND ?';
@@ -97,7 +107,6 @@ class gastorepositorio
         return $lista;
     }
 
-    // Total de los gastos que cuentan (no anulados) por categoría: [categoría => monto]
     public function totalesporcategoria($desde, $hasta)
     {
         $sentencia = $this->conexion->prepare('SELECT tbgastocategoria AS categoria, SUM(tbgastomonto) AS total FROM tbgasto
@@ -112,14 +121,12 @@ class gastorepositorio
         return $totales;
     }
 
-    // Fecha del gasto más viejo (para "Todo")
     public function primerafecha()
     {
         $fecha = $this->conexion->query('SELECT MIN(tbgastofecha) AS fecha FROM tbgasto')->fetch()['fecha'];
         return $fecha ?: null;
     }
 
-    // ¿Hay otro gasto activo igual (misma categoría, descripción, monto y fecha)? Así no se registra dos veces.
     public function existeigual($categoria, $descripcion, $monto, $fecha, $idexcluir = 0)
     {
         $sentencia = $this->conexion->prepare('SELECT COUNT(*) AS total FROM tbgasto WHERE tbgastoestado = 1

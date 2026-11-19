@@ -3,13 +3,10 @@ require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 require_once __DIR__ . '/../Modelo/pedidoabono.php';
 require_once __DIR__ . '/../Modelo/solicitudencargoabono.php';
 
-// Abonos de las cuentas por pagar (a los proveedores, por pedido) y por cobrar (de las clientas, por solicitud).
-// Las dos tablas tienen las mismas columnas; cambia el nombre y a qué registro pertenecen.
 class abonorepositorio
 {
     private $conexion;
 
-    // Tabla, columna del registro y modelo de cada tipo. Solo se aceptan estos.
     private $tipos = [
         'pagar'  => ['tabla' => 'tbpedidoabono', 'id' => 'tbpedidoid', 'clase' => 'Pedidoabono'],
         'cobrar' => ['tabla' => 'tbsolicitudencargoabono', 'id' => 'tbsolicitudencargoid', 'clase' => 'Solicitudencargoabono'],
@@ -35,8 +32,6 @@ class abonorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    // Abonos de un pedido o de una solicitud, del más viejo al más nuevo, como arreglos simples.
-    // Trae también los anulados (estado 0), con el motivo y cuándo y quién los anuló.
     public function listar($tipo, $idregistro)
     {
         $t = $this->tipo($tipo);
@@ -72,7 +67,6 @@ class abonorepositorio
         return $abonos;
     }
 
-    // Un abono por su id, con el pedido o la solicitud a la que pertenece
     public function obtener($tipo, $idabono)
     {
         $t = $this->tipo($tipo);
@@ -83,7 +77,6 @@ class abonorepositorio
         return $fila ? new $t['clase']($fila) : null;
     }
 
-    // Anula un abono: deja de sumar, guarda el motivo y registra en el histórico quién y cuándo
     public function anular($tipo, $idabono, $motivo, $idempleado)
     {
         $t = $this->tipo($tipo);
@@ -113,7 +106,6 @@ class abonorepositorio
         }
     }
 
-    // Lo abonado a cada registro: [id del pedido o de la solicitud => total abonado]. Los anulados no cuentan.
     public function totales($tipo)
     {
         $t = $this->tipo($tipo);
@@ -156,7 +148,7 @@ class abonorepositorio
         $sentencia = $this->conexion->prepare($sql);
         $prefijo = 'get' . ucfirst($tabla);
 
-        return $sentencia->execute([
+        $sentencia->execute([
             $abono->{$prefijo . 'id'}(),
             $abono->{'get' . ucfirst($t['id'])}(),
             $abono->{$prefijo . 'fecha'}(),
@@ -165,5 +157,7 @@ class abonorepositorio
             $abono->{$prefijo . 'nota'}(),
             $abono->getTbempleadoid(),
         ]);
+
+        return (int) $abono->{$prefijo . 'id'}();
     }
 }

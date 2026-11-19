@@ -1,5 +1,4 @@
 <?php
-// Reportes: ganancia neta de un período y trazabilidad de una solicitud o de un pedido
 $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'ganancia';
 ?>
 <!DOCTYPE html>
@@ -18,13 +17,13 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
     <header class="encabezado">
         <div>
             <h1>Reportes</h1>
-            <p class="subtitulo">Cuánto queda de verdad después de pagar todo, y la historia completa de cada encargo y cada pedido.</p>
+            <p class="subtitulo">Cuánto queda después de pagar todo (lo vendido menos los gastos), y la historia completa de cada encargo y cada pedido.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonimprimir">Imprimir</button>
     </header>
 
     <nav class="pestanas" aria-label="Reporte">
-        <a href="index.php?modulo=reporte&amp;ver=ganancia"<?= $verreporte === 'ganancia' ? ' class="activa" aria-current="page"' : '' ?>>Ganancia neta</a>
+        <a href="index.php?modulo=reporte&amp;ver=ganancia"<?= $verreporte === 'ganancia' ? ' class="activa" aria-current="page"' : '' ?>>Balance</a>
         <a href="index.php?modulo=reporte&amp;ver=trazabilidad"<?= $verreporte === 'trazabilidad' ? ' class="activa" aria-current="page"' : '' ?>>Trazabilidad</a>
     </nav>
 
@@ -53,7 +52,7 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
 
         <section class="reporte-ganancia">
             <article class="estado-resultados" aria-live="polite">
-                <h2 id="tituloperiodo">Ganancia neta</h2>
+                <h2 id="tituloperiodo">Balance</h2>
                 <dl id="resultados" class="lineas-resultado"></dl>
             </article>
             <article class="meses-ganancia">
@@ -64,16 +63,15 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
                             <tr>
                                 <th>Mes</th>
                                 <th class="numero">Vendido</th>
-                                <th class="numero">Costo</th>
                                 <th class="numero">Gastos</th>
-                                <th class="numero">Ganancia neta</th>
+                                <th class="numero">Balance</th>
                             </tr>
                         </thead>
                         <tbody id="cuerpomeses"></tbody>
                     </table>
                 </div>
-                <p class="nota">Vendido: encargos terminados en el mes. Costo: lo que costaron sus flores y productos.
-                    Gastos: alquiler, luz, salarios y demás gastos que cuentan.</p>
+                <p class="nota">Vendido: encargos terminados en el mes. Gastos: lo que salió de la caja (alquiler, luz,
+                    salarios… y las compras a proveedores). Balance: vendido − gastos.</p>
             </article>
         </section>
     <?php else: ?>

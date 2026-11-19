@@ -429,7 +429,6 @@ h1 {
     margin-top: 1rem;
 }
 
-/* Botones de la solicitud dentro de "Ver" (Asignármela, Iniciar…), a la izquierda de Cerrar */
 .acciones-detalle {
     display: flex;
     flex-wrap: wrap;
@@ -441,7 +440,6 @@ h1 {
     display: none;
 }
 
-/* Detalle de Encargos: cabecera fija con cierre en la esquina. */
 #dialogodetalle {
     max-height: 90vh;
     max-height: 90dvh;
@@ -498,7 +496,6 @@ h1 {
     color: #ffffff;
 }
 
-/* Acciones después de los datos principales, antes del cobro. */
 #dialogodetalle .acciones-detalle {
     justify-content: center;
     gap: 0.5rem;
@@ -658,13 +655,10 @@ h1 {
     }
 }
 
-/* En el historial, los valores largos (como la ubicación) pasan a la siguiente línea */
 #dialogohistorial .tabla td {
     white-space: normal;
 }
 
-
-/* Inventario */
 .estado-bajo {
     background: var(--peligro-fondo);
     color: var(--peligro);
@@ -680,7 +674,6 @@ h1 {
     color: var(--texto);
 }
 
-/* Ganancia por unidad, al lado del precio de venta */
 .precio-ganancia {
     align-self: center;
     margin: 0;
@@ -703,8 +696,6 @@ h1 {
     color: var(--principal-oscuro);
 }
 
-
-/* En el inventario, los nombres largos pasan a la siguiente línea para que se vean las acciones */
 .tabla-inventario th,
 .tabla-inventario td {
     padding: 0.75rem 0.6rem;
@@ -716,8 +707,6 @@ h1 {
     min-width: 110px;
 }
 
-
-/* Inventario: círculo de color según el nivel de stock */
 .stock {
     display: inline-flex;
     align-items: center;
@@ -770,19 +759,16 @@ h1 {
     border-radius: 50%;
 }
 
-/* Proveedores: teléfono nacional o internacional */
 .grupo-telefono {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
 }
 
-/* Evita que el nombre largo de un país ensanche el formulario */
 .rejilla > .campo {
     min-width: 0;
 }
 
-/* El país va arriba a todo el ancho, para que se lea el nombre y el código */
 .selector-pais {
     position: relative;
     flex: none;
@@ -793,7 +779,6 @@ h1 {
     width: 100%;
 }
 
-/* Lista que se va filtrando mientras se escribe el país */
 .lista-paises {
     position: absolute;
     top: calc(100% + 4px);
@@ -854,8 +839,6 @@ h1 {
     display: none;
 }
 
-
-/* Pedidos */
 .estado-pendiente {
     background: #fdf3d7;
     color: #7a5a00;
@@ -927,8 +910,6 @@ h1 {
     clip: rect(0 0 0 0);
 }
 
-
-/* Pedidos: botones − y + para la cantidad de paquetes */
 .contador {
     display: flex;
     align-items: center;
@@ -966,8 +947,6 @@ h1 {
     outline-offset: 2px;
 }
 
-
-/* Catálogo de arreglos florales */
 .galeria {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -1133,8 +1112,6 @@ h1 {
     }
 }
 
-
-/* Empleados */
 .estado-propietario {
     background: var(--ciruela);
     color: #ffffff;
@@ -1145,8 +1122,6 @@ h1 {
     color: var(--principal-oscuro);
 }
 
-
-/* Pestañas del catálogo: Arreglos / Encargos */
 .pestanas {
     display: flex;
     gap: 0.5rem;
@@ -1177,7 +1152,6 @@ h1 {
     outline-offset: 2px;
 }
 
-/* Encargos */
 .tabla-encargos th,
 .tabla-encargos td {
     padding: 0.75rem 0.6rem;
@@ -1236,8 +1210,6 @@ h1 {
     text-align: center;
 }
 
-
-/* Menú con submenús */
 .menu-lateral .menu-nivel {
     list-style: none;
     margin: 0;
@@ -1284,7 +1256,6 @@ h1 {
     outline-offset: 2px;
 }
 
-/* Flecha que gira al abrir */
 .flecha {
     width: 0.5rem;
     height: 0.5rem;
@@ -1307,14 +1278,12 @@ h1 {
     display: block;
 }
 
-/* En celular o sin mouse: los submenús se despliegan hacia abajo */
 .submenu > .menu-nivel {
     padding-left: 0.75rem;
     margin-left: 1rem;
     border-left: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* Con mouse en pantalla grande: los submenús salen hacia la derecha */
 @media (hover: hover) and (min-width: 768px) {
     .menu-lateral {
         overflow: visible;
@@ -1331,7 +1300,6 @@ h1 {
         left: 100%;
         z-index: 30;
         width: 260px;
-        /* El relleno hace de "puente" para que el mouse no pierda el submenú */
         padding-left: 1.25rem;
     }
 
@@ -1356,8 +1324,6 @@ h1 {
     }
 }
 
-
-/* Usuario conectado en la barra superior */
 .usuario-sesion {
     display: flex;
     align-items: center;
@@ -1405,7 +1371,6 @@ h1 {
     }
 }
 
-/* Pantalla de login */
 .pagina-login {
     display: grid;
     place-items: center;
@@ -1460,7 +1425,6 @@ h1 {
     margin-top: 0.75rem;
 }
 
-/* Página sin permiso */
 .sin-permiso {
     max-width: 480px;
     margin: 3rem auto;
@@ -1485,7 +1449,6 @@ h1 {
     text-decoration: none;
 }
 
-/* Página de inicio */
 .resumen-inicio {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -1586,7 +1549,6 @@ h1 {
     min-width: 0;
 }
 
-/* Cada solicitud del inicio abre esa misma solicitud */
 .enlace-inicio {
     display: flex;
     flex: 1;
@@ -1627,14 +1589,12 @@ h1 {
     margin-left: 1.25rem;
 }
 
-/* Mensaje en vivo de la contraseña */
 .correcto {
     font-size: 0.82rem;
     font-weight: 400;
     color: var(--verde);
 }
 
-/* Historial de encargos y movimientos de inventario */
 .tabla-historial td {
     white-space: normal;
 }
@@ -1653,13 +1613,10 @@ h1 {
     color: var(--peligro);
 }
 
-
-/* En las ventanas de historial, la fecha no se parte en dos líneas */
 #dialogohistorial .tabla td:first-child {
     white-space: nowrap;
 }
 
-/* Botón "Inicio" en la barra de arriba */
 .boton-inicio {
     display: inline-flex;
     align-items: center;
@@ -1682,7 +1639,6 @@ h1 {
     outline-offset: 2px;
 }
 
-/* Datos del usuario en el menú lateral, con el botón para cambiar la contraseña */
 .menu-cuenta {
     display: flex;
     flex-direction: column;
@@ -1721,8 +1677,6 @@ h1 {
     gap: 0.5rem;
 }
 
-/* Páginas más compactas: el encabezado y las filas ocupan menos alto,
-   así caben más registros en cada página sin tener que bajar */
 .contenedor {
     padding-top: 1.25rem;
     padding-bottom: 1.25rem;
@@ -1756,12 +1710,10 @@ h1 {
     padding-bottom: 0.55rem;
 }
 
-/* Las listas no se salen por la derecha: el texto largo pasa a la siguiente línea */
 .contenedor > .tabla-contenedor .tabla td {
     white-space: normal;
 }
 
-/* En pantallas medianas (tablet, ventana angosta) las columnas se aprietan un poco más */
 @media (max-width: 860px) {
     .contenedor > .tabla-contenedor .tabla th {
         white-space: normal;
@@ -1799,7 +1751,6 @@ h1 {
     font-size: 0.8rem;
 }
 
-/* Paginación debajo de las listas */
 .paginacion {
     display: flex;
     flex-wrap: wrap;
@@ -1861,9 +1812,6 @@ h1 {
     color: var(--texto-suave);
 }
 
-/* ---------- Celular ----------
-   En pantallas angostas todo se hace más compacto y las listas
-   se muestran como tarjetas en lugar de tablas anchas. */
 @media (max-width: 760px) {
     .contenedor {
         padding: 1rem 0.75rem;
@@ -1888,7 +1836,6 @@ h1 {
         font-size: 0.85rem;
     }
 
-    /* Encabezado de cada página */
     .encabezado {
         padding: 1rem 1.1rem;
         gap: 0.75rem;
@@ -1909,7 +1856,6 @@ h1 {
         font-size: 0.9rem;
     }
 
-    /* Inicio: tarjetas de dos en dos */
     .resumen-inicio {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.6rem;
@@ -1941,7 +1887,6 @@ h1 {
         padding: 1rem;
     }
 
-    /* Filtros: dos por fila y la búsqueda a todo el ancho */
     .filtros {
         gap: 0.6rem;
     }
@@ -1963,7 +1908,6 @@ h1 {
         margin-bottom: 0.75rem;
     }
 
-    /* Listas: cada fila de la tabla se convierte en una tarjeta */
     .contenedor > .tabla-contenedor {
         overflow: visible;
         background: none;
@@ -2002,7 +1946,6 @@ h1 {
         border-bottom: none;
     }
 
-    /* Nombre de la columna a la izquierda de cada dato */
     .contenedor > .tabla-contenedor .tabla td::before {
         content: attr(data-etiqueta);
         float: left;
@@ -2034,7 +1977,6 @@ h1 {
         text-align: right;
     }
 
-    /* Catálogo: dos arreglos por fila */
     .galeria {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.6rem;
@@ -2049,7 +1991,6 @@ h1 {
         font-size: 0.85rem;
     }
 
-    /* El nombre arriba y el estado debajo, para que el nombre no se parta */
     .tarjeta-titulo {
         flex-direction: column;
         gap: 0.3rem;
@@ -2078,24 +2019,18 @@ h1 {
         padding: 0.25rem 0.3rem;
     }
 
-    /* Ventanas de formularios */
     .dialogo {
         width: calc(100% - 1rem);
         padding: 1rem;
     }
 }
 
-
-/* Teléfono del cliente: abre WhatsApp y no se parte en dos líneas */
 .enlace-telefono {
     font-weight: 600;
     color: var(--principal-oscuro);
     white-space: nowrap;
 }
 
-/* Solicitudes de encargo */
-
-/* Foto y contenido del arreglo del catálogo elegido en la solicitud */
 .lleva-arreglo {
     display: flex;
     gap: 1rem;
@@ -2193,7 +2128,6 @@ h1 {
     font-weight: 700;
 }
 
-/* En la lista de solicitudes, quién la tiene va en una sola línea y las acciones tienen más espacio */
 @media (min-width: 761px) {
     .tabla-encargos td:nth-child(6) small {
         white-space: nowrap;
@@ -2204,10 +2138,6 @@ h1 {
     }
 }
 
-
-/* ---------- Temporadas ---------- */
-
-/* Arriba, en la barra: qué precios se están usando */
 .chip-temporada {
     display: inline-flex;
     align-items: center;
@@ -2232,7 +2162,6 @@ h1 {
     color: #7a4b00;
 }
 
-/* Página de temporadas: aviso de qué precios se usan */
 .banner-temporada {
     display: flex;
     justify-content: space-between;
@@ -2257,7 +2186,6 @@ h1 {
     border-left-color: #f0a500;
 }
 
-/* Formularios: un campo de precio por temporada */
 .rejilla-temporadas {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -2272,7 +2200,6 @@ h1 {
     gap: 0.35rem;
 }
 
-/* Catálogo: precio normal debajo del de temporada */
 .precio-normal {
     display: block;
     font-size: 0.8rem;
@@ -2281,7 +2208,6 @@ h1 {
     text-decoration: line-through;
 }
 
-/* Aviso flotante de precios que faltan */
 .aviso-flotante {
     position: fixed;
     right: 1.25rem;
@@ -2321,7 +2247,6 @@ h1 {
         display: none;
     }
 
-    /* Con el aviso de temporada arriba, el botón de inicio queda solo con el ícono */
     .barra-superior:has(.chip-temporada) .boton-inicio span {
         display: none;
     }
@@ -2336,8 +2261,6 @@ h1 {
     }
 }
 
-
-/* ---------- Barra superior sin saltos ---------- */
 .boton-salir,
 .boton-inicio,
 .usuario-datos strong,
@@ -2355,7 +2278,6 @@ h1 {
     text-overflow: ellipsis;
 }
 
-/* Pantallas medianas: el aviso de temporada se acorta para que todo quepa en una línea */
 @media (max-width: 1100px) {
     .chip-temporada .chip-texto {
         display: none;
@@ -2372,7 +2294,6 @@ h1 {
     }
 }
 
-/* Solicitudes en pantallas medianas: la tabla cabe sin moverse de lado */
 @media (min-width: 761px) and (max-width: 1000px) {
     .tabla-encargos .columna-acciones {
         min-width: 0;
@@ -2387,7 +2308,6 @@ h1 {
         min-width: 0;
     }
 
-    /* La foto se achica (antes se escondía y en esta medida no se veía la foto del personalizado) */
     .tabla-encargos .celda-arreglo img,
     .tabla-encargos .celda-arreglo .icono-personalizado {
         width: 34px;
@@ -2399,38 +2319,28 @@ h1 {
     }
 }
 
-
-/* Formulario de solicitudes: con qué precios de temporada se cotiza */
 .aviso-temporada {
     background: #fff1c2;
     color: #7a4b00;
     border-left: 4px solid #f0a500;
 }
 
-
-/* Precio de temporada mal escrito: borde rojo al momento */
 .tabla-lineas input[aria-invalid="true"],
 .precio-temporada input[aria-invalid="true"] {
     border-color: var(--peligro);
     box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.15);
 }
 
-/* Las etiquetas de estado ("En uso", "Activa"...) no se partan en dos líneas */
 .estado {
     white-space: nowrap;
 }
 
-
-/* ---------- Parte 9: precios calculados en temporada y flores pintadas ---------- */
-
-/* Debajo del precio del proveedor: a cuánto se vende la unidad */
 .venta-temporada {
     min-height: 1.1em;
     font-size: 0.8rem;
     color: #2f6b3a;
 }
 
-/* Catálogo: aviso de que el precio de temporada se calcula solo */
 .nota-temporada {
     margin-top: 0.75rem;
     padding: 0.55rem 0.8rem;
@@ -2439,14 +2349,11 @@ h1 {
     border-radius: 6px;
 }
 
-/* En pantallas grandes los botones de acciones van en una sola línea: las filas quedan más bajas
-   y caben más registros por página (la tabla de solicitudes tiene su propio ajuste) */
 @media (min-width: 1001px) {
     .contenedor > .tabla-contenedor .tabla:not(.tabla-encargos) td.columna-acciones {
         white-space: nowrap;
     }
 }
-/* Celular angosto con temporada en uso: el aviso de la barra se acorta para que todo quepa */
 @media (max-width: 480px) {
     .barra-superior {
         gap: 0.4rem;
@@ -2461,10 +2368,6 @@ h1 {
     }
 }
 
-
-/* ---------- Parte 10: dos precios, Ver más sencillo, % de ganancia, temporada alta y ventas ---------- */
-
-/* Botones pequeños redondeados (períodos, porcentajes rápidos) */
 .chip {
     padding: 0.3rem 0.75rem;
     border: 1px solid var(--borde);
@@ -2486,7 +2389,6 @@ h1 {
     color: #ffffff;
 }
 
-/* Tarjeta del catálogo: precio normal y de temporada alta; el que se cobra ahora resaltado */
 .tarjeta-precios {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2522,7 +2424,6 @@ h1 {
     color: var(--principal-oscuro);
 }
 
-/* Ver un arreglo: foto, precios y lo que incluye */
 .detalle-info h2 {
     margin: 0 0 0.25rem;
 }
@@ -2615,7 +2516,6 @@ h1 {
     gap: 0.75rem;
 }
 
-/* Solicitud: % de ganancia y los dos totales */
 .fila-porcentaje {
     display: flex;
     flex-wrap: wrap;
@@ -2672,7 +2572,6 @@ h1 {
     color: var(--principal-oscuro);
 }
 
-/* Temporada alta: buscar y guardar en la misma línea */
 .filtros-temporada {
     align-items: flex-end;
 }
@@ -2708,7 +2607,6 @@ h1 {
     display: block;
 }
 
-/* Ventas y ganancias */
 .chips-periodo {
     display: flex;
     flex-wrap: wrap;
@@ -2777,16 +2675,11 @@ h1 {
     }
 }
 
-/* Detalle sin foto (personalizados): el texto usa todo el ancho */
 .detalle-arreglo:has(> .foto-detalle[hidden]),
 .detalle-arreglo:has(> .columna-foto[hidden]) {
     grid-template-columns: 1fr;
 }
 
-/* ---------- Parte 11: acciones como botones ---------- */
-
-/* Ver, Historial, Asignar…: gris. Editar, Iniciar, Terminar…: color de la floristería.
-   Inactivar y Cancelar: rojo. Reactivar: verde. */
 .columna-acciones .enlace,
 .tarjeta-acciones .enlace {
     display: inline-flex;
@@ -2865,14 +2758,11 @@ h1 {
     border-color: #8fbd9f;
 }
 
-/* En el celular, los botones van a la derecha debajo de los datos */
 @media (max-width: 760px) {
     .contenedor > .tabla-contenedor .tabla td.columna-acciones {
         text-align: right;
     }
 }
-
-/* ---------- Parte 11: el botón del encabezado siempre a la derecha ---------- */
 
 .encabezado > div:first-child {
     flex: 1 1 18rem;
@@ -2883,8 +2773,6 @@ h1 {
     flex: none;
     margin-left: auto;
 }
-
-/* ---------- Parte 11: historial con filtro ---------- */
 
 .filtro-historial {
     display: flex;
@@ -2921,7 +2809,6 @@ h1 {
     white-space: nowrap;
 }
 
-/* Solo en la ventana de historial: la columna del cambio es la más ancha */
 #dialogohistorial .tabla-historial th:nth-child(3) {
     width: 50%;
 }
@@ -2979,7 +2866,6 @@ h1 {
     font-weight: 600;
 }
 
-/* En el celular, cada cambio del historial es una tarjeta (sin moverse de lado) */
 @media (max-width: 600px) {
     #dialogohistorial .tabla-historial thead {
         display: none;
@@ -3028,8 +2914,6 @@ h1 {
     }
 }
 
-/* ---------- Parte 11: foto del arreglo personalizado ---------- */
-
 .columna-foto {
     display: flex;
     flex-direction: column;
@@ -3064,15 +2948,12 @@ h1 {
     color: var(--verde);
 }
 
-/* Debajo del precio de un producto del personalizado: costo + % */
 .detalle-precio {
     display: block;
     font-size: 0.75rem;
     color: var(--texto-suave);
     white-space: nowrap;
 }
-
-/* ---------- Parte 12: los botones de las tarjetas del catálogo bajan de línea si no caben ---------- */
 
 .tarjeta-acciones {
     flex-wrap: wrap;
@@ -3082,8 +2963,6 @@ h1 {
 .tarjeta-acciones .enlace {
     text-decoration: none;
 }
-
-/* ---------- Parte 12: botones del encabezado del catálogo ---------- */
 
 .botones-encabezado {
     display: flex;
@@ -3114,8 +2993,6 @@ h1 {
     white-space: nowrap;
     border: 0;
 }
-
-/* ---------- Parte 12: búsqueda por foto ---------- */
 
 .busqueda-foto {
     display: grid;
@@ -3270,8 +3147,6 @@ h1 {
     }
 }
 
-/* ---------- Parte 12: asistente de presupuesto ---------- */
-
 .asistente {
     margin-top: 1rem;
     padding: 0.9rem 1rem;
@@ -3374,9 +3249,6 @@ h1 {
     margin-top: auto;
 }
 
-/* ---------- Parte 13: lupa, foto de referencia y valorar ramo ---------- */
-
-/* Las fotos con lupa: con el mouse se ven más grandes; con un clic, en toda la pantalla */
 img[data-lupa] {
     cursor: zoom-in;
 }
@@ -3457,7 +3329,6 @@ img[data-lupa] {
     cursor: pointer;
 }
 
-/* Propuestas del asistente: la foto arriba y grande */
 .foto-propuesta {
     width: 100%;
     aspect-ratio: 4 / 3;
@@ -3471,7 +3342,6 @@ img[data-lupa] {
     gap: 0.1rem;
 }
 
-/* Foto de referencia en el formulario y en "Ver" */
 .caja-referencia {
     display: flex;
     gap: 0.9rem;
@@ -3519,7 +3389,6 @@ img[data-lupa] {
     text-align: center;
 }
 
-/* Valorar el ramo de la foto */
 .valorar-ramo {
     margin: 0 0 1rem;
     padding: 0.9rem 1rem;
@@ -3613,7 +3482,6 @@ img[data-lupa] {
         width: 100%;
     }
 
-    /* En el celular no cabe la columna del precio: queda la cantidad y el subtotal */
     .tabla-valoracion th:nth-child(3),
     .tabla-valoracion td:nth-child(3) {
         display: none;
@@ -3625,7 +3493,6 @@ img[data-lupa] {
     }
 }
 
-/* ---------- Parte 14: catálogos de colores y tipos de flor ---------- */
 .catalogos-inventario {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -3711,7 +3578,6 @@ img[data-lupa] {
     border-radius: 999px;
 }
 
-/* Ventana para elegir los productos de un arreglo */
 .buscador-productos {
     display: grid;
     gap: 0.6rem;
@@ -3782,7 +3648,6 @@ img[data-lupa] {
     white-space: nowrap;
 }
 
-/* Parte 15: stock apartado para solicitudes abiertas */
 .nota-apartado {
     display: block;
     margin-top: 2px;
@@ -3795,7 +3660,6 @@ img[data-lupa] {
     font-size: inherit;
 }
 
-/* Parte 16: otros proveedores de un insumo */
 .lista-otros {
     display: grid;
     gap: 0.5rem;
@@ -3847,7 +3711,6 @@ img[data-lupa] {
     }
 }
 
-/* Parte 17: cuentas por cobrar y por pagar */
 .tabla-cuentas .numero {
     text-align: right;
     white-space: nowrap;
@@ -3879,7 +3742,6 @@ img[data-lupa] {
     display: none;
 }
 
-/* Abono anulado: queda en la lista, tachado y más suave */
 .fila-anulada td {
     color: var(--texto-suave);
 }
@@ -3895,7 +3757,6 @@ img[data-lupa] {
     white-space: normal;
 }
 
-/* Ventana para anular un abono: el campo del motivo va alineado a la izquierda */
 #formularioanular .campo {
     margin-top: 1rem;
     text-align: left;
@@ -3928,7 +3789,6 @@ img[data-lupa] {
     }
 }
 
-/* Parte 18: gastos y reportes */
 .resumen-gastos {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
@@ -4157,8 +4017,6 @@ img[data-lupa] {
     }
 }
 
-
-/* Inventario: "Ver" por secciones (stock, proveedores y precios, datos de la categoría) */
 .detalle .detalle-seccion {
     grid-column: 1 / -1;
     margin-top: 0.6rem;
@@ -4172,7 +4030,6 @@ img[data-lupa] {
     margin-top: 0;
 }
 
-/* Inventario: al editar, el stock solo se muestra; se cambia con "Sumar o restar stock" */
 .stock-fijo {
     display: flex;
     flex-wrap: wrap;
@@ -4182,7 +4039,6 @@ img[data-lupa] {
     margin: 0;
 }
 
-/* Ventana para sumar o restar stock */
 .opciones-sentido {
     display: flex;
     flex-wrap: wrap;
@@ -4221,7 +4077,6 @@ img[data-lupa] {
     font-weight: 600;
 }
 
-/* Inventario: al agregar stock a un insumo que ya existe, sus datos se ven pero no se pueden cambiar */
 #formulario input:disabled,
 #formulario select:disabled,
 #formulario textarea:disabled {
@@ -4229,9 +4084,6 @@ img[data-lupa] {
     color: var(--texto-suave);
     cursor: not-allowed;
 }
-
-
-/* ---------- Proforma para el cliente ---------- */
 
 .dialogo-proforma {
     width: min(820px, calc(100% - 2rem));
@@ -4463,7 +4315,6 @@ img[data-lupa] {
         text-align: left;
     }
 
-    /* Celular: sin precio por unidad */
     .proforma-tabla th:nth-child(4),
     .proforma-tabla td:nth-child(4) {
         display: none;
@@ -4489,7 +4340,6 @@ img[data-lupa] {
     }
 }
 
-/* Al imprimir solo sale la hoja */
 @media print {
     @page {
         margin: 12mm;
@@ -4538,7 +4388,6 @@ img[data-lupa] {
     }
 }
 
-/* Nuevo encargo: cierre y selección visual, sin cambiar el estilo general de Floristica. */
 .cabecera-modal-encargo, .cabecera-modal-inventario { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
 .cabecera-modal-encargo h2, .cabecera-modal-inventario h2 { margin: 0; }
 .cerrar-modal-encargo, .cerrar-modal-inventario { display: grid; place-items: center; flex: none; width: 2.4rem; height: 2.4rem;
@@ -4568,13 +4417,11 @@ img[data-lupa] {
 .tarjeta-seleccion-encargo small { font-size: 0.77rem; color: var(--texto-suave); }
 @media (max-width: 520px) { .galeria-seleccion-encargo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* El mismo inventario de regalos aparece también en el catálogo general. */
 .catalogo-regalos { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--borde); }
 
 .catalogo-regalos .galeria-seleccion-encargo { max-height: none; overflow: visible; }
 .catalogo-regalos .tarjeta-seleccion-encargo { cursor: default; }
 
-/* Nuevo encargo: la cabecera permanece visible y solo se desplaza el formulario. */
 #dialogoformulario {
     max-height: 90vh;
     max-height: 90dvh;
@@ -4604,7 +4451,6 @@ img[data-lupa] {
     overscroll-behavior: contain;
 }
 
-/* Inventario: fotografía compacta en el listado. */
 .tabla-inventario .celda-foto-inventario {
     width: 58px;
     min-width: 58px;
@@ -4631,7 +4477,6 @@ img[data-lupa] {
     font-size: 1.2rem;
 }
 
-/* Ver insumo: encabezado con cierre fijo y contenido desplazable. */
 #dialogodetalle.dialogo-inventario[open] {
     display: flex;
     flex-direction: column;
@@ -4664,4 +4509,29 @@ img[data-lupa] {
 
 #dialogodetalle.dialogo-inventario .acciones-dialogo .boton {
     white-space: nowrap;
+}
+
+.tarjeta-perdida {
+    border-color: var(--peligro);
+    background: var(--peligro-fondo);
+}
+
+.tarjeta-perdida strong {
+    color: var(--peligro);
+}
+
+.tabla-balance .numero,
+.tabla-ventas .numero {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.tabla-balance tfoot td {
+    border-top: 2px solid var(--borde);
+    font-weight: 600;
+    background: var(--superficie);
+}
+
+.seccion-balance {
+    margin-bottom: 1.5rem;
 }

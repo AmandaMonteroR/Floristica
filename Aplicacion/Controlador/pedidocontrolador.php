@@ -6,6 +6,7 @@ require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariomovimientorepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariootroproveedorrepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
+require_once __DIR__ . '/gastocontrolador.php';
 
 class pedidocontrolador
 {
@@ -16,6 +17,7 @@ class pedidocontrolador
     private $movimientos;
     private $historico;
     private $otrosproveedores;
+    private $gastos;
     private $tipospago = ['Contado', 'Crédito'];
 
     public function __construct()
@@ -27,6 +29,7 @@ class pedidocontrolador
         $this->movimientos = new inventariomovimientorepositorio();
         $this->historico = new historicocontrolador();
         $this->otrosproveedores = new inventariootroproveedorrepositorio();
+        $this->gastos = new gastocontrolador();
     }
 
     public function proveedores()
@@ -42,8 +45,6 @@ class pedidocontrolador
         return $this->respuesta(true, '', $lista);
     }
 
-    // Insumos que se le pueden pedir a un proveedor: los que tienen a ese proveedor como principal y
-    // los que también le compran a él (con el precio que cobra ese proveedor)
     public function productos($idproveedor)
     {
         $otros = $this->otrosproveedores->listarporproveedor((int) $idproveedor);
@@ -211,13 +212,22 @@ class pedidocontrolador
             'tbconfirmacioncompraplazodias' => (int) $plazodias,
         ]);
 
-        $this->entransaccion(function () use ($confirmacion, $id, $usuario) {
+        $proveedor = $this->nombresproveedores()[(int) $pedido->getTbproveedorid()] ?? 'proveedor';
+
+        $this->entransaccion(function () use ($confirmacion, $id, $usuario, $tipopago, $proveedor) {
             $this->confirmaciones->insertar($confirmacion);
             $this->repositorio->cambiarestado($id, 'Confirmado');
             $this->historico->registrar('pedido', $id, ['estado' => 'Pendiente'], ['estado' => 'Confirmado'], $usuario['id']);
+
+            if ($tipopago === 'Contado') {
+                $this->gastos->registrarcompra('Pedido', $id, 'Pedido N.º ' . $id . ' a ' . $proveedor . ' (de contado)',
+                    $confirmacion->getTbconfirmacioncompramonto(), $confirmacion->getTbconfirmacioncomprafecha(), $usuario['id']);
+            }
         });
 
-        return $this->respuesta(true, 'Compra confirmada correctamente.');
+        return $this->respuesta(true, $tipopago === 'Contado'
+            ? 'Compra confirmada. Se registró como gasto de hoy en "Compras a proveedores".'
+            : 'Compra confirmada a crédito. Cada abono que se le haga se registra como gasto del día en que se paga.');
     }
 
     public function recibir($id, $usuario)
@@ -248,7 +258,6 @@ class pedidocontrolador
         return $this->respuesta(true, 'Pedido recibido. El stock del inventario se actualizó.');
     }
 
-    // Si el proveedor no confirma el pedido, se cancela. Solo los pendientes: uno confirmado ya es una compra.
     public function cancelar($id, $usuario)
     {
         $id = (int) $id;

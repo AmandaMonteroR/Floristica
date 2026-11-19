@@ -3,14 +3,13 @@ require_once __DIR__ . '/../Repositorio/gastorepositorio.php';
 require_once __DIR__ . '/../Repositorio/empleadorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 
-// Gastos del negocio (solo el propietario): lo que se paga y no es mercadería, como el alquiler,
-// la luz, el agua o los salarios. Se usan en el reporte de ganancia neta.
-// Un gasto mal registrado se anula (no se borra) y queda en el historial.
 class gastocontrolador
 {
-    const CATEGORIAS = ['Alquiler', 'Electricidad', 'Agua', 'Internet y teléfono', 'Salarios', 'Transporte',
+    const CATEGORIASMANUALES = ['Alquiler', 'Electricidad', 'Agua', 'Internet y teléfono', 'Salarios', 'Transporte',
         'Mantenimiento', 'Publicidad', 'Otros'];
-    // Hasta cuántos años atrás se puede registrar un gasto
+    const CATEGORIACOMPRAS = 'Compras a proveedores';
+    const CATEGORIAS = [self::CATEGORIACOMPRAS, 'Alquiler', 'Electricidad', 'Agua', 'Internet y teléfono', 'Salarios',
+        'Transporte', 'Mantenimiento', 'Publicidad', 'Otros'];
     const ANOSMAXIMOS = 2;
 
     private $repositorio;
@@ -30,7 +29,6 @@ class gastocontrolador
         return $objeto && $objeto->format('Y-m-d') === $fecha;
     }
 
-    // Gastos de un período ($desde y $hasta AAAA-MM-DD; sin fechas, el mes actual; "todo", desde el primero)
     public function listar($desde = '', $hasta = '', $categoria = '', $estado = '')
     {
         $desde = trim((string) $desde);
@@ -124,6 +122,9 @@ class gastocontrolador
         if (!$gasto) {
             return $this->respuesta(false, 'El gasto no existe.');
         }
+        if ($gasto->esAutomatico()) {
+            return $this->respuesta(false, $this->mensajeautomatico($gasto));
+        }
         if (!$gasto->estaActivo()) {
             return $this->respuesta(false, 'El gasto está anulado. Vuelva a contarlo antes de editarlo.');
         }
@@ -150,7 +151,6 @@ class gastocontrolador
         return $this->respuesta(true, 'Gasto actualizado correctamente.');
     }
 
-    // Anular: deja de contar en los totales y en la ganancia neta, pero no se borra
     public function inactivar($id, $usuario)
     {
         return $this->cambiarestado((int) $id, 0, $usuario);
@@ -167,6 +167,9 @@ class gastocontrolador
 
         if (!$gasto) {
             return $this->respuesta(false, 'El gasto no existe.');
+        }
+        if ($gasto->esAutomatico()) {
+            return $this->respuesta(false, $this->mensajeautomatico($gasto));
         }
         if ((int) $gasto->getTbgastoestado() === $estado) {
             return $this->respuesta(false, $estado === 1 ? 'El gasto ya cuenta.' : 'El gasto ya está anulado.');
@@ -264,12 +267,14 @@ class gastocontrolador
         return $limpios;
     }
 
-    // $fechaanterior: al editar, la fecha que ya tenía puede quedarse aunque sea muy vieja
     private function validar($datos, $idexcluir = 0, $fechaanterior = '')
     {
         $errores = [];
 
-        if (!in_array($datos['tbgastocategoria'], self::CATEGORIAS, true)) {
+        if ($datos['tbgastocategoria'] === self::CATEGORIACOMPRAS) {
+            $errores['tbgastocategoria'] = 'Las compras a proveedores se registran solas: al confirmar un pedido de contado, '
+                . 'al abonarle a un pedido a crédito o al agregar stock en Inventario.';
+        } elseif (!in_array($datos['tbgastocategoria'], self::CATEGORIASMANUALES, true)) {
             $errores['tbgastocategoria'] = 'Elija la categoría del gasto.';
         }
 
@@ -319,7 +324,54 @@ class gastocontrolador
             'tbgastomonto'       => (float) $gasto->getTbgastomonto(),
             'tbgastofecha'       => $gasto->getTbgastofecha(),
             'tbgastoestado'      => (int) $gasto->getTbgastoestado(),
+            'tbgastoorigen'      => $gasto->getTbgastoorigen(),
+            'tbgastoreferencia'  => $gasto->getTbgastoreferencia() !== null ? (int) $gasto->getTbgastoreferencia() : null,
+            'automatico'         => $gasto->esAutomatico(),
         ];
+    }
+
+    private function mensajeautomatico(Gasto $gasto)
+    {
+        switch ($gasto->getTbgastoorigen()) {
+            case 'Pedido':
+                return 'Este gasto se registró solo al confirmar el pedido N.º ' . $gasto->getTbgastoreferencia()
+                    . ' de contado. No se cambia desde Gastos.';
+            case 'Abono':
+                return 'Este gasto se registró solo con un abono a un pedido a crédito. Si está mal, anule el abono en Créditos.';
+            default:
+                return 'Este gasto se registró solo al agregar stock comprado sin pedido. No se cambia desde Gastos.';
+        }
+    }
+
+    public function registrarcompra($origen, $referencia, $descripcion, $monto, $fecha, $idempleado)
+    {
+        $gasto = new Gasto([
+            'tbgastocategoria'   => self::CATEGORIACOMPRAS,
+            'tbgastodescripcion' => mb_substr($descripcion, 0, 100),
+            'tbgastomonto'       => number_format((float) $monto, 2, '.', ''),
+            'tbgastofecha'       => $fecha,
+            'tbempleadoid'       => (int) $idempleado,
+            'tbgastoorigen'      => $origen,
+            'tbgastoreferencia'  => (int) $referencia,
+        ]);
+
+        $id = $this->repositorio->insertar($gasto);
+        $this->historico->registrar('gasto', $id, [], $this->datoshistorico($gasto), $idempleado);
+
+        return $id;
+    }
+
+    public function anularcompra($origen, $referencia, $idempleado)
+    {
+        $gasto = $this->repositorio->obtenerpororigen($origen, $referencia);
+        if (!$gasto || !$gasto->estaActivo()) {
+            return false;
+        }
+
+        $this->repositorio->cambiarestado($gasto->getTbgastoid(), 0);
+        $this->historico->registrar('gasto', $gasto->getTbgastoid(), ['estado' => 1], ['estado' => 0], $idempleado);
+
+        return true;
     }
 
     private function respuesta($exito, $mensaje, $datos = [])

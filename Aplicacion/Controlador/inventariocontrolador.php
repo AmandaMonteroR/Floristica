@@ -8,6 +8,7 @@ require_once __DIR__ . '/../Repositorio/tipoflorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/inventariootroproveedorrepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 require_once __DIR__ . '/preciotemporadacontrolador.php';
+require_once __DIR__ . '/gastocontrolador.php';
 
 class inventariocontrolador
 {
@@ -20,27 +21,19 @@ class inventariocontrolador
     private $preciosvigentes = null;
     private $colores;
     private $tiposflor;
-    // Otros proveedores a los que también se les compra el insumo, cada uno con su precio
     private $otrosproveedores;
     private $conteootros = null;
-    // Atributos de la categoría que tiene el producto que se está editando (un color o tipo de flor
-    // que se inactivó después se puede dejar como estaba)
+    private $gastos;
     private $actuales = [];
-    // Al registrar: el insumo activo que ya tiene ese nombre, para ofrecer sumarle el stock
     private $existente = null;
     private $categorias = ['Flor', 'Envoltura', 'Base', 'Chocolate', 'Peluche', 'Tarjeta', 'Spray', 'Accesorio'];
-    // Fotos de los productos (para la proforma)
     private $carpetafotos;
     private $tiposfoto = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     private $tamanomaximo = 2097152;
 
-    // Opciones de las listas de cada categoría. La vista las usa para llenar los select
-    // y el controlador para validar, así las dos siempre coinciden.
     public static function opciones()
     {
         return [
-            // Flor o follaje. Los tipos de flor (Rosa, Eucalipto...) y los colores están en las tablas
-            // catálogo tbtipoflor y tbcolor, y se manejan en Inventario → "Colores y tipos de flor".
             'tiposflor'               => ['Flor', 'Follaje'],
             'clasesenvoltura'         => ['Papel', 'Cinta'],
             'tiposenvoltura'          => [
@@ -58,12 +51,9 @@ class inventariocontrolador
             'tematicastarjeta'        => ['Cumpleaños', 'Amor', 'Aniversario', 'Graduación', 'Condolencias', 'Agradecimiento', 'Otra'],
             'materialestarjeta'       => ['Cartulina', 'Papel kraft', 'Papel perlado', 'Opalina'],
             'elaboracionestarjeta'    => ['Hecha en el negocio', 'Comprada'],
-            // Spray: la pintura floral se cobra por cada flor pintada
             'tiposspray'              => ['Pintura floral', 'Abrillantador de follaje', 'Aromatizante floral'],
-            // Accesorios que se le agregan a un arreglo
             'tiposaccesorio'          => ['Corona', 'Perfume', 'Splash', 'Moño', 'Topper', 'Otro'],
             'tamanosaccesorio'        => ['Pequeño', 'Mediano', 'Grande', 'Único'],
-            // Personalizable (cinta y tarjeta): 1 = sí, 0 = no
             'personalizable'          => ['1' => 'Sí', '0' => 'No'],
         ];
     }
@@ -80,9 +70,8 @@ class inventariocontrolador
         $this->tiposflor = new tipoflorrepositorio();
         $this->otrosproveedores = new inventariootroproveedorrepositorio();
         $this->carpetafotos = __DIR__ . '/../../Publico/imagenes/productos/';
+        $this->gastos = new gastocontrolador();
     }
-
-    /* ---------- Catálogos de colores y tipos de flor ---------- */
 
     public function catalogos()
     {
@@ -110,7 +99,6 @@ class inventariocontrolador
         return $this->respuesta(true, '', ['colores' => $colores, 'tiposflor' => $tipos]);
     }
 
-    // Agrega o corrige un color o un tipo de flor. $datos: catalogo (color o tipoflor), id (vacío si es nuevo), nombre, clase
     public function guardarcatalogo($datos)
     {
         $catalogo = (string) ($datos['catalogo'] ?? '');
@@ -150,7 +138,6 @@ class inventariocontrolador
             return $this->respuesta(false, reset($errores), ['errores' => $errores]);
         }
 
-        // El nombre se guarda con la primera letra en mayúscula: "rosa" → "Rosa"
         $nombre = mb_strtoupper(mb_substr($nombre, 0, 1)) . mb_substr($nombre, 1);
 
         if ($catalogo === 'color') {
@@ -171,7 +158,6 @@ class inventariocontrolador
         return $this->respuesta(true, 'Se agregó "' . $nombre . '".', ['id' => $nuevo]);
     }
 
-    // Inactivar o reactivar un color o tipo de flor. Uno inactivo ya no se puede elegir en productos nuevos.
     public function estadocatalogo($datos)
     {
         $catalogo = (string) ($datos['catalogo'] ?? '');
@@ -191,7 +177,6 @@ class inventariocontrolador
         return $this->respuesta(true, $estado === '1' ? 'Se reactivó.' : 'Se inactivó. Los productos que ya lo tienen no cambian.');
     }
 
-    // Color: el id de un color del catálogo
     private function validarcolor(&$errores, $datos, $campo, $nombre, $obligatorio)
     {
         $valor = (string) ($datos[$campo] ?? '');
@@ -263,7 +248,6 @@ class inventariocontrolador
         $errores += $this->validarotros($otros, $datos);
 
         if ($errores) {
-            // Si el nombre ya existe, la pantalla ofrece sumarle el stock a ese insumo
             return $this->respuesta(false, 'Revise los datos ingresados.',
                 ['errores' => $errores] + ($this->existente ? ['existente' => $this->existente] : []));
         }
@@ -315,7 +299,6 @@ class inventariocontrolador
         $inventario->setTbinventariounidadespaquete($datos['tbinventariounidadespaquete']);
         $inventario->setTbinventariopreciounidad($this->calcularpreciounidad($datos));
         $inventario->setTbinventarioprecioventa($datos['tbinventarioprecioventa']);
-        // El stock no se escribe al editar: se suma o se resta con movimientostock()
         $inventario->setTbinventariostockminimo($datos['tbinventariostockminimo']);
 
         $this->entransaccion(function () use ($inventario, $datos, $preciostemporada, $otros, $id, $anteriores, $usuario) {
@@ -330,11 +313,6 @@ class inventariocontrolador
         return $this->respuesta(true, 'Insumo actualizado correctamente.');
     }
 
-    /* ---------- Agregar stock o rebajar las dañadas ---------- */
-
-    // Al agregar stock se le compra a un proveedor: lo que llega con un pedido se suma solo al recibirlo,
-    // y lo que se compra sin pedido se suma aquí, por paquetes. Al rebajar, solo las que se dañaron o se
-    // marchitaron (las que salen en los arreglos se rebajan solas al terminar la solicitud).
     const TIPOCOMPRA = 'Compra';
     const TIPODANADO = 'Dañado';
 
@@ -356,9 +334,9 @@ class inventariocontrolador
         $errores = [];
         $idproveedor = null;
         $paquetes = 0;
+        $pagado = 0;
 
         if ($sentido === 'sumar') {
-            // A quién se le compró: el proveedor principal o uno de "Otros proveedores", que esté activo
             $idproveedor = (int) ($datos['tbproveedorid'] ?? 0);
             $permitidos = array_keys($this->otrosproveedores->listarporinsumo($id));
             $permitidos[] = (int) $inventario->getTbproveedorid();
@@ -381,6 +359,10 @@ class inventariocontrolador
             }
             $paquetes = (int) $texto;
             $cantidad = $paquetes * $unidadespaquete;
+            $preciopaquete = $idproveedor === (int) $inventario->getTbproveedorid()
+                ? (float) $inventario->getTbinventariopreciopaquete()
+                : (float) ($this->otrosproveedores->listarporinsumo($id)[$idproveedor] ?? 0);
+            $pagado = round($paquetes * $preciopaquete, 2);
         } elseif ($sentido === 'restar') {
             $texto = trim((string) ($datos['cantidad'] ?? ''));
             if ($texto === '') {
@@ -399,10 +381,17 @@ class inventariocontrolador
             return $this->respuesta(false, 'Revise los datos ingresados.', ['errores' => $errores]);
         }
 
-        $this->entransaccion(function () use ($id, $sentido, $cantidad, $idproveedor, $usuario) {
+        $this->entransaccion(function () use ($id, $sentido, $cantidad, $idproveedor, $usuario, $inventario, $paquetes, $pagado) {
             if ($sentido === 'sumar') {
                 $this->repositorio->sumarstock($id, $cantidad);
-                $this->movimientos->registrar($id, self::TIPOCOMPRA, $cantidad, $usuario['id'], null, null, $idproveedor);
+                $idmovimiento = $this->movimientos->registrar($id, self::TIPOCOMPRA, $cantidad, $usuario['id'], null, null, $idproveedor);
+                if ($pagado > 0) {
+                    $proveedor = $this->proveedores->obtenerporid($idproveedor);
+                    $this->gastos->registrarcompra('Compra', $idmovimiento, 'Compra sin pedido: ' . $paquetes
+                        . ($paquetes === 1 ? ' paquete de ' : ' paquetes de ') . $inventario->getTbinventarionombre()
+                        . ' a ' . ($proveedor ? $proveedor->getTbproveedornombreempresa() : 'proveedor'),
+                        $pagado, date('Y-m-d'), $usuario['id']);
+                }
             } else {
                 $this->repositorio->restarstock($id, $cantidad);
                 $this->movimientos->registrar($id, self::TIPODANADO, -$cantidad, $usuario['id']);
@@ -412,6 +401,7 @@ class inventariocontrolador
         $nuevo = $sentido === 'sumar' ? $stock + $cantidad : $stock - $cantidad;
         $mensaje = $sentido === 'sumar'
             ? 'Se sumaron ' . $paquetes . ($paquetes === 1 ? ' paquete' : ' paquetes') . ' (' . $cantidad . ' unidades). Ahora hay ' . $nuevo . ' en stock.'
+                . ($pagado > 0 ? ' Los ' . historicocontrolador::monto($pagado) . ' quedaron como gasto de hoy.' : '')
             : 'Se rebajaron ' . $cantidad . ($cantidad === 1 ? ' unidad dañada' : ' unidades dañadas') . '. Ahora hay ' . $nuevo . ' en stock.';
 
         return $this->respuesta(true, $mensaje, ['stock' => $nuevo]);
@@ -459,9 +449,6 @@ class inventariocontrolador
         return $this->respuesta(true, 'Insumo reactivado correctamente.');
     }
 
-    /* ---------- Foto del producto ---------- */
-
-    // Sube o cambia la foto; con $foto = null la quita
     public function subirfoto($id, $foto, $usuario)
     {
         $id = (int) $id;
@@ -493,7 +480,6 @@ class inventariocontrolador
                 $this->historico->registrar('inventario', $id, [], ['foto' => $nueva], $usuario['id']);
             });
         } catch (Throwable $excepcion) {
-            // Si falla, se borra la foto nueva
             $this->eliminarfoto($nueva);
             throw $excepcion;
         }
@@ -506,7 +492,6 @@ class inventariocontrolador
         return $this->respuesta(true, $mensaje, ['tbinventariofoto' => $nueva]);
     }
 
-    // JPG, PNG o WEBP de hasta 2 MB
     private function validarfoto($foto)
     {
         if (!is_array($foto) || ($foto['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
@@ -526,7 +511,6 @@ class inventariocontrolador
         return '';
     }
 
-    // Guarda el archivo y devuelve su ruta
     private function guardarfoto($foto, $id)
     {
         if (!is_dir($this->carpetafotos)) {
@@ -543,7 +527,6 @@ class inventariocontrolador
         return 'imagenes/productos/' . $nombre;
     }
 
-    // Solo borra fotos subidas desde el sistema
     private function eliminarfoto($ruta)
     {
         $archivo = __DIR__ . '/../../Publico/' . $ruta;
@@ -586,7 +569,6 @@ class inventariocontrolador
                 case 'preciotemporada':
                     return $this->temporadas->textohistorial($valor);
                 case 'otroproveedor':
-                    // "2|7500.00" → "Vivero Orosi: ₡7 500,00 el paquete"; "2|" → "Vivero Orosi: ya no"
                     [$idproveedor, $precio] = explode('|', (string) $valor) + [1 => ''];
                     return ($nombres[$idproveedor] ?? 'Proveedor eliminado') . ': '
                         . ($precio === '' ? 'ya no se le compra' : historicocontrolador::monto($precio) . ' el paquete');
@@ -602,9 +584,6 @@ class inventariocontrolador
         return $this->respuesta(true, '', $this->historico->listar('inventario', $id, $etiquetas, $formatear, ['preciotemporada', 'otroproveedor']));
     }
 
-    /* ---------- Otros proveedores del insumo ---------- */
-
-    // Filas del formulario: [['tbproveedorid' => '2', 'preciopaquete' => '7500'], ...]. Las vacías no cuentan.
     private function limpiarotros($filas)
     {
         if (!is_array($filas)) {
@@ -626,8 +605,6 @@ class inventariocontrolador
         return $limpias;
     }
 
-    // Cada otro proveedor: que exista, esté activo (o ya estuviera antes), no sea el principal ni se repita,
-    // y que su precio del paquete sea un monto válido. $antes: los que ya tenía [idproveedor => precio].
     private function validarotros($otros, $datos, $antes = [])
     {
         $usados = [];
@@ -663,8 +640,6 @@ class inventariocontrolador
         return [];
     }
 
-    // Guarda los otros proveedores y deja en el historial solo lo que cambió ("idproveedor|precio",
-    // o "idproveedor|" si se quitó)
     private function guardarotros($id, $otros, $idempleado)
     {
         $antes = $this->otrosproveedores->listarporinsumo($id);
@@ -689,7 +664,6 @@ class inventariocontrolador
         }
     }
 
-    // Los otros proveedores del insumo con su precio del paquete y de la unidad, para compararlos con el principal
     private function convertirotros(Inventario $inventario)
     {
         $unidades = max(1, (int) $inventario->getTbinventariounidadespaquete());
@@ -708,7 +682,6 @@ class inventariocontrolador
         return $lista;
     }
 
-    // Lo que cobra el proveedor por el paquete en cada temporada
     private function validartemporadas($preciostemporada, $datos, $errores)
     {
         $error = $this->temporadas->validar($preciostemporada);
@@ -716,14 +689,11 @@ class inventariocontrolador
         return $error !== '' ? ['temporadas' => $error] : [];
     }
 
-    // Temporadas para el formulario de un producto nuevo
     public function temporadas()
     {
         return $this->respuesta(true, '', $this->temporadas->paraformulario('inventario', 0));
     }
 
-    // Flores y follajes activos sin precio del proveedor para la temporada vigente (para el aviso flotante).
-    // Solo las flores, porque son las que suben de precio en temporada.
     public function pendientestemporada()
     {
         $registros = [];
@@ -739,7 +709,6 @@ class inventariocontrolador
         return $this->respuesta(true, '', $this->temporadas->pendientes('inventario', $registros));
     }
 
-    // Guarda de una vez lo que cobra el proveedor en la temporada vigente: precios[idinventario] = precio del paquete
     public function guardarpreciostemporada($datos, $usuario)
     {
         if (!$this->temporadas->vigente()) {
@@ -764,7 +733,6 @@ class inventariocontrolador
             : 'Se guardaron ' . $resultado['guardados'] . ' precios de ' . $this->temporadas->vigente()->getTbtemporadanombre() . '.');
     }
 
-    // Datos del producto que llevan histórico, tal como se guardan
     private function datoshistorico(Inventario $inventario)
     {
         return [
@@ -788,11 +756,9 @@ class inventariocontrolador
         return $nombres;
     }
 
-    // Movimientos del stock en palabras, para mostrarlos en "Ver"
     private function convertirmovimientos($idinventario)
     {
         $lista = [];
-        // Se piden los 20 más recientes y se muestran del más viejo al más nuevo
         foreach (array_reverse($this->movimientos->listar($idinventario)) as $fila) {
             switch ($fila['tbinventariomovimientotipo']) {
                 case 'Inicial':
@@ -811,7 +777,6 @@ class inventariocontrolador
                     $motivo = 'Se dañaron o se marchitaron';
                     break;
                 default:
-                    // "Ajuste" es de antes, cuando el stock se corregía editando el producto
                     $motivo = 'Ajuste manual al editar el producto';
             }
 
@@ -875,7 +840,6 @@ class inventariocontrolador
             }
         }
 
-        // Las medidas se guardan con el formato "20 x 30"
         $medidas = ['tbinventariocategoriabasemedida', 'tbinventariocategoriaenvolturamedida', 'tbinventariocategoriatarjetamedida'];
         foreach ($medidas as $campo) {
             if (isset($limpios[$campo])) {
@@ -883,7 +847,6 @@ class inventariocontrolador
             }
         }
 
-        // El acabado solo aplica al papel y "personalizable" solo a la cinta; lo que no aplica queda vacío (NULL)
         if (isset($limpios['tbinventariocategoriaenvolturaclase'])) {
             $clase = $limpios['tbinventariocategoriaenvolturaclase'];
 
@@ -899,14 +862,12 @@ class inventariocontrolador
             $limpios['tbinventariocategoriachocolatefechavencimiento'] = null;
         }
 
-        // Accesorio: el color y el material son opcionales
         foreach (['tbinventariocategoriaaccesoriocolor', 'tbinventariocategoriaaccesoriomaterial'] as $campo) {
             if (($limpios[$campo] ?? null) === '') {
                 $limpios[$campo] = null;
             }
         }
 
-        // Spray: el color es de la pintura, el aroma del aromatizante y el cobro por flor solo de la pintura
         if (isset($limpios['tbinventariocategoriaspraytipo'])) {
             $tipo = $limpios['tbinventariocategoriaspraytipo'];
             $limpios['tbinventariocategoriaspraycobroflor'] = str_replace(',', '.', $limpios['tbinventariocategoriaspraycobroflor']);
@@ -926,7 +887,6 @@ class inventariocontrolador
         return $limpios;
     }
 
-    // Palabras que son un color por sí solas
     const PALABRASCOLOR = ['rojo', 'roja', 'rojizo', 'rojiza', 'azul', 'azulado', 'azulada', 'verde', 'verdoso', 'verdosa',
         'amarillo', 'amarilla', 'naranja', 'anaranjado', 'anaranjada', 'morado', 'morada', 'violeta', 'lila', 'rosado', 'rosada',
         'rosa', 'fucsia', 'blanco', 'blanca', 'negro', 'negra', 'gris', 'grisaceo', 'cafe', 'marron', 'beige', 'crema', 'dorado',
@@ -936,15 +896,12 @@ class inventariocontrolador
         'berenjena', 'carmesi', 'escarlata', 'cereza', 'frambuesa', 'fresa', 'oliva', 'menta', 'lima', 'esmeralda', 'jade', 'caqui',
         'kaki', 'arena', 'chocolate', 'canela', 'miel', 'mandarina', 'limon', 'uva', 'mora', 'natural', 'surtido', 'surtida',
         'transparente', 'multicolor', 'tornasol', 'tornasolado', 'nude', 'tierra', 'grafito', 'plomo', 'ceniza', 'petroleo'];
-    // Palabras que acompañan a un color: "Verde lima", "Azul oscuro", "Palo de rosa", "Rosado pastel"
     const PALABRASMATIZ = ['claro', 'clara', 'oscuro', 'oscura', 'pastel', 'fuerte', 'suave', 'intenso', 'intensa', 'palido',
         'palida', 'brillante', 'mate', 'metalico', 'metalica', 'metalizado', 'metalizada', 'agua', 'cielo', 'rey', 'marino',
         'bebe', 'chicle', 'viejo', 'vieja', 'palo', 'de', 'y', 'con', 'neon', 'electrico', 'electrica', 'militar', 'botella',
         'musgo', 'acero', 'humo', 'vivo', 'viva', 'profundo', 'profunda', 'quemado', 'quemada', 'perlado', 'perlada', 'nacarado',
         'nacarada', 'empolvado', 'empolvada', 'tenue', 'medio', 'media', 'satinado', 'satinada'];
 
-    // ¿El nombre es un color? Todas sus palabras tienen que ser de color o de matiz, y al menos una de color
-    // ("Carro" o "Casa" no son colores)
     public static function escolor($nombre)
     {
         $texto = mb_strtolower(trim((string) $nombre));
@@ -991,8 +948,6 @@ class inventariocontrolador
         } elseif (!preg_match("/^[\p{L}\d\s.,'&()-]+$/u", $datos['tbinventarionombre'])) {
             $errores['tbinventarionombre'] = 'El nombre del producto solo puede contener letras, números y los signos . , - \' & ( ).';
         } elseif ($igual = $this->repositorio->buscarpornombre($datos['tbinventarionombre'], $idexcluir)) {
-            // Un insumo se registra una sola vez: si se compra más, se le suma el stock, y si
-            // otro proveedor también lo vende, se agrega en "Otros proveedores"
             $this->existente = $idexcluir === 0 && (int) $igual['tbinventarioestado'] === 1
                 ? ['tbinventarioid' => (int) $igual['tbinventarioid'], 'tbinventarionombre' => $igual['tbinventarionombre']]
                 : null;
@@ -1018,7 +973,6 @@ class inventariocontrolador
             'Las unidades por paquete son obligatorias.',
             'Las unidades por paquete deben ser un número entero entre 1 y 10000.');
 
-        // El precio de venta por unidad no puede quedar por debajo de lo que cuesta la unidad
         if ($datos['tbinventarioprecioventa'] === '') {
             $errores['tbinventarioprecioventa'] = 'El precio de venta es obligatorio.';
         } elseif (!preg_match('/^\d{1,8}(\.\d{1,2})?$/', $datos['tbinventarioprecioventa'])
@@ -1030,7 +984,6 @@ class inventariocontrolador
                 . historicocontrolador::monto($this->calcularpreciounidad($datos)) . ').';
         }
 
-        // El stock solo se escribe al registrar el insumo; después se suma o se resta con su motivo
         if ($idexcluir === 0) {
             $this->validarentero($errores, $datos, 'tbinventariostock', 0, 999999,
                 'El stock es obligatorio.',
@@ -1126,7 +1079,6 @@ class inventariocontrolador
         }
     }
 
-    // Revisa que el valor sea una de las opciones de la lista
     private function validarlista(&$errores, $datos, $campo, $nombre, $lista, $obligatorio = true)
     {
         $valor = $datos[$campo];
@@ -1147,7 +1099,6 @@ class inventariocontrolador
 
         $this->validarlista($errores, $datos, 'tbinventariocategoriaflortipo', 'Si es flor o follaje', $opciones['tiposflor']);
 
-        // El tipo de flor viene del catálogo y tiene que ser de la misma clase (una rosa no puede ser follaje)
         $valor = (string) $datos['tbinventariocategoriaflorvariedad'];
         $tipo = ctype_digit($valor) ? $this->tiposflor->obtenerporid((int) $valor) : null;
         if ($valor === '') {
@@ -1174,7 +1125,6 @@ class inventariocontrolador
         return $errores;
     }
 
-    // Papel o cinta
     private function validarenvoltura($datos)
     {
         $errores = [];
@@ -1249,8 +1199,6 @@ class inventariocontrolador
         return $errores;
     }
 
-    // Lo que se compra tiene que durar: el vencimiento debe ser al menos DIASVENCIMIENTO días después de hoy.
-    // Al editar, si la fecha no cambió, no se vuelve a revisar (así se pueden editar otros datos).
     const DIASVENCIMIENTO = 30;
 
     private function errorvencimiento($valor, $campo)
@@ -1353,7 +1301,6 @@ class inventariocontrolador
             'El contenido es obligatorio.',
             'El contenido debe ser un número entero entre 1 y 5000 ml.');
 
-        // La fecha de vencimiento es opcional
         $valor = $datos['tbinventariocategoriasprayfechavencimiento'];
         if ($valor !== null) {
             $fecha = DateTime::createFromFormat('Y-m-d', (string) $valor);
@@ -1381,7 +1328,6 @@ class inventariocontrolador
         foreach ($this->atributos->campos($categoria) as $campo) {
             $datos[$campo] = $atributos ? $atributos->{'get' . ucfirst($campo)}() : '';
 
-            // El color y el tipo de flor se guardan como id; también se manda el nombre para mostrarlo
             if (substr($campo, -5) === 'color') {
                 $color = $datos[$campo] !== null && $datos[$campo] !== '' ? $this->colores->obtenerporid($datos[$campo]) : null;
                 $datos[$campo . 'nombre'] = $color ? $color->getTbcolornombre() : null;
@@ -1415,7 +1361,6 @@ class inventariocontrolador
         $contemporada = $actual && $actual['contemporada'];
 
         return [
-            // Costo y precio de venta de ahora: los de la temporada en uso (calculados) o los normales
             'preciounidadactual'          => $contemporada ? $actual['costo'] : (float) $inventario->getTbinventariopreciounidad(),
             'precioventaactual'           => $contemporada ? $actual['venta'] : (float) $inventario->getTbinventarioprecioventa(),
             'temporadaprecio'             => $contemporada ? $vigente['tbtemporadanombre'] : '',

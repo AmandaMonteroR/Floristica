@@ -16,7 +16,6 @@ class inventariomovimientorepositorio
         return (int) $consulta->fetch()['siguiente'];
     }
 
-    // $idproveedor: a quién se le compró, cuando se suma stock sin pedido
     public function registrar($idinventario, $tipo, $cantidad, $idempleado, $idpedido = null, $idencargo = null, $idproveedor = null)
     {
         $consulta = $this->conexion->prepare('SELECT tbinventariostock FROM tbinventario WHERE tbinventarioid = ?');
@@ -28,9 +27,10 @@ class inventariomovimientorepositorio
                 tbinventariomovimientofecha, tbproveedorid)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 
+        $id = $this->siguienteid();
         $sentencia = $this->conexion->prepare($sql);
-        return $sentencia->execute([
-            $this->siguienteid(),
+        $sentencia->execute([
+            $id,
             (int) $idinventario,
             $tipo,
             (int) $cantidad,
@@ -41,6 +41,8 @@ class inventariomovimientorepositorio
             date('Y-m-d H:i:s'),
             $idproveedor,
         ]);
+
+        return $id;
     }
 
     public function listar($idinventario, $limite = 20)

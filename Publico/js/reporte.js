@@ -1,4 +1,3 @@
-// Reportes: ganancia neta (vendido - costo - gastos) y trazabilidad de una solicitud o un pedido
 const rutabase = 'index.php?modulo=reporte';
 const ver = document.querySelector('main').dataset.ver;
 const aviso = document.getElementById('aviso');
@@ -17,7 +16,6 @@ function fechatexto(fecha) {
     return fecha.toLocaleDateString('en-CA');
 }
 
-// "2026-10-11" -> "11/10/2026"; con hora: "11/10/2026 3:25 p. m." (si la hora es 00:00, solo la fecha)
 function formatearfecha(fecha) {
     const [dia, hora] = String(fecha).split(' ');
     const [anio, mes, d] = dia.split('-');
@@ -45,8 +43,6 @@ function mostrarerror(mensaje) {
 }
 
 document.getElementById('botonimprimir').addEventListener('click', () => window.print());
-
-/* ---------- Ganancia neta ---------- */
 
 if (ver === 'ganancia') {
     const campodesde = document.getElementById('desde');
@@ -98,20 +94,17 @@ if (ver === 'ganancia') {
             .map(([categoria, total]) => linea(`− ${escapar(categoria)}`, -total, 'linea-detalle')).join('');
         document.getElementById('resultados').innerHTML =
             linea('Vendido', datos.vendido, '', `${datos.ventas} ${datos.ventas === 1 ? 'encargo terminado' : 'encargos terminados'}`)
-            + linea('− Costo de flores y productos', -datos.costo)
-            + linea('= Ganancia bruta', datos.bruta, 'linea-subtotal')
-            + linea('− Gastos del negocio', -datos.gastos, '', datos.gastos > 0 ? '' : 'Sin gastos en este período')
+            + linea('− Gastos', -datos.gastos, '', datos.gastos > 0 ? 'Incluye las compras a proveedores' : 'Sin gastos en este período')
             + categorias
-            + linea('= Ganancia neta', datos.neta, `linea-total ${datos.neta < 0 ? 'negativa' : 'positiva'}`,
+            + linea('= Balance', datos.balance, `linea-total ${datos.balance < 0 ? 'negativa' : 'positiva'}`,
                 datos.vendido > 0 ? `${datos.margen}% de lo vendido` : '');
 
         document.getElementById('cuerpomeses').innerHTML = datos.meses.map((mes) => `
             <tr>
                 <td>${escapar(mes.etiqueta)}</td>
                 <td class="numero">${montocorto(mes.vendido)}</td>
-                <td class="numero">${montocorto(mes.costo)}</td>
                 <td class="numero">${montocorto(mes.gastos)}</td>
-                <td class="numero"><strong class="${mes.neta < 0 ? 'texto-peligro' : 'texto-ganancia'}">${montocorto(mes.neta)}</strong></td>
+                <td class="numero"><strong class="${mes.balance < 0 ? 'texto-peligro' : 'texto-ganancia'}">${montocorto(mes.balance)}</strong></td>
             </tr>`).join('');
     };
 
@@ -132,8 +125,6 @@ if (ver === 'ganancia') {
     marcarchip('mes');
     cargar(...periodo('mes'));
 }
-
-/* ---------- Trazabilidad ---------- */
 
 if (ver === 'trazabilidad') {
     const tipotraza = document.getElementById('tipotraza');

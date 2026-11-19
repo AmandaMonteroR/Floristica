@@ -11,12 +11,8 @@ require_once __DIR__ . '/../Repositorio/proveedorrepositorio.php';
 require_once __DIR__ . '/../Repositorio/empleadorepositorio.php';
 require_once __DIR__ . '/historicocontrolador.php';
 
-// Reportes (solo el propietario):
-// - Ganancia neta de un período: lo vendido - lo que costaron las flores y productos - los gastos del negocio.
-// - Trazabilidad: todo lo que le pasó a una solicitud de arreglo o a un pedido al proveedor, con fecha y responsable.
 class reportecontrolador
 {
-    // Cuántos meses se comparan en la tabla de la ganancia neta
     const MESES = 6;
 
     private $ventas;
@@ -30,8 +26,6 @@ class reportecontrolador
         $this->abonos = new abonorepositorio();
     }
 
-    /* ---------- Ganancia neta ---------- */
-
     public function ganancia($desde = '', $hasta = '')
     {
         $resumen = $this->ventas->resumen($desde, $hasta);
@@ -43,7 +37,6 @@ class reportecontrolador
         $hasta = $resumen['datos']['hasta'];
         $datos = $this->calcular($desde, $hasta, $resumen['datos']['totales']);
 
-        // Los últimos meses hasta el mes de "hasta", para comparar
         $meses = [];
         $nombres = ['', 'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
         $inicio = new DateTime(substr($hasta, 0, 7) . '-01');
@@ -57,9 +50,8 @@ class reportecontrolador
                 'mes'      => $inicio->format('Y-m'),
                 'etiqueta' => $nombres[(int) $inicio->format('n')] . ' ' . $inicio->format('Y'),
                 'vendido'  => $mes['vendido'],
-                'costo'    => $mes['costo'],
                 'gastos'   => $mes['gastos'],
-                'neta'     => $mes['neta'],
+                'balance'  => $mes['balance'],
             ];
             $inicio->modify('+1 month');
         }
@@ -75,25 +67,18 @@ class reportecontrolador
     {
         $porcategoria = $this->gastos->totalesporcategoria($desde, $hasta);
         $gastos = round(array_sum($porcategoria), 2);
-        $bruta = round($totales['vendido'] - $totales['costo'], 2);
-        $neta = round($bruta - $gastos, 2);
+        $balance = round($totales['vendido'] - $gastos, 2);
 
         return [
             'ventas'       => (int) $totales['ventas'],
             'vendido'      => round($totales['vendido'], 2),
-            'costo'        => round($totales['costo'], 2),
-            'bruta'        => $bruta,
             'gastos'       => $gastos,
             'porcategoria' => $porcategoria,
-            'neta'         => $neta,
-            // Qué parte de lo vendido queda de ganancia después de todo
-            'margen'       => $totales['vendido'] > 0 ? round($neta * 100 / $totales['vendido'], 1) : 0,
+            'balance'      => $balance,
+            'margen'       => $totales['vendido'] > 0 ? round($balance * 100 / $totales['vendido'], 1) : 0,
         ];
     }
 
-    /* ---------- Trazabilidad ---------- */
-
-    // Solicitudes y pedidos para elegir cuál ver (los más nuevos primero)
     public function opciones()
     {
         $clientes = [];
@@ -127,7 +112,6 @@ class reportecontrolador
         return $this->respuesta(true, '', ['solicitudes' => $solicitudes, 'pedidos' => $pedidos]);
     }
 
-    // $tipo: "solicitud" (de arreglo, a una clienta) o "pedido" (compra a un proveedor)
     public function trazabilidad($tipo, $id)
     {
         $id = (int) $id;
@@ -157,7 +141,6 @@ class reportecontrolador
                 $terminado = $paso['fecha'];
                 $evento['texto'] = 'Se terminó y se entregó';
                 $evento['tipo'] = 'fin';
-                // Lo que salió del inventario al terminarla
                 $evento['detalle'] = implode(', ', array_map(function ($material) {
                     return $material['necesarias'] . ' ' . $material['tbinventarionombre'];
                 }, $encargo['materiales']));
@@ -183,7 +166,6 @@ class reportecontrolador
                 'responsable' => $abono['hechopor'],
                 'tipo'        => 'pago',
             ];
-            // Un abono anulado sigue en la trazabilidad, y aparte cuándo y quién lo anuló
             if ($abono['estado'] === 0) {
                 $eventos[] = [
                     'fecha'       => $abono['fechaanulacion'] ?: $abono['fecha'] . ' 00:00:00',
@@ -277,7 +259,6 @@ class reportecontrolador
                 'responsable' => $abono['hechopor'],
                 'tipo'        => 'pago',
             ];
-            // Un abono anulado sigue en la trazabilidad, y aparte cuándo y quién lo anuló
             if ($abono['estado'] === 0) {
                 $eventos[] = [
                     'fecha'       => $abono['fechaanulacion'] ?: $abono['fecha'] . ' 00:00:00',
@@ -315,7 +296,6 @@ class reportecontrolador
         ]);
     }
 
-    // Cuándo empezó: el registro de la solicitud o el pedido (un adelanto sin hora no cuenta)
     private function fechainicio($eventos)
     {
         foreach ($eventos as $evento) {
@@ -327,7 +307,6 @@ class reportecontrolador
         return $eventos ? $eventos[0]['fecha'] : null;
     }
 
-    // Abonos con el nombre de quién los registró
     private function abonoscon($tipo, $id)
     {
         $nombres = [];
@@ -342,7 +321,6 @@ class reportecontrolador
         }, $this->abonos->listar($tipo, $id));
     }
 
-    // Por fecha; si es el mismo momento, se queda el orden en que se agregaron
     private function ordenar($eventos)
     {
         foreach ($eventos as $indice => &$evento) {
@@ -360,7 +338,6 @@ class reportecontrolador
         }, $eventos);
     }
 
-    // "2 días y 3 horas", "4 horas y 20 minutos"...
     private function duracion($inicio, $fin)
     {
         $segundos = max(0, strtotime($fin) - strtotime($inicio));
