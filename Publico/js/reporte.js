@@ -97,7 +97,7 @@ if (ver === 'ganancia') {
         const categorias = Object.entries(datos.porcategoria)
             .map(([categoria, total]) => linea(`− ${escapar(categoria)}`, -total, 'linea-detalle')).join('');
         document.getElementById('resultados').innerHTML =
-            linea('Vendido', datos.vendido, '', `${datos.ventas} ${datos.ventas === 1 ? 'solicitud terminada' : 'solicitudes terminadas'}`)
+            linea('Vendido', datos.vendido, '', `${datos.ventas} ${datos.ventas === 1 ? 'encargo terminado' : 'encargos terminados'}`)
             + linea('− Costo de flores y productos', -datos.costo)
             + linea('= Ganancia bruta', datos.bruta, 'linea-subtotal')
             + linea('− Gastos del negocio', -datos.gastos, '', datos.gastos > 0 ? '' : 'Sin gastos en este período')
@@ -144,7 +144,7 @@ if (ver === 'trazabilidad') {
 
     const llenarregistros = (elegido = '') => {
         const lista = tipotraza.value === 'pedido' ? opciones.pedidos : opciones.solicitudes;
-        etiquetatraza.textContent = tipotraza.value === 'pedido' ? 'Pedido' : 'Solicitud';
+        etiquetatraza.textContent = tipotraza.value === 'pedido' ? 'Pedido' : 'Encargo';
         registrotraza.innerHTML = '<option value="">Elija…</option>'
             + lista.map((item) => `<option value="${item.id}"${String(item.id) === String(elegido) ? ' selected' : ''}>${escapar(item.texto)}</option>`).join('');
     };
@@ -162,7 +162,7 @@ if (ver === 'trazabilidad') {
         window.history.replaceState(null, '', `${window.location.pathname}?${parametros}`);
 
         if (!id) {
-            traza.innerHTML = '<p class="texto-suave">Elija una solicitud o un pedido para ver todo lo que pasó, cuándo y quién lo hizo.</p>';
+            traza.innerHTML = '<p class="texto-suave">Elija un encargo o un pedido para ver todo lo que pasó, cuándo y quién lo hizo.</p>';
             return;
         }
 

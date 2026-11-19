@@ -138,7 +138,7 @@ class reportecontrolador
             return $this->trazapedido($id);
         }
 
-        return $this->respuesta(false, 'Elija si quiere ver una solicitud o un pedido.');
+        return $this->respuesta(false, 'Elija si quiere ver un encargo o un pedido.');
     }
 
     private function trazasolicitud($id)
@@ -169,7 +169,7 @@ class reportecontrolador
                 $evento['tipo'] = 'cancelado';
             } elseif ($paso['texto'] === 'Pasó a "En proceso"') {
                 $evento['texto'] = 'Empezó a prepararse';
-            } elseif ($paso['texto'] === 'Se registró la solicitud') {
+            } elseif ($paso['texto'] === 'Se registró el encargo') {
                 $evento['tipo'] = 'inicio';
             }
             $eventos[] = $evento;
@@ -200,7 +200,7 @@ class reportecontrolador
         return $this->respuesta(true, '', [
             'tipo'      => 'solicitud',
             'id'        => $id,
-            'titulo'    => 'Solicitud N.º ' . $id . ' · ' . $encargo['tbclientenombre'],
+            'titulo'    => 'Encargo N.º ' . $id . ' · ' . $encargo['tbclientenombre'],
             'resumen'   => [
                 ['Clienta', $encargo['tbclientenombre'] . ($encargo['tbclientetelefono'] ? ' · ' . $encargo['tbclientetelefono'] : '')],
                 ['Pedido', $encargo['descripcion']],

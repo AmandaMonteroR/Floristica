@@ -37,7 +37,7 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
             <small>Ventas a crédito</small>
         </article>
         <article class="tarjeta-dato">
-            <span>Por cobrar: solicitudes abiertas</span>
+            <span>Por cobrar: encargos abiertos</span>
             <strong id="datocobrarabierto">—</strong>
             <small>Lo que falta después de los adelantos</small>
         </article>
@@ -51,7 +51,7 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
     <section class="filtros">
         <label class="campo campo-busqueda">
             <span>Buscar</span>
-            <input type="search" id="filtrotexto" placeholder="<?= $vercuentas === 'pagar' ? 'Proveedor o N.º de pedido' : 'Clienta, teléfono o N.º de solicitud' ?>">
+            <input type="search" id="filtrotexto" placeholder="<?= $vercuentas === 'pagar' ? 'Proveedor o N.º de pedido' : 'Clienta, teléfono o N.º de encargo' ?>">
         </label>
         <label class="campo">
             <span>Estado</span>
@@ -91,7 +91,7 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
                     <tr>
                         <th>N.º</th>
                         <th>Clienta</th>
-                        <th>Solicitud</th>
+                        <th>Encargo</th>
                         <th class="numero">Total</th>
                         <th class="numero">Pagado</th>
                         <th class="numero">Saldo</th>

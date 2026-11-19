@@ -419,7 +419,7 @@ class arreglofloralcontrolador
             } elseif (!$producto->estaActivo()) {
                 $errores['detalles'] = $linea . 'el producto está inactivo.';
             } elseif ($producto->getTbinventariocategoria() === 'Spray') {
-                $errores['detalles'] = $linea . 'el spray no va dentro del arreglo; la pintura se cobra por flor pintada en la solicitud.';
+                $errores['detalles'] = $linea . 'el spray no va dentro del arreglo; la pintura se cobra por flor pintada en el encargo.';
             } elseif (in_array($detalle['tbinventarioid'], $usados, true)) {
                 $errores['detalles'] = $linea . 'el producto ya está en otra línea.';
             } elseif (!ctype_digit($detalle['tbarreglofloralinsumocantidad'])

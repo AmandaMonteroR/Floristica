@@ -802,7 +802,7 @@ class inventariocontrolador
                     $motivo = 'Pedido N.º ' . $fila['tbpedidoid'] . ' recibido';
                     break;
                 case 'Salida':
-                    $motivo = 'Solicitud de pedido de arreglo N.º ' . $fila['tbsolicitudencargoid'] . ' terminada';
+                    $motivo = 'Encargo N.º ' . $fila['tbsolicitudencargoid'] . ' terminado';
                     break;
                 case self::TIPOCOMPRA:
                     $motivo = 'Compra sin pedido' . (!empty($fila['proveedor']) ? ' a ' . $fila['proveedor'] : '');

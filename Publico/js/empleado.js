@@ -292,13 +292,13 @@ async function cambiarestado(accion, id, nombre) {
     const configuracion = accion === 'inactivar'
         ? {
             titulo: '¿Inactivar empleado?',
-            mensaje: `${nombre} ya no aparecerá para asignarle solicitudes. Podrá reactivarlo cuando lo necesite.`,
+            mensaje: `${nombre} ya no aparecerá para asignarle encargos. Podrá reactivarlo cuando lo necesite.`,
             textoaceptar: 'Inactivar',
             peligro: true,
         }
         : {
             titulo: '¿Reactivar empleado?',
-            mensaje: `${nombre} volverá a estar disponible para asignarle solicitudes.`,
+            mensaje: `${nombre} volverá a estar disponible para asignarle encargos.`,
             textoaceptar: 'Reactivar',
         };
 

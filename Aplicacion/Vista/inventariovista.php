@@ -93,6 +93,7 @@ $categoriasinventario = [
         <table class="tabla tabla-inventario">
             <thead>
                 <tr>
+                    <th>Foto</th>
                     <th>Producto</th>
                     <th>Categoría</th>
                     <th>Proveedor</th>
@@ -104,7 +105,7 @@ $categoriasinventario = [
                 </tr>
             </thead>
             <tbody id="cuerpotabla">
-                <tr><td colspan="8" class="vacio">Cargando inventario…</td></tr>
+                <tr><td colspan="9" class="vacio">Cargando inventario…</td></tr>
             </tbody>
         </table>
     </div>
@@ -117,9 +118,11 @@ $categoriasinventario = [
 </main>
 
 <dialog id="dialogoformulario" class="dialogo">
-    <form id="formulario" novalidate>
+    <header class="cabecera-modal-inventario">
         <h2 id="tituloformulario">Nuevo insumo</h2>
-        <p class="nota">Los campos con * son obligatorios.</p>
+        <button type="button" class="cerrar-modal-inventario" id="botoncerrarformulario" aria-label="Cerrar formulario">&times;</button>
+    </header>
+    <form id="formulario" novalidate>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
             <span>Se recuperaron datos que no se habían guardado.</span>
@@ -177,8 +180,7 @@ $categoriasinventario = [
                 <input type="text" name="tbinventarioprecioventa" inputmode="decimal" maxlength="11" placeholder="1000" autocomplete="off" data-filtro="decimal">
                 <small class="error" data-error="tbinventarioprecioventa"></small>
             </label>
-            <p class="campo precio-unidad precio-ganancia">Ganancia por unidad: <strong id="gananciaunidad">—</strong><br>
-                <small class="texto-suave">Es lo que se le cobra a la clienta por unidad en un arreglo personalizado o como adicional.</small></p>
+            <p class="campo precio-unidad precio-ganancia">Ganancia por unidad: <strong id="gananciaunidad">—</strong></p>
             <div class="campo">
                 <span id="etiquetastock">Stock inicial (unidades) *</span>
                 <!-- Al registrar se escribe lo que hay; al editar solo se muestra: se suma o se resta con su motivo -->
@@ -213,6 +215,23 @@ $categoriasinventario = [
             </div>
             <p class="campo resultado-stock" id="resultadocompra" aria-live="polite" hidden></p>
         </div>
+
+        <!-- La fotografía se administra solo al editar un insumo existente -->
+        <fieldset class="seccion-categoria" id="seccionfoto" hidden>
+            <legend>Fotografía del producto</legend>
+            <div class="detalle-arreglo">
+                <div class="columna-foto">
+                    <img id="fotodetalle" class="foto-detalle" alt="" data-lupa>
+                    <div class="foto-vacia" id="fotovacia"><span aria-hidden="true">&#10047;</span>Todavía no tiene foto</div>
+                    <input type="file" id="campofoto" accept="image/jpeg,image/png,image/webp" hidden>
+                    <button type="button" class="boton boton-foto" id="botonfoto">Agregar foto</button>
+                    <button type="button" class="enlace enlace-peligro" id="botonquitarfoto" hidden>Quitar foto</button>
+                    <small class="nota-foto texto-suave">JPG, PNG o WEBP · Máximo 2 MB.</small>
+                    <small class="error" id="errorfoto" role="alert"></small>
+                </div>
+                <p class="nota">Se guarda al seleccionarla.</p>
+            </div>
+        </fieldset>
 
         <fieldset class="seccion-categoria" data-categoria="Flor" hidden>
             <legend>Datos de la flor o follaje</legend>
@@ -299,7 +318,6 @@ $categoriasinventario = [
                         <option value="">Seleccione…</option>
                         <?php opcionespersonalizable($opciones['personalizable']); ?>
                     </select>
-                    <small class="nota-campo texto-suave">Si se le puede imprimir un nombre o mensaje.</small>
                     <small class="error" data-error="tbinventariocategoriaenvolturapersonalizable"></small>
                 </label>
                 <label class="campo" id="campoacabado" hidden>
@@ -483,7 +501,6 @@ $categoriasinventario = [
                         <option value="">Seleccione…</option>
                         <?php opcionespersonalizable($opciones['personalizable']); ?>
                     </select>
-                    <small class="nota-campo texto-suave">Si se le puede escribir o imprimir un mensaje.</small>
                     <small class="error" data-error="tbinventariocategoriatarjetapersonalizable"></small>
                 </label>
                 <label class="campo">
@@ -538,7 +555,6 @@ $categoriasinventario = [
                 <label class="campo" id="campospraycobro" hidden>
                     <span>Cobro por flor pintada (₡) *</span>
                     <input type="text" name="tbinventariocategoriaspraycobroflor" inputmode="decimal" maxlength="11" autocomplete="off" placeholder="300" data-filtro="decimal">
-                    <small class="nota-campo texto-suave">Lo que se le suma al cliente por cada flor que se pinta con esta pintura.</small>
                     <small class="error" data-error="tbinventariocategoriaspraycobroflor"></small>
                 </label>
             </div>
@@ -580,9 +596,6 @@ $categoriasinventario = [
 
         <fieldset class="seccion-categoria">
             <legend>Otros proveedores</legend>
-            <p class="nota">Si este insumo también se le compra a otros proveedores, agréguelos con lo que cobran por el mismo
-                paquete. Al hacerle un pedido a ese proveedor, el insumo aparece con su precio. El costo del insumo sigue
-                siendo el del proveedor principal.</p>
             <div class="lista-otros" id="otrosproveedores"></div>
             <small class="error" data-error="otrosproveedores"></small>
             <button type="button" class="boton" id="botonotroproveedor">+ Agregar otro proveedor</button>
@@ -590,9 +603,6 @@ $categoriasinventario = [
 
         <fieldset class="seccion-categoria">
             <legend>Precio del proveedor en temporada alta</legend>
-            <p class="nota">Escriba cuánto le cobra el proveedor por el paquete en temporada alta. El precio de venta sube solo
-                lo mismo que subió el costo (se mantiene la ganancia en colones), y también el de los arreglos que lo llevan.
-                Si lo deja vacío, se usa el precio normal.</p>
             <div class="rejilla-temporadas" id="preciostemporada"></div>
             <small class="error" data-error="temporadas"></small>
         </fieldset>
@@ -604,20 +614,19 @@ $categoriasinventario = [
     </form>
 </dialog>
 
-<dialog id="dialogodetalle" class="dialogo dialogo-ancho">
-    <!-- Foto del producto (sale en la proforma) y sus datos -->
+<dialog id="dialogodetalle" class="dialogo dialogo-ancho dialogo-inventario">
+    <header>
+        <h2 id="titulodetalle"></h2>
+        <button type="button" class="boton" id="botoncerrardetalle" aria-label="Cerrar detalle">&times;</button>
+    </header>
+    <div class="contenido-detalle-inventario">
+    <!-- La foto se consulta aquí; sus cambios se hacen desde Editar insumo -->
     <div class="detalle-arreglo">
-        <div class="columna-foto" id="columnafoto">
-            <img id="fotodetalle" class="foto-detalle" alt="" data-lupa>
-            <div class="foto-vacia" id="fotovacia"><span aria-hidden="true">&#10047;</span>Todavía no tiene foto</div>
-            <input type="file" id="campofoto" accept="image/jpeg,image/png,image/webp" hidden>
-            <button type="button" class="boton boton-foto" id="botonfoto">Agregar foto</button>
-            <button type="button" class="enlace enlace-peligro" id="botonquitarfoto" hidden>Quitar foto</button>
-            <small class="nota-foto texto-suave">JPG, PNG o WEBP de hasta 2 MB. Sale en la proforma que se le manda al cliente.</small>
-            <small class="error" id="errorfoto" role="alert"></small>
+        <div class="columna-foto">
+            <img id="fotodetallever" class="foto-detalle" alt="" data-lupa>
+            <div class="foto-vacia" id="fotovaciaver"><span aria-hidden="true">&#10047;</span>Todavía no tiene foto</div>
         </div>
         <div>
-            <h2 id="titulodetalle"></h2>
             <dl id="listadetalle" class="detalle"></dl>
         </div>
     </div>
@@ -638,10 +647,12 @@ $categoriasinventario = [
         </table>
     </div>
     <div class="acciones-dialogo">
+        <button type="button" class="boton" id="botoneditardetalle">Editar</button>
         <button type="button" class="boton" id="botondanadasdetalle">Rebajar dañadas</button>
         <button type="button" class="boton" id="botonstockdetalle">Agregar stock</button>
         <button type="button" class="boton" id="botonverhistorial">Ver historial</button>
-        <button type="button" class="boton boton-principal" id="botoncerrardetalle">Cerrar</button>
+        <button type="button" class="boton" id="botonestadodetalle">Inactivar</button>
+    </div>
     </div>
 </dialog>
 

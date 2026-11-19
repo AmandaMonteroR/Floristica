@@ -498,7 +498,7 @@ function textoapartado(producto) {
     const texto = producto.tbinventariofaltante > 0
         ? `<span class="aviso-stock">Faltan ${producto.tbinventariofaltante}</span>`
         : `${producto.tbinventariodisponible} libres`;
-    return `<small class="texto-suave nota-apartado" title="Apartado para solicitudes abiertas">${producto.tbinventariostockreservado} ${producto.tbinventariostockreservado === 1 ? 'apartada' : 'apartadas'} · ${texto}</small>`;
+    return `<small class="texto-suave nota-apartado" title="Apartado para encargos abiertos">${producto.tbinventariostockreservado} ${producto.tbinventariostockreservado === 1 ? 'apartada' : 'apartadas'} · ${texto}</small>`;
 }
 
 async function cargarinventario() {
@@ -509,7 +509,7 @@ async function cargarinventario() {
     });
 
     if (!respuesta.exito) {
-        cuerpotabla.innerHTML = `<tr><td colspan="8" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
+        cuerpotabla.innerHTML = `<tr><td colspan="9" class="vacio">${escapar(respuesta.mensaje)}</td></tr>`;
         return;
     }
 
@@ -523,19 +523,19 @@ async function cargarinventario() {
         const mensaje = sinfiltros
             ? 'Aún no hay insumos registrados. Use "Nuevo insumo" para agregar el primero.'
             : 'No hay productos que coincidan con la búsqueda.';
-        cuerpotabla.innerHTML = `<tr><td colspan="8" class="vacio">${mensaje}</td></tr>`;
+        cuerpotabla.innerHTML = `<tr><td colspan="9" class="vacio">${mensaje}</td></tr>`;
         return;
     }
 
     cuerpotabla.innerHTML = productos.map((producto) => {
         const activo = producto.tbinventarioestado === 1;
-        const botonestado = activo
-            ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${producto.tbinventarioid}">Inactivar</button>`
-            : `<button type="button" class="enlace" data-accion="reactivar" data-id="${producto.tbinventarioid}">Reactivar</button>`;
         const nivel = nivelstock(producto);
 
         return `
             <tr class="${activo ? '' : 'fila-inactiva'}">
+                <td class="celda-foto-inventario" data-etiqueta="Foto">${producto.tbinventariofoto
+                    ? `<img class="miniatura-inventario" src="${escapar(producto.tbinventariofoto).replace(/"/g, '&quot;')}" alt="" loading="lazy">`
+                    : '<span class="miniatura-vacia-inventario" title="Sin foto" aria-label="Sin foto">✿</span>'}</td>
                 <td>${escapar(producto.tbinventarionombre)}</td>
                 <td>${escapar(producto.tbinventariocategoria)}</td>
                 <td>${escapar(producto.tbproveedornombreempresa)}${producto.cantidadotrosproveedores > 0
@@ -547,9 +547,6 @@ async function cargarinventario() {
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
                     <button type="button" class="enlace" data-accion="ver" data-id="${producto.tbinventarioid}">Ver</button>
-                    <button type="button" class="enlace" data-accion="editar" data-id="${producto.tbinventarioid}">Editar</button>
-                    ${activo ? `<button type="button" class="enlace" data-accion="stock" data-id="${producto.tbinventarioid}">Stock</button>` : ''}
-                    ${botonestado}
                 </td>
             </tr>`;
     }).join('');
@@ -603,6 +600,7 @@ async function abrirnuevo() {
     aplicarborrador();
     salirexistente();
     modostock(null);
+    document.getElementById('seccionfoto').hidden = true;
     tituloformulario.textContent = 'Nuevo insumo';
     botonguardar.textContent = 'Guardar insumo';
     dialogoformulario.showModal();
@@ -624,6 +622,8 @@ async function abrireditar(id) {
     aplicarborrador();
     salirexistente();
     modostock(datosservidor);
+    document.getElementById('seccionfoto').hidden = false;
+    mostrarfoto(datosservidor);
     tituloformulario.textContent = 'Editar insumo';
     botonguardar.textContent = 'Guardar cambios';
     dialogoformulario.showModal();
@@ -646,7 +646,7 @@ async function verdetalle(id) {
         ['Estado', producto.tbinventarioestado === 1 ? 'Activo' : 'Inactivo'],
         ['§', 'Stock'],
         ['Stock actual', `${producto.tbinventariostock} ${producto.tbinventariostock === 1 ? 'unidad' : 'unidades'}`],
-        ['Apartado para solicitudes', `${producto.tbinventariostockreservado}${producto.tbinventariofaltante > 0
+        ['Apartado para encargos', `${producto.tbinventariostockreservado}${producto.tbinventariofaltante > 0
             ? ` (faltan ${producto.tbinventariofaltante} para prepararlas todas)` : ''}`],
         ['Disponible', `${producto.tbinventariodisponible} (${nivelstock(producto).texto.toLowerCase()})`],
         ['Stock mínimo', String(producto.tbinventariostockminimo)],
@@ -710,6 +710,10 @@ async function verdetalle(id) {
         .join('');
     document.getElementById('botonstockdetalle').hidden = producto.tbinventarioestado !== 1;
     document.getElementById('botondanadasdetalle').hidden = producto.tbinventarioestado !== 1 || producto.tbinventariostock === 0;
+    const botonestado = document.getElementById('botonestadodetalle');
+    botonestado.dataset.accion = producto.tbinventarioestado === 1 ? 'inactivar' : 'reactivar';
+    botonestado.textContent = producto.tbinventarioestado === 1 ? 'Inactivar' : 'Reactivar';
+    botonestado.classList.toggle('boton-peligro', producto.tbinventarioestado === 1);
 
     cuerpomovimientos.innerHTML = producto.movimientos.length === 0
         ? '<tr><td colspan="5" class="vacio">Este producto todavía no tiene movimientos registrados.</td></tr>'
@@ -730,6 +734,8 @@ async function verdetalle(id) {
 
 const fotodetalle = document.getElementById('fotodetalle');
 const fotovacia = document.getElementById('fotovacia');
+const fotodetallever = document.getElementById('fotodetallever');
+const fotovaciaver = document.getElementById('fotovaciaver');
 const campofoto = document.getElementById('campofoto');
 const botonfoto = document.getElementById('botonfoto');
 const botonquitarfoto = document.getElementById('botonquitarfoto');
@@ -741,6 +747,10 @@ function mostrarfoto(producto) {
     fotodetalle.src = foto || '';
     fotodetalle.alt = producto.tbinventarionombre;
     fotovacia.hidden = Boolean(foto);
+    fotodetallever.hidden = !foto;
+    fotodetallever.src = foto || '';
+    fotodetallever.alt = producto.tbinventarionombre;
+    fotovaciaver.hidden = Boolean(foto);
     botonfoto.textContent = foto ? 'Cambiar foto' : 'Agregar foto';
     botonfoto.disabled = false;
     botonquitarfoto.hidden = !foto;
@@ -756,7 +766,11 @@ async function terminarfoto(respuesta) {
         botonfoto.textContent = fotodetalle.hidden ? 'Agregar foto' : 'Cambiar foto';
         return;
     }
-    await verdetalle(iddetalle);
+    datosservidor.tbinventariofoto = respuesta.datos.tbinventariofoto;
+    mostrarfoto({
+        tbinventariofoto: respuesta.datos.tbinventariofoto,
+        tbinventarionombre: formulario.elements.tbinventarionombre.value,
+    });
     errorfoto.textContent = respuesta.mensaje;
     errorfoto.className = 'texto-exito';
 }
@@ -774,7 +788,7 @@ async function subirfoto() {
     }
 
     const datos = new FormData();
-    datos.append('id', iddetalle);
+    datos.append('id', formulario.elements.tbinventarioid.value);
     datos.append('tbinventariofoto', archivo);
     botonfoto.disabled = true;
     botonfoto.textContent = 'Subiendo…';
@@ -785,7 +799,7 @@ async function subirfoto() {
 
 async function quitarfoto() {
     const datos = new FormData();
-    datos.append('id', iddetalle);
+    datos.append('id', formulario.elements.tbinventarioid.value);
     botonquitarfoto.disabled = true;
     const respuesta = await enviar('quitarfoto', datos);
     botonquitarfoto.disabled = false;
@@ -811,7 +825,7 @@ async function cambiarestado(accion, id, nombre) {
         };
 
     if (!(await confirmar(configuracion))) {
-        return;
+        return false;
     }
 
     const datos = new FormData();
@@ -823,6 +837,7 @@ async function cambiarestado(accion, id, nombre) {
     if (respuesta.exito) {
         cargarinventario();
     }
+    return respuesta.exito;
 }
 
 formulario.addEventListener('input', (evento) => {
@@ -958,23 +973,8 @@ cuerpotabla.addEventListener('click', (evento) => {
         return;
     }
 
-    const id = boton.dataset.id;
-    const nombre = boton.closest('tr').cells[0].textContent;
-
-    switch (boton.dataset.accion) {
-        case 'ver':
-            verdetalle(id);
-            break;
-        case 'editar':
-            abrireditar(id);
-            break;
-        case 'stock':
-            abrirstock(id);
-            break;
-        case 'inactivar':
-        case 'reactivar':
-            cambiarestado(boton.dataset.accion, id, nombre);
-            break;
+    if (boton.dataset.accion === 'ver') {
+        verdetalle(boton.dataset.id);
     }
 });
 
@@ -988,7 +988,20 @@ filtroestado.addEventListener('change', cargarinventario);
 filtrostock.addEventListener('change', cargarinventario);
 document.getElementById('botonnuevo').addEventListener('click', abrirnuevo);
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
+document.getElementById('botoncerrarformulario').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
+document.getElementById('botoneditardetalle').addEventListener('click', () => {
+    dialogodetalle.close();
+    abrireditar(iddetalle);
+});
+document.getElementById('botonestadodetalle').addEventListener('click', async (evento) => {
+    const id = iddetalle;
+    const cambiado = await cambiarestado(evento.currentTarget.dataset.accion, id, titulodetalle.textContent);
+    if (cambiado && dialogodetalle.open) {
+        dialogodetalle.close();
+        verdetalle(id);
+    }
+});
 
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
@@ -1222,7 +1235,7 @@ function calcularresultadostock() {
         return;
     }
     const falta = productostock.tbinventariostockreservado > nuevo
-        ? ` · Ya no alcanza para las solicitudes abiertas (tienen ${productostock.tbinventariostockreservado} apartadas)` : '';
+        ? ` · Ya no alcanza para los encargos abiertos (tienen ${productostock.tbinventariostockreservado} apartadas)` : '';
     resultadostock.textContent = `${sumando() ? `Se suman ${cambio} unidades` : `Se rebajan ${-cambio}`}: pasa de `
         + `${productostock.tbinventariostock} a ${nuevo}${falta}`;
     resultadostock.className = `resultado-stock${falta ? ' texto-peligro' : ''}`;
@@ -1246,10 +1259,10 @@ async function abrirstock(id, sentido = 'sumar') {
     document.getElementById('titulostock').textContent = suma
         ? `Agregar stock a ${productostock.tbinventarionombre}` : `Rebajar ${productostock.tbinventarionombre} dañadas`;
     resumenstock.textContent = `Hay ${productostock.tbinventariostock} en stock · ${productostock.tbinventariostockreservado} apartadas `
-        + `para solicitudes · ${productostock.tbinventariodisponible} disponibles.`;
+        + `para encargos · ${productostock.tbinventariodisponible} disponibles.`;
     document.getElementById('notastock').textContent = suma
         ? 'Si lo compró con un pedido al proveedor, no lo sume aquí: se suma solo al marcar el pedido como Recibido.'
-        : 'Solo las que se dañaron o se marchitaron. Las que se usan en los arreglos se rebajan solas al terminar la solicitud.';
+        : 'Solo las que se dañaron o se marchitaron. Las que se usan en los arreglos se rebajan solas al terminar el encargo.';
     botonguardarstock.textContent = suma ? 'Sumar al stock' : 'Rebajar del stock';
     botonguardarstock.classList.toggle('boton-peligro', !suma);
     llenarvendedores(formulariostock.elements.tbproveedorid, productostock);

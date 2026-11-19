@@ -105,7 +105,7 @@ class clientecontrolador
         $abiertas = $this->repositorio->contarsolicitudes()[$id]['abiertas'] ?? 0;
         if ($abiertas > 0) {
             return $this->respuesta(false, 'No se puede inactivar: ' . $cliente->getTbclientenombre() . ' tiene ' . $abiertas
-                . ($abiertas === 1 ? ' solicitud de pedido de arreglo pendiente o en proceso.' : ' solicitudes de pedido de arreglo pendientes o en proceso.'));
+                . ($abiertas === 1 ? ' encargo pendiente o en proceso.' : ' encargos pendientes o en proceso.'));
         }
 
         $this->entransaccion(function () use ($id, $usuario) {

@@ -100,8 +100,8 @@
                 </div>
                 ${notas}
                 <p class="nota">Es un aproximado según los colores de la foto y el tamaño elegido (${datos.porcentaje}% de ganancia).
-                    En la solicitud puede cambiar las flores y las cantidades.</p>
-                <button type="button" class="boton boton-principal" data-crear>Crear solicitud con esta valoración</button>
+                    En el encargo puede cambiar las flores y las cantidades.</p>
+                <button type="button" class="boton boton-principal" data-crear>Crear encargo con esta valoración</button>
             </div>`
             : `${notas}<p class="nota">No se pudo armar el ramo con el inventario actual.</p>`;
     }

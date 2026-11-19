@@ -123,7 +123,7 @@ class creditocontrolador
 
         $errores = [];
         if ($cuenta['saldo'] <= 0) {
-            return $this->respuesta(false, $tipo === 'pagar' ? 'Ese pedido ya está pagado.' : 'Esa solicitud ya está pagada.');
+            return $this->respuesta(false, $tipo === 'pagar' ? 'Ese pedido ya está pagado.' : 'Ese encargo ya está pagado.');
         }
         if ($monto === '') {
             $errores['monto'] = 'Escriba el monto del abono.';
@@ -143,7 +143,7 @@ class creditocontrolador
         } elseif ($fecha < $cuenta['fechainicio']) {
             $errores['fecha'] = $tipo === 'pagar'
                 ? 'La fecha no puede ser anterior a la compra (' . date('d/m/Y', strtotime($cuenta['fechainicio'])) . ').'
-                : 'La fecha no puede ser anterior a la solicitud (' . date('d/m/Y', strtotime($cuenta['fechainicio'])) . ').';
+                : 'La fecha no puede ser anterior al encargo (' . date('d/m/Y', strtotime($cuenta['fechainicio'])) . ').';
         }
 
         if (!in_array($metodo, $this->metodos, true)) {
@@ -162,7 +162,7 @@ class creditocontrolador
 
         return $this->respuesta(true, $saldo > 0
             ? 'Abono registrado. Queda un saldo de ' . historicocontrolador::monto($saldo) . '.'
-            : ($tipo === 'pagar' ? 'Abono registrado. El pedido quedó pagado.' : 'Abono registrado. La solicitud quedó pagada.'),
+            : ($tipo === 'pagar' ? 'Abono registrado. El pedido quedó pagado.' : 'Abono registrado. El encargo quedó pagado.'),
             ['saldo' => $saldo]);
     }
 
@@ -297,7 +297,7 @@ class creditocontrolador
             'id'           => (int) $encargo->getTbsolicitudencargoid(),
             'nombre'       => $cliente ? $cliente->getTbclientenombre() : 'Cliente eliminado',
             'telefono'     => $cliente ? $cliente->getTbclientetelefono() : '',
-            'detalle'      => 'Solicitud N.º ' . $encargo->getTbsolicitudencargoid() . ' · ' . $encargo->getTbsolicitudencargoestado(),
+            'detalle'      => 'Encargo N.º ' . $encargo->getTbsolicitudencargoid() . ' · ' . $encargo->getTbsolicitudencargoestado(),
             'fechainicio'  => $encargo->getTbsolicitudencargofecharegistro(),
             'fechaentrega' => $encargo->getTbsolicitudencargofechaentrega(),
             'entregada'    => $entregada,

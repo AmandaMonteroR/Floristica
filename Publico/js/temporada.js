@@ -198,12 +198,12 @@ botonalternar.addEventListener('click', async () => {
     const aceptado = await confirmar(encender
         ? {
             titulo: '¿Encender la temporada alta?',
-            mensaje: `Las flores con precio de temporada alta (${estado.conprecio}) y los arreglos que las llevan subirán de precio. Las solicitudes ya registradas no cambian.`,
+            mensaje: `Las flores con precio de temporada alta (${estado.conprecio}) y los arreglos que las llevan subirán de precio. Los encargos ya registrados no cambian.`,
             textoaceptar: 'Encender',
         }
         : {
             titulo: '¿Apagar la temporada alta?',
-            mensaje: 'Se vuelve a los precios normales. Las solicitudes ya registradas no cambian.',
+            mensaje: 'Se vuelve a los precios normales. Los encargos ya registrados no cambian.',
             textoaceptar: 'Apagar',
             peligro: true,
         });

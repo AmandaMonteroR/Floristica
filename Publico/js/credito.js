@@ -214,7 +214,7 @@ async function abrircuenta(tipo, id) {
     cuentaactual = cuenta;
     titulocuenta.textContent = tipo === 'pagar'
         ? `Pedido N.º ${cuenta.id} · ${cuenta.nombre}`
-        : `Solicitud N.º ${cuenta.id} · ${cuenta.nombre}`;
+        : `Encargo N.º ${cuenta.id} · ${cuenta.nombre}`;
 
     const filas = tipo === 'pagar'
         ? [
@@ -224,7 +224,7 @@ async function abrircuenta(tipo, id) {
         ]
         : [
             ['Teléfono', cuenta.telefono],
-            ['Solicitud', `${cuenta.detalle.split(' · ')[1] ?? ''} · entrega ${formatearfecha(cuenta.fechaentrega)}`],
+            ['Encargo', `${cuenta.detalle.split(' · ')[1] ?? ''} · entrega ${formatearfecha(cuenta.fechaentrega)}`],
             ['Total', formatearmonto(cuenta.monto)],
         ];
     filas.push(['Pagado', formatearmonto(cuenta.abonado)], ['Saldo', formatearmonto(cuenta.saldo)], ['Estado', etiquetaestado(cuenta)]);

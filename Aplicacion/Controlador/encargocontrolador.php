@@ -216,7 +216,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid((int) $id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         $datos = $this->convertirarreglo($encargo, $this->nombres());
@@ -265,7 +265,7 @@ class encargocontrolador
             return $id;
         });
 
-        return $this->respuesta(true, 'Solicitud de pedido de arreglo N.º ' . $id . ' registrada. Total: '
+        return $this->respuesta(true, 'Encargo N.º ' . $id . ' registrado. Total: '
             . historicocontrolador::monto($encargo->getTbsolicitudencargototal()) . '.',
             ['tbsolicitudencargoid' => $id, 'total' => (float) $encargo->getTbsolicitudencargototal()]);
     }
@@ -276,11 +276,11 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if ($encargo->getTbsolicitudencargoestado() !== 'Pendiente') {
-            return $this->respuesta(false, 'Solo se pueden editar solicitudes pendientes.');
+            return $this->respuesta(false, 'Solo se pueden editar encargos pendientes.');
         }
 
         $datos = $this->limpiar($datos);
@@ -307,7 +307,7 @@ class encargocontrolador
             $this->generales->registrar('solicitudencargo', $id, $anteriores, $this->datoshistorico($nuevo), $usuario['id']);
         });
 
-        return $this->respuesta(true, 'Solicitud de pedido de arreglo N.º ' . $id . ' actualizada. Total: '
+        return $this->respuesta(true, 'Encargo N.º ' . $id . ' actualizado. Total: '
             . historicocontrolador::monto($nuevo->getTbsolicitudencargototal()) . '.');
     }
 
@@ -318,17 +318,17 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if (!$encargo->estaAbierto()) {
-            return $this->respuesta(false, 'Solo se pueden asignar solicitudes pendientes o en proceso.');
+            return $this->respuesta(false, 'Solo se pueden asignar encargos pendientes o en proceso.');
         }
 
         // Un empleado asigna las sin asignar o las suyas
         if (($usuario['rol'] ?? '') !== 'Propietario' && $encargo->getTbempleadoid()
             && (int) $encargo->getTbempleadoid() !== (int) $usuario['id']) {
-            return $this->respuesta(false, 'Esta solicitud ya la tiene otra persona. Solo puede asignar las que están sin asignar o las suyas.');
+            return $this->respuesta(false, 'Este encargo ya lo tiene otra persona. Solo puede asignar los que están sin asignar o los suyos.');
         }
 
         $error = $this->validarempleado($idempleado);
@@ -340,7 +340,7 @@ class encargocontrolador
 
         // Misma persona: no hay cambio
         if ((int) $encargo->getTbempleadoid() === (int) $idempleado) {
-            return $this->respuesta(true, 'La solicitud ya estaba asignada a ' . $empleado->getTbempleadonombre() . '.');
+            return $this->respuesta(true, 'El encargo ya estaba asignado a ' . $empleado->getTbempleadonombre() . '.');
         }
 
         $this->entransaccion(function () use ($id, $idempleado, $usuario) {
@@ -348,7 +348,7 @@ class encargocontrolador
             $this->historico->registrar('empleado', $id, (int) $idempleado, $usuario['id']);
         });
 
-        return $this->respuesta(true, 'Solicitud asignada a ' . $empleado->getTbempleadonombre() . '.');
+        return $this->respuesta(true, 'Encargo asignado a ' . $empleado->getTbempleadonombre() . '.');
     }
 
     // Se la asigna quien tiene la sesión
@@ -358,7 +358,7 @@ class encargocontrolador
 
         if ($encargo && $usuario['rol'] !== 'Propietario' && $encargo->getTbempleadoid()
             && (int) $encargo->getTbempleadoid() !== (int) $usuario['id']) {
-            return $this->respuesta(false, 'Esta solicitud ya está asignada a otra persona.');
+            return $this->respuesta(false, 'Este encargo ya está asignado a otra persona.');
         }
 
         return $this->asignar(['tbsolicitudencargoid' => $id, 'tbempleadoid' => (string) $usuario['id']], $usuario);
@@ -376,24 +376,24 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if ($encargo->getTbsolicitudencargoestado() !== 'Pendiente') {
-            return $this->respuesta(false, 'Solo se pueden iniciar solicitudes pendientes.');
+            return $this->respuesta(false, 'Solo se pueden iniciar encargos pendientes.');
         }
 
         if (!$encargo->getTbempleadoid()) {
-            return $this->respuesta(false, 'Asigne la solicitud a alguien antes de iniciarla.');
+            return $this->respuesta(false, 'Asigne el encargo a alguien antes de iniciarlo.');
         }
 
         if ($this->esdeotro($encargo, $usuario)) {
-            return $this->respuesta(false, 'Solo puede iniciar las solicitudes asignadas a usted.');
+            return $this->respuesta(false, 'Solo puede iniciar los encargos asignados a usted.');
         }
 
         $this->cambiarestado($id, 'En proceso', $usuario);
 
-        return $this->respuesta(true, 'La solicitud pasó a "En proceso".');
+        return $this->respuesta(true, 'El encargo pasó a "En proceso".');
     }
 
     public function terminar($id, $usuario)
@@ -402,15 +402,15 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if ($this->esdeotro($encargo, $usuario)) {
-            return $this->respuesta(false, 'Solo puede terminar las solicitudes asignadas a usted.');
+            return $this->respuesta(false, 'Solo puede terminar los encargos asignados a usted.');
         }
 
         if ($encargo->getTbsolicitudencargoestado() !== 'En proceso') {
-            return $this->respuesta(false, 'Solo se pueden terminar solicitudes en proceso.');
+            return $this->respuesta(false, 'Solo se pueden terminar encargos en proceso.');
         }
 
         $materiales = $this->materiales($encargo);
@@ -441,7 +441,7 @@ class encargocontrolador
             $this->inventario->recalcularreservado();
         });
 
-        return $this->respuesta(true, 'Solicitud terminada. Se descontaron los productos del inventario.');
+        return $this->respuesta(true, 'Encargo terminado. Se descontaron los productos del inventario.');
     }
 
     // Cualquier empleado con permiso puede entregar un encargo terminado.
@@ -451,7 +451,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if ($encargo->getTbsolicitudencargoestado() !== 'Terminado') {
@@ -484,16 +484,16 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if (!$encargo->estaAbierto()) {
-            return $this->respuesta(false, 'Solo se pueden cancelar solicitudes pendientes o en proceso.');
+            return $this->respuesta(false, 'Solo se pueden cancelar encargos pendientes o en proceso.');
         }
 
         $this->cambiarestado($id, 'Cancelado', $usuario);
 
-        return $this->respuesta(true, 'Solicitud cancelada.');
+        return $this->respuesta(true, 'Encargo cancelado.');
     }
 
     // Foto de cómo quedó el personalizado (no si está cancelada)
@@ -503,7 +503,7 @@ class encargocontrolador
         $encargo = $this->repositorio->obtenerporid($id);
 
         if (!$encargo) {
-            return $this->respuesta(false, 'La solicitud de pedido de arreglo no existe.');
+            return $this->respuesta(false, 'El encargo no existe.');
         }
 
         if (!$encargo->esPersonalizado()) {
@@ -511,11 +511,11 @@ class encargocontrolador
         }
 
         if ($encargo->getTbsolicitudencargoestado() === 'Cancelado') {
-            return $this->respuesta(false, 'No se le puede agregar foto a una solicitud cancelada.');
+            return $this->respuesta(false, 'No se le puede agregar foto a un encargo cancelado.');
         }
 
         if ($this->esdeotro($encargo, $usuario)) {
-            return $this->respuesta(false, 'Solo puede agregar la foto de las solicitudes asignadas a usted.');
+            return $this->respuesta(false, 'Solo puede agregar la foto de los encargos asignados a usted.');
         }
 
         $error = $this->validarfoto($foto);
@@ -631,7 +631,7 @@ class encargocontrolador
         foreach ($this->historico->listar($idencargo) as $fila) {
             if ($fila['campo'] === 'estado') {
                 $texto = $fila['valor'] === 'Pendiente' && !$lista
-                    ? 'Se registró la solicitud'
+                    ? 'Se registró el encargo'
                     : 'Pasó a "' . $fila['valor'] . '"';
             } else {
                 $texto = 'Se asignó a ' . ($fila['nombreasignado'] ?? 'un empleado eliminado');
@@ -765,7 +765,7 @@ class encargocontrolador
                 $apartadas = (int) $producto->getTbinventariostockreservado() - $suyas;
                 $faltan[] = $producto->getTbinventarionombre() . ': se necesitan ' . $cantidad . ' y hay ' . max(0, $disponible)
                     . ' disponibles (' . (int) $producto->getTbinventariostock() . ' en inventario'
-                    . ($apartadas > 0 ? ', ' . $apartadas . ' apartadas para otras solicitudes' : '') . ')';
+                    . ($apartadas > 0 ? ', ' . $apartadas . ' apartadas para otros encargos' : '') . ')';
             }
         }
 

@@ -14,7 +14,7 @@
     <header class="encabezado">
         <div>
             <h1>Clientes</h1>
-            <p class="subtitulo">Personas que hacen solicitudes de pedido de arreglo, casi siempre por WhatsApp.</p>
+            <p class="subtitulo">Personas que hacen encargos, casi siempre por WhatsApp.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo cliente</button>
     </header>
@@ -43,7 +43,7 @@
                     <th>Nombre</th>
                     <th>Teléfono</th>
                     <th>Dirección</th>
-                    <th>Solicitudes</th>
+                    <th>Encargos</th>
                     <th>Estado</th>
                     <th class="columna-acciones">Acciones</th>
                 </tr>

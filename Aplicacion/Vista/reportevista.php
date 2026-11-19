@@ -18,7 +18,7 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
     <header class="encabezado">
         <div>
             <h1>Reportes</h1>
-            <p class="subtitulo">Cuánto queda de verdad después de pagar todo, y la historia completa de cada solicitud y cada pedido.</p>
+            <p class="subtitulo">Cuánto queda de verdad después de pagar todo, y la historia completa de cada encargo y cada pedido.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonimprimir">Imprimir</button>
     </header>
@@ -72,7 +72,7 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
                         <tbody id="cuerpomeses"></tbody>
                     </table>
                 </div>
-                <p class="nota">Vendido: solicitudes terminadas en el mes. Costo: lo que costaron sus flores y productos.
+                <p class="nota">Vendido: encargos terminados en el mes. Costo: lo que costaron sus flores y productos.
                     Gastos: alquiler, luz, salarios y demás gastos que cuentan.</p>
             </article>
         </section>
@@ -81,12 +81,12 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
             <label class="campo">
                 <span>Qué quiere ver</span>
                 <select id="tipotraza">
-                    <option value="solicitud">Una solicitud de arreglo</option>
+                    <option value="solicitud">Un encargo</option>
                     <option value="pedido">Un pedido al proveedor</option>
                 </select>
             </label>
             <label class="campo campo-busqueda">
-                <span id="etiquetatraza">Solicitud</span>
+                <span id="etiquetatraza">Encargo</span>
                 <select id="registrotraza" aria-labelledby="etiquetatraza">
                     <option value="">Cargando…</option>
                 </select>
@@ -94,7 +94,7 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
         </section>
 
         <article id="traza" class="traza" aria-live="polite">
-            <p class="texto-suave">Elija una solicitud o un pedido para ver todo lo que pasó, cuándo y quién lo hizo.</p>
+            <p class="texto-suave">Elija un encargo o un pedido para ver todo lo que pasó, cuándo y quién lo hizo.</p>
         </article>
     <?php endif; ?>
 </main>

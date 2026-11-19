@@ -95,7 +95,7 @@ async function cargar(desde, hasta) {
         ? `${totales.margen}% de lo vendido` : '';
 
     if (datos.ventas.length === 0) {
-        cuerpotabla.innerHTML = '<tr><td colspan="7" class="vacio">No hay solicitudes terminadas en este período.</td></tr>';
+        cuerpotabla.innerHTML = '<tr><td colspan="7" class="vacio">No hay encargos terminados en este período.</td></tr>';
         return;
     }
 

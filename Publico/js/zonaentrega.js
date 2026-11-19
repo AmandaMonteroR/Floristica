@@ -274,7 +274,7 @@ async function cambiarestado(accion, id, nombre) {
     const configuracion = accion === 'inactivar'
         ? {
             titulo: '¿Inactivar zona?',
-            mensaje: `${nombre} ya no aparecerá para elegirla en las solicitudes con express. Podrá reactivarla cuando lo necesite.`,
+            mensaje: `${nombre} ya no aparecerá para elegirla en los encargos con express. Podrá reactivarla cuando lo necesite.`,
             textoaceptar: 'Inactivar',
             peligro: true,
         }
@@ -325,7 +325,7 @@ formulario.addEventListener('submit', async (evento) => {
         const nombre = formulario.elements.tbzonaentreganombre.value.trim() || 'esta zona';
         const aceptado = await confirmar({
             titulo: '¿Guardar los cambios?',
-            mensaje: `Se actualizarán los datos de ${nombre}. El precio nuevo se usará en las solicitudes que se registren desde ahora.`,
+            mensaje: `Se actualizarán los datos de ${nombre}. El precio nuevo se usará en los encargos que se registren desde ahora.`,
             textoaceptar: 'Guardar cambios',
         });
 

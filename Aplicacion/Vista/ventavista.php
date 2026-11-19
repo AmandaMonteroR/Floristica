@@ -14,7 +14,7 @@
     <header class="encabezado">
         <div>
             <h1>Ventas y ganancias</h1>
-            <p class="subtitulo">Solicitudes terminadas: lo que se vendió y lo que queda después de pagar las flores y productos.</p>
+            <p class="subtitulo">Encargos terminados: lo que se vendió y lo que queda después de pagar las flores y productos.</p>
         </div>
     </header>
 

@@ -64,7 +64,7 @@
                     <p class="precio-resultado">${precio}</p>
                     <div class="tarjeta-acciones">
                         <button type="button" class="enlace" data-ver="${arreglo.tbarreglofloralid}">Ver</button>
-                        <a class="enlace" data-accion="editar" href="index.php?modulo=encargo&amp;arreglo=${arreglo.tbarreglofloralid}">Crear solicitud</a>
+                        <a class="enlace" data-accion="editar" href="index.php?modulo=encargo&amp;arreglo=${arreglo.tbarreglofloralid}">Crear encargo</a>
                     </div>
                 </div>
             </article>`;

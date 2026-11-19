@@ -24,7 +24,7 @@
 
     <nav class="pestanas" aria-label="Secciones del catálogo">
         <a href="index.php?modulo=catalogo" class="activa" aria-current="page">Catálogo</a>
-        <a href="index.php?modulo=encargo">Solicitudes de pedido de arreglo</a>
+        <a href="index.php?modulo=encargo">Encargos</a>
     </nav>
 
     <section class="filtros">

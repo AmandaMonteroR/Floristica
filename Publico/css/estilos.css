@@ -710,8 +710,8 @@ h1 {
     padding: 0.75rem 0.6rem;
 }
 
-.tabla-inventario td:nth-child(1),
-.tabla-inventario td:nth-child(3) {
+.tabla-inventario td:nth-child(2),
+.tabla-inventario td:nth-child(4) {
     white-space: normal;
     min-width: 110px;
 }
@@ -4539,12 +4539,12 @@ img[data-lupa] {
 }
 
 /* Nuevo encargo: cierre y selección visual, sin cambiar el estilo general de Floristica. */
-.cabecera-modal-encargo { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
-.cabecera-modal-encargo h2 { margin: 0; }
-.cerrar-modal-encargo { display: grid; place-items: center; flex: none; width: 2.4rem; height: 2.4rem;
+.cabecera-modal-encargo, .cabecera-modal-inventario { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.6rem; }
+.cabecera-modal-encargo h2, .cabecera-modal-inventario h2 { margin: 0; }
+.cerrar-modal-encargo, .cerrar-modal-inventario { display: grid; place-items: center; flex: none; width: 2.4rem; height: 2.4rem;
     padding: 0; font-size: 1.6rem; font-weight: 400; line-height: 1; color: var(--principal-oscuro);
     background: var(--rosa-claro); border: 1px solid var(--borde); border-radius: 50%; }
-.cerrar-modal-encargo:hover { color: #fff; background: var(--principal); }
+.cerrar-modal-encargo:hover, .cerrar-modal-inventario:hover { color: #fff; background: var(--principal); }
 .boton-elegir-arreglo { width: 100%; text-align: left; }
 .arreglo-elegido { display: flex; gap: 0.75rem; align-items: center; padding: 0.6rem;
     border: 1px solid var(--borde); border-radius: 0.65rem; background: var(--rosa-claro); }
@@ -4587,7 +4587,8 @@ img[data-lupa] {
     flex-direction: column;
 }
 
-#dialogoformulario > .cabecera-modal-encargo {
+#dialogoformulario > .cabecera-modal-encargo,
+#dialogoformulario > .cabecera-modal-inventario {
     flex-shrink: 0;
     align-items: center;
     margin: 0;
@@ -4601,4 +4602,66 @@ img[data-lupa] {
     padding: 1.25rem 1.5rem 1.5rem;
     overflow-y: auto;
     overscroll-behavior: contain;
+}
+
+/* Inventario: fotografía compacta en el listado. */
+.tabla-inventario .celda-foto-inventario {
+    width: 58px;
+    min-width: 58px;
+    text-align: center;
+}
+
+.miniatura-inventario,
+.miniatura-vacia-inventario {
+    display: inline-grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+}
+
+.miniatura-inventario {
+    display: inline-block;
+    object-fit: cover;
+}
+
+.miniatura-vacia-inventario {
+    color: var(--principal);
+    background: var(--rosa-claro);
+    font-size: 1.2rem;
+}
+
+/* Ver insumo: encabezado con cierre fijo y contenido desplazable. */
+#dialogodetalle.dialogo-inventario[open] {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    max-height: 90dvh;
+    padding: 0;
+    overflow: hidden;
+}
+
+#dialogodetalle.dialogo-inventario > header {
+    position: static;
+    flex-shrink: 0;
+    margin: 0;
+}
+
+#dialogodetalle.dialogo-inventario > .contenido-detalle-inventario {
+    min-height: 0;
+    min-width: 0;
+    padding: 1.25rem 1.5rem 1.5rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+}
+
+#dialogodetalle.dialogo-inventario .acciones-dialogo {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+}
+
+#dialogodetalle.dialogo-inventario .acciones-dialogo .boton {
+    white-space: nowrap;
 }
