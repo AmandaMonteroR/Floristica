@@ -41,6 +41,7 @@ class empleadocontrolador
     public function crear($datos, $usuarioactual)
     {
         $datos = $this->limpiar($datos);
+        $datos['tbempleadorol'] = 'Empleado';
         $errores = $this->validar($datos);
 
         if ($errores) {
@@ -71,6 +72,7 @@ class empleadocontrolador
         }
 
         $datos = $this->limpiar($datos);
+        $datos['tbempleadorol'] = $empleado->getTbempleadorol();
         $errores = $this->validar($datos, $empleado);
 
         if ($id === (int) $usuarioactual['id'] && $datos['tbempleadorol'] !== 'Propietario') {

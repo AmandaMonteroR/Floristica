@@ -669,6 +669,12 @@ formulario.addEventListener('submit', async (evento) => {
     botonguardar.disabled = false;
 
     if (respuesta.exito) {
+        const parametrosretorno = new URLSearchParams(location.search);
+        if (!esedicion && parametrosretorno.get('volver') === 'inventario' && respuesta.datos?.tbproveedorid) {
+            borrarborrador(clave);
+            location.href = `index.php?modulo=inventario&volver=proveedor&proveedorid=${encodeURIComponent(respuesta.datos.tbproveedorid)}`;
+            return;
+        }
         borrarborrador(clave);
         avisoborrador.hidden = true;
         dialogoformulario.close();

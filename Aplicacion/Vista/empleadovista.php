@@ -14,7 +14,6 @@
     <header class="encabezado">
         <div>
             <h1>Empleados</h1>
-            <p class="subtitulo">Personas de la floristería a las que se les asignan los encargos.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo empleado</button>
     </header>
@@ -57,9 +56,12 @@
 </main>
 
 <dialog id="dialogoformulario" class="dialogo">
-    <form id="formulario" novalidate>
+    <header class="cabecera-modal-inventario">
         <h2 id="tituloformulario">Nuevo empleado</h2>
-        <p class="nota">Los campos con * son obligatorios. Solo puede haber un propietario activo.</p>
+        <button type="button" class="cerrar-modal-inventario" id="botoncerrarformulario" aria-label="Cerrar formulario">&times;</button>
+    </header>
+    <form id="formulario" novalidate>
+        <p class="nota">Los campos con * son obligatorios.</p>
 
         <div id="avisoborrador" class="aviso aviso-info" hidden>
             <span>Se recuperaron datos que no se habían guardado.</span>
@@ -79,15 +81,6 @@
                 <span>Teléfono *</span>
                 <input type="tel" name="tbempleadotelefono" inputmode="numeric" maxlength="9" placeholder="8888-8888" autocomplete="off">
                 <small class="error" data-error="tbempleadotelefono"></small>
-            </label>
-            <label class="campo">
-                <span>Rol *</span>
-                <select name="tbempleadorol">
-                    <option value="">Seleccione…</option>
-                    <option value="Empleado">Empleado</option>
-                    <option value="Propietario">Propietario</option>
-                </select>
-                      <small class="error" data-error="tbempleadorol"></small>
             </label>
         </div>
 
@@ -109,14 +102,16 @@
         </fieldset>
 
         <div class="acciones-dialogo">
-            <button type="button" class="boton" id="botoncancelar">Cancelar</button>
             <button type="submit" class="boton boton-principal" id="botonguardar">Guardar empleado</button>
         </div>
     </form>
 </dialog>
 
 <dialog id="dialogohistorial" class="dialogo dialogo-ancho">
-    <h2 id="titulohistorial"></h2>
+    <header class="cabecera-modal-inventario">
+        <h2 id="titulohistorial"></h2>
+        <button type="button" class="cerrar-modal-inventario" id="botoncerrarhistorial" aria-label="Cerrar historial">&times;</button>
+    </header>
     <p class="nota">Cambios en los datos principales, del más antiguo al más reciente.</p>
     <div class="tabla-contenedor">
         <table class="tabla tabla-historial">
@@ -132,17 +127,16 @@
             <tbody id="cuerpohistorial"></tbody>
         </table>
     </div>
-    <div class="acciones-dialogo">
-        <button type="button" class="boton boton-principal" id="botoncerrarhistorial">Cerrar</button>
-    </div>
 </dialog>
 
 <dialog id="dialogoconfirmacion" class="dialogo dialogo-confirmacion">
+    <header class="cabecera-modal-inventario">
+        <h2 id="tituloconfirmacion"></h2>
+        <button type="button" class="cerrar-modal-inventario" id="botoncerrarconfirmacion" aria-label="Cancelar y cerrar">&times;</button>
+    </header>
     <div class="icono-confirmacion" id="iconoconfirmacion" aria-hidden="true"></div>
-    <h2 id="tituloconfirmacion"></h2>
     <p id="mensajeconfirmacion" class="mensaje-confirmacion"></p>
     <div class="acciones-dialogo acciones-centradas">
-        <button type="button" class="boton" id="botoncancelarconfirmacion">Cancelar</button>
         <button type="button" class="boton boton-principal" id="botonaceptarconfirmacion"></button>
     </div>
 </dialog>

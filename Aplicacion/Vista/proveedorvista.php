@@ -14,7 +14,6 @@
     <header class="encabezado">
         <div>
             <h1>Proveedores</h1>
-            <p class="subtitulo">Empresas que abastecen de flores e insumos a la floristería.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo proveedor</button>
     </header>

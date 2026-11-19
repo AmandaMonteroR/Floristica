@@ -14,7 +14,6 @@
     <header class="encabezado">
         <div>
             <h1>Zonas de entrega</h1>
-            <p class="subtitulo">Precios del servicio express desde el local en El Humo de Roxana, Cariari.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nueva zona</button>
     </header>

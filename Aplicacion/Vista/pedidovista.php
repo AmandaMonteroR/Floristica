@@ -14,7 +14,6 @@
     <header class="encabezado">
         <div>
             <h1>Pedidos</h1>
-            <p class="subtitulo">Compras a proveedores: se registran, se confirman y al recibirlas se suman al inventario.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Nuevo pedido</button>
     </header>

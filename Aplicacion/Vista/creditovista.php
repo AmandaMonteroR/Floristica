@@ -18,8 +18,6 @@ $vercuentas = ($_GET['ver'] ?? '') === 'pagar' ? 'pagar' : 'cobrar';
     <header class="encabezado">
         <div>
             <h1>Cuentas por cobrar y por pagar</h1>
-            <p class="subtitulo">Lo que deben las clientas (adelantos y arreglos entregados sin pagar completos) y lo que se les debe
-                a los proveedores por los pedidos comprados a crédito.</p>
         </div>
     </header>
 

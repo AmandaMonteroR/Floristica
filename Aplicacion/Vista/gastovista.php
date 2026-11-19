@@ -15,9 +15,6 @@
     <header class="encabezado">
         <div>
             <h1>Gastos del negocio</h1>
-            <p class="subtitulo">Todo lo que sale de la caja: alquiler, luz, agua, salarios… y las compras a proveedores,
-                que se registran solas al confirmar un pedido de contado, al abonarle a uno a crédito o al agregar stock.
-                Se restan de lo vendido en el balance de Ventas.</p>
         </div>
         <button type="button" class="boton boton-claro" id="botonnuevo">Registrar gasto</button>
     </header>
