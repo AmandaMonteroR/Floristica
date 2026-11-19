@@ -1,4 +1,3 @@
-
 <?php
 require_once __DIR__ . '/../../Configuracion/Basedatos.php';
 require_once __DIR__ . '/../Modelo/encargo.php';

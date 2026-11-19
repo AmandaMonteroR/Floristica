@@ -1,4 +1,3 @@
-
 <?php
 // $modulo y $usuarioactual vienen de index.php
 require_once __DIR__ . '/../Repositorio/temporadarepositorio.php';

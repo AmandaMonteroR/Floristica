@@ -139,7 +139,7 @@ class reportecontrolador
             $evento = ['fecha' => $paso['fecha'], 'texto' => $paso['texto'], 'responsable' => $paso['hechopor'], 'tipo' => 'cambio'];
             if ($paso['texto'] === 'Pasó a "Terminado"') {
                 $terminado = $paso['fecha'];
-                $evento['texto'] = 'Se terminó y se entregó';
+                $evento['texto'] = 'Se terminó';
                 $evento['tipo'] = 'fin';
                 $evento['detalle'] = implode(', ', array_map(function ($material) {
                     return $material['necesarias'] . ' ' . $material['tbinventarionombre'];
@@ -147,6 +147,11 @@ class reportecontrolador
                 if ($evento['detalle'] !== '') {
                     $evento['detalle'] = 'Salió del inventario: ' . $evento['detalle'];
                 }
+            } elseif ($paso['texto'] === 'Pasó a "Entregado"') {
+                // Se entregó a la clienta: ahí termina el ciclo
+                $terminado = $paso['fecha'];
+                $evento['texto'] = 'Se entregó a la clienta';
+                $evento['tipo'] = 'fin';
             } elseif ($paso['texto'] === 'Pasó a "Cancelado"') {
                 $evento['texto'] = 'Se canceló';
                 $evento['tipo'] = 'cancelado';

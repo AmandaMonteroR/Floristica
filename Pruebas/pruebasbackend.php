@@ -9,7 +9,7 @@
  *     php Pruebas/pruebasbackend.php http://localhost:8000
  *
  * OJO: las pruebas crean y cambian datos. Antes de correrlas, cargue la base
- * con bdfloristica.sql y datosprueba.sql, y vuelva a cargarla al terminar.
+ * con bdfloristica.sql (ya trae los datos de prueba), y vuelva a cargarla al terminar.
  */
 
 date_default_timezone_set('America/Costa_Rica');
@@ -217,8 +217,7 @@ prueba('El propietario entra con propietario / propietario1', exito($r), mensaje
 // Las pruebas cuentan con los datos de prueba recién cargados
 if (exito($r) && count(datos($propietario->get('proveedor', 'listar'))) !== 8) {
     fwrite(STDERR, "\nLa base ya tiene datos de una corrida anterior. Vuelva a cargarla:\n"
-        . "  /opt/lampp/bin/mysql -u root --default-character-set=utf8mb4 < BaseDatos/ScriptsSQL/bdfloristica.sql\n"
-        . "  /opt/lampp/bin/mysql -u root --default-character-set=utf8mb4 < BaseDatos/DatosIniciales/datosprueba.sql\n");
+        . "  /opt/lampp/bin/mysql -u root --default-character-set=utf8mb4 < BaseDatos/ScriptsSQL/bdfloristica.sql\n");
     exit(2);
 }
 
@@ -229,7 +228,7 @@ $r = $propietario->get('noexiste', 'listar');
 prueba('Módulo inexistente responde con error', !exito($r), mensaje($r));
 
 $r = $propietario->get('inicio');
-prueba('La página de inicio carga para el propietario', $r['codigo'] === 200 && strpos($r['texto'], 'Productos con stock bajo') !== false);
+prueba('La página de inicio carga para el propietario (con el aviso de stock bajo)', $r['codigo'] === 200 && strpos($r['texto'], 'Stock bajo') !== false);
 
 $lorena = new Cliente($servidor);
 prueba('Lorena entra con empleado1 / empleado1', exito($lorena->ingresar('empleado1', 'empleado1')));
@@ -829,12 +828,13 @@ $r = $propietario->post('empleado', 'crear', ['tbempleadoclave' => 'corta1'] + $
 prueba('La contraseña debe tener al menos 8 caracteres', tieneerror($r, 'tbempleadoclave'));
 $r = $propietario->post('empleado', 'crear', ['tbempleadoclave' => 'solamenteletras'] + $empleadovalido);
 prueba('La contraseña debe tener letra y número', tieneerror($r, 'tbempleadoclave'));
+// Solo hay un propietario: todo empleado nuevo se crea como "Empleado", aunque se mande otro rol
 $r = $propietario->post('empleado', 'crear', ['tbempleadorol' => 'Propietario'] + $empleadovalido);
-prueba('Solo puede haber un propietario activo', tieneerror($r, 'tbempleadorol'));
-
-$r = $propietario->post('empleado', 'crear', $empleadovalido);
 $idempleado = datos($r)['tbempleadoid'] ?? 0;
 prueba('Crea un empleado válido', exito($r) && $idempleado > 0, mensaje($r));
+$roles = array_column(datos($propietario->get('empleado', 'listar')) ?: [], 'tbempleadorol', 'tbempleadoid');
+prueba('Siempre se crea como "Empleado" (solo hay un propietario)', ($roles[$idempleado] ?? '') === 'Empleado'
+    && count(array_keys($roles, 'Propietario', true)) === 1, json_encode($roles, JSON_UNESCAPED_UNICODE));
 
 $r = $propietario->get('empleado', 'listar');
 $textolista = json_encode(datos($r));
@@ -859,7 +859,8 @@ $r = $propietario->post('empleado', 'inactivar', ['id' => 1]);
 prueba('El propietario no puede inactivarse a sí mismo', !exito($r), mensaje($r));
 $r = $propietario->post('empleado', 'actualizar', ['tbempleadoid' => 1, 'tbempleadonombre' => 'Patricia Mora Solano', 'tbempleadotelefono' => '8800-0001',
     'tbempleadorol' => 'Empleado', 'tbempleadousuario' => 'propietario', 'tbempleadoclave' => '']);
-prueba('El propietario no puede quitarse el rol', tieneerror($r, 'tbempleadorol'));
+$roles = array_column(datos($propietario->get('empleado', 'listar')) ?: [], 'tbempleadorol', 'tbempleadoid');
+prueba('El propietario no puede quitarse el rol (sigue siendo "Propietario")', ($roles[1] ?? '') === 'Propietario', mensaje($r));
 $r = $propietario->post('empleado', 'inactivar', ['id' => 3]);
 prueba('No deja inactivar a alguien con solicitudes abiertas (Carlos)', !exito($r), mensaje($r));
 
@@ -920,7 +921,7 @@ $ultimo = end($historial);
 prueba('El cambio de dirección queda en el historial', count($historial) === 5 && ($ultimo['campo'] ?? '') === 'direccion', json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 
 $r = $propietario->post('cliente', 'inactivar', ['id' => 1]);
-prueba('No deja inactivar a un cliente con solicitudes abiertas', !exito($r) && strpos(mensaje($r), 'solicitud') !== false, mensaje($r));
+prueba('No deja inactivar a un cliente con encargos abiertos', !exito($r) && strpos(mensaje($r), 'encargo') !== false, mensaje($r));
 
 prueba('Inactiva el cliente nuevo', exito($propietario->post('cliente', 'inactivar', ['id' => $idcliente])));
 prueba('No deja inactivarlo dos veces', !exito($propietario->post('cliente', 'inactivar', ['id' => $idcliente])));
@@ -963,7 +964,7 @@ prueba('El cambio de precio queda en el historial', ($ultimo['campo'] ?? '') ===
     && strpos($ultimo['anterior'] ?? '', '3 000') !== false, json_encode($ultimo, JSON_UNESCAPED_UNICODE));
 
 $r = $propietario->post('zonaentrega', 'inactivar', ['id' => 1]);
-prueba('No deja inactivar una zona con solicitudes abiertas', !exito($r) && strpos(mensaje($r), 'solicitud') !== false, mensaje($r));
+prueba('No deja inactivar una zona con encargos abiertos', !exito($r) && strpos(mensaje($r), 'encargo') !== false, mensaje($r));
 
 prueba('Inactiva la zona nueva', exito($propietario->post('zonaentrega', 'inactivar', ['id' => $idzona])));
 prueba('La reactiva', exito($propietario->post('zonaentrega', 'reactivar', ['id' => $idzona])));
@@ -1180,12 +1181,14 @@ prueba('Un empleado no puede ver las ventas (403)', $r['codigo'] === 403, 'HTTP 
 
 $r = $propietario->get('venta', 'resumen', ['desde' => '2026-09-01', 'hasta' => '2026-09-30']);
 $setiembre = datos($r);
-prueba('Ventas de setiembre: 2 terminadas, vendido ₡31 500, costo ₡9 108,37 y ganancia ₡22 391,63',
+prueba('Ventas de setiembre: 2 ventas por ₡31 500, gastos ₡61 800 y balance −₡30 300 (vendido − gastos)',
     exito($r) && ($setiembre['totales']['ventas'] ?? 0) === 2 && (float) ($setiembre['totales']['vendido'] ?? 0) === 31500.0
-    && (float) ($setiembre['totales']['costo'] ?? 0) === 9108.37 && (float) ($setiembre['totales']['ganancia'] ?? 0) === 22391.63,
+    && (float) ($setiembre['totales']['gastos'] ?? 0) === 61800.0 && (float) ($setiembre['totales']['balance'] ?? 0) === -30300.0,
     json_encode($setiembre['totales'] ?? null));
-prueba('Cada venta trae su ganancia (total − costo)', (float) ($setiembre['ventas'][0]['ganancia'] ?? 0)
-    === round($setiembre['ventas'][0]['total'] - $setiembre['ventas'][0]['costo'], 2));
+prueba('Cada período trae su balance (vendido − gastos)', count($setiembre['periodos'] ?? []) > 0
+    && count(array_filter($setiembre['periodos'], function ($p) {
+        return (float) $p['balance'] !== round($p['vendido'] - $p['gastos'], 2);
+    })) === 0, json_encode($setiembre['periodos'] ?? null, JSON_UNESCAPED_UNICODE));
 
 $r = $propietario->get('venta', 'resumen', ['desde' => '2026-10-01', 'hasta' => '2026-10-17']);
 prueba('Ventas del 1 al 17 de octubre: 9 terminadas por ₡191 210', ((datos($r)['totales']['ventas'] ?? 0) === 9)
@@ -1201,7 +1204,7 @@ $ids = array_column(datos($r)['ventas'] ?? [], 'tbsolicitudencargoid');
 prueba('Las solicitudes que se terminan hoy aparecen en las ventas de hoy', in_array($idencargo, $ids, true) && in_array($idpersonalizada, $ids, true),
     json_encode($ids));
 $r = $propietario->get('venta', 'resumen', ['desde' => 'todo']);
-prueba('"Todo" empieza en la primera venta (20/09/2026)', (datos($r)['desde'] ?? '') === '2026-09-20', datos($r)['desde'] ?? '');
+prueba('"Todo" empieza en la primera venta o el primer gasto (01/09/2026)', (datos($r)['desde'] ?? '') === '2026-09-01', datos($r)['desde'] ?? '');
 
 /* =====================================================================
  * 14. Presupuesto y foto de los personalizados (Parte 11)
@@ -1678,7 +1681,8 @@ $lirio = datos($propietario->get('inventario', 'obtener', ['id' => 10]));
 prueba('Si lo apartado pasa del stock, el inventario dice cuántos faltan', (int) ($lirio['tbinventariofaltante'] ?? 0) > 0
     && (int) $lirio['tbinventariodisponible'] === 0, json_encode($lirio, JSON_UNESCAPED_UNICODE));
 $inicio = $propietario->get('inicio', '');
-prueba('…y el inicio lo avisa entre los productos con stock bajo', strpos($inicio['texto'] ?? '', 'para las solicitudes abiertas') !== false);
+prueba('…y el inicio lo cuenta en "Stock bajo"', preg_match('/<span class="numero">(\d+)<\/span>\s*<span>Stock bajo<\/span>/', $inicio['texto'] ?? '', $m) === 1
+    && (int) $m[1] > 0, $m[1] ?? 'sin la tarjeta');
 
 /* =====================================================================
  * 19. Varios proveedores por insumo (Parte 16)
@@ -1750,11 +1754,21 @@ seccion('20. Cuentas por cobrar y por pagar');
 $cuentas = datos($propietario->get('credito', 'listar'));
 $porpagar = array_column($cuentas['porpagar'] ?? [], null, 'id');
 $porcobrar = array_column($cuentas['porcobrar'] ?? [], null, 'id');
+// Terminado = listo; Entregado = ya se lo llevó la clienta. Si se lo lleva sin pagar todo, es venta a crédito.
+prueba('El N.º 17 terminado todavía no cuenta como entregado', ($porcobrar[17]['estadocuenta'] ?? '') === 'Con adelanto'
+    && ($porcobrar[17]['entregada'] ?? null) === false, json_encode($porcobrar[17] ?? null, JSON_UNESCAPED_UNICODE));
+$r = $carlos->post('encargo', 'entregar', ['id' => 1]);
+prueba('No deja entregar un encargo que no está terminado', !exito($r) && strpos(mensaje($r), 'terminados') !== false, mensaje($r));
+$r = $carlos->post('encargo', 'entregar', ['id' => 17]);
+prueba('Un empleado entrega el N.º 17 (queda "Entregado")', exito($r)
+    && (datos($propietario->get('encargo', 'obtener', ['id' => 17]))['tbsolicitudencargoestado'] ?? '') === 'Entregado', mensaje($r));
+prueba('No deja entregarlo dos veces', !exito($carlos->post('encargo', 'entregar', ['id' => 17])));
+$porcobrar = array_column(datos($propietario->get('credito', 'listar'))['porcobrar'] ?? [], null, 'id');
 prueba('Por pagar: el pedido N.º 2 a crédito (₡15 000) tiene ₡5 000 abonados y debe ₡10 000',
     (float) ($porpagar[2]['monto'] ?? 0) === 15000.0 && (float) ($porpagar[2]['saldo'] ?? 0) === 10000.0
     && ($porpagar[2]['vence'] ?? '') === '2026-11-10', json_encode($porpagar[2] ?? null, JSON_UNESCAPED_UNICODE));
 prueba('…y los pedidos de contado no aparecen', !isset($porpagar[1]));
-prueba('Por cobrar: la solicitud N.º 17 se entregó y debe ₡20 000 (venta a crédito)',
+prueba('Por cobrar: el encargo N.º 17 se entregó y debe ₡20 000 (venta a crédito)',
     (float) ($porcobrar[17]['saldo'] ?? 0) === 20000.0 && ($porcobrar[17]['estadocuenta'] ?? '') === 'Entregada sin pagar',
     json_encode($porcobrar[17] ?? null, JSON_UNESCAPED_UNICODE));
 prueba('…la N.º 1 dejó un adelanto, las pagadas y las canceladas no aparecen',
@@ -1801,7 +1815,7 @@ $r = $propietario->post('encargo', 'crear', $pagada);
 $idpagada = datos($r)['tbsolicitudencargoid'] ?? 0;
 $totalpagada = (float) (datos($propietario->get('encargo', 'obtener', ['id' => $idpagada]))['tbsolicitudencargototal'] ?? 0);
 $r = $propietario->post('credito', 'abonar', ['tipo' => 'cobrar', 'id' => $idpagada, 'monto' => (string) $totalpagada, 'fecha' => $hoy, 'metodo' => 'SINPE Móvil']);
-prueba('Se paga completa una solicitud nueva', $idpagada > 0 && exito($r) && strpos(mensaje($r), 'pagada') !== false, mensaje($r));
+prueba('Se paga completo un encargo nuevo', $idpagada > 0 && exito($r) && strpos(mensaje($r), 'quedó pagado') !== false, mensaje($r));
 $r = $propietario->post('encargo', 'actualizar', ['tbsolicitudencargoid' => $idpagada, 'tbsolicitudencargocantidad' => 1] + $pagada);
 prueba('…y ya no se le puede bajar la cantidad para que cueste menos de lo que pagó', tieneerror($r, 'tbsolicitudencargocantidad'), mensaje($r));
 
@@ -1859,9 +1873,11 @@ prueba('Un empleado no puede ver los gastos (403)', $lorena->get('gasto', 'lista
 prueba('…ni los reportes (403)', $carlos->get('reporte', 'ganancia')['codigo'] === 403);
 
 $octubre = datos($propietario->get('gasto', 'listar', ['desde' => '2026-10-01', 'hasta' => '2026-10-31']));
-prueba('En octubre hay 9 gastos registrados (1 anulado) y suman ₡127 100',
-    count($octubre['gastos'] ?? []) === 9 && ($octubre['anulados'] ?? 0) === 1 && (float) ($octubre['total'] ?? 0) === 127100.0,
+prueba('En octubre hay 11 gastos (1 anulado) y suman ₡150 100: 9 del negocio y 2 compras a proveedores',
+    count($octubre['gastos'] ?? []) === 11 && ($octubre['anulados'] ?? 0) === 1 && (float) ($octubre['total'] ?? 0) === 150100.0,
     json_encode(['n' => count($octubre['gastos'] ?? []), 'total' => $octubre['total'] ?? null], JSON_UNESCAPED_UNICODE));
+prueba('…las compras a proveedores se registran solas como gasto (pedido de contado ₡18 000 + abono ₡5 000)',
+    (float) ($octubre['porcategoria']['Compras a proveedores'] ?? 0) === 23000.0, json_encode($octubre['porcategoria'] ?? null, JSON_UNESCAPED_UNICODE));
 prueba('…con el total de cada categoría (el alquiler es el mayor)', array_key_first($octubre['porcategoria'] ?? []) === 'Alquiler'
     && (float) ($octubre['porcategoria']['Mantenimiento'] ?? 0) === 6500.0);
 $soloagua = datos($propietario->get('gasto', 'listar', ['desde' => '2026-10-01', 'hasta' => '2026-10-31', 'categoria' => 'Agua']));
@@ -1896,33 +1912,36 @@ prueba('…y el cambio queda en el historial', count($cambios) === 1 && $cambios
 $antes = datos($propietario->get('reporte', 'ganancia', ['desde' => $hoy, 'hasta' => $hoy]));
 prueba('Anular un gasto…', exito($propietario->post('gasto', 'inactivar', ['id' => $idgasto])));
 $despues = datos($propietario->get('reporte', 'ganancia', ['desde' => $hoy, 'hasta' => $hoy]));
-prueba('…lo saca de la ganancia neta', round($despues['gastos'] - $antes['gastos'], 2) === -16000.0
-    && round($despues['neta'] - $antes['neta'], 2) === 16000.0, json_encode([$antes['gastos'] ?? null, $despues['gastos'] ?? null]));
+prueba('…lo saca del balance', round($despues['gastos'] - $antes['gastos'], 2) === -16000.0
+    && round($despues['balance'] - $antes['balance'], 2) === 16000.0, json_encode([$antes['gastos'] ?? null, $despues['gastos'] ?? null]));
 prueba('Un gasto anulado no se puede editar', !exito($propietario->post('gasto', 'actualizar', ['tbgastoid' => $idgasto] + $gasto)));
 prueba('…pero puede volver a contar', exito($propietario->post('gasto', 'reactivar', ['id' => $idgasto])));
 prueba('El gasto anulado de los datos de prueba no puede volver a contar porque ya hay uno igual',
     !exito($propietario->post('gasto', 'reactivar', ['id' => 11])));
 
-// Ganancia neta de octubre: vendido 191 210 - costo 55 950,24 - gastos 127 100
+// Balance de octubre: vendido 191 210 - gastos 150 100 (las compras a proveedores ya están en los gastos)
 $ganancia = datos($propietario->get('reporte', 'ganancia', ['desde' => '2026-10-01', 'hasta' => '2026-10-31']));
-prueba('Ganancia neta de octubre = vendido − costo − gastos',
-    (float) ($ganancia['vendido'] ?? 0) === 191210.0 && (float) ($ganancia['gastos'] ?? 0) === 127100.0
-    && abs(($ganancia['neta'] ?? 0) - round(191210 - $ganancia['costo'] - 127100, 2)) < 0.01 && ($ganancia['neta'] ?? 0) > 0,
-    json_encode($ganancia ? array_intersect_key($ganancia, array_flip(['vendido', 'costo', 'gastos', 'neta'])) : null));
+prueba('Balance de octubre = vendido − gastos = ₡41 110',
+    (float) ($ganancia['vendido'] ?? 0) === 191210.0 && (float) ($ganancia['gastos'] ?? 0) === 150100.0
+    && (float) ($ganancia['balance'] ?? 0) === 41110.0,
+    json_encode($ganancia ? array_intersect_key($ganancia, array_flip(['vendido', 'gastos', 'balance'])) : null));
 prueba('…y trae los 6 meses hasta octubre para comparar', count($ganancia['meses'] ?? []) === 6
     && ($ganancia['meses'][5]['mes'] ?? '') === '2026-10' && (float) $ganancia['meses'][4]['gastos'] === 61800.0);
 
 // Trazabilidad
 $traza = datos($propietario->get('reporte', 'trazabilidad', ['tipo' => 'solicitud', 'id' => 17]));
 $textos = array_column($traza['eventos'] ?? [], 'texto');
-prueba('Trazabilidad de la solicitud N.º 17: registro, asignación, preparación, entrega y pago',
-    in_array('Se registró la solicitud', $textos, true) && in_array('Se asignó a Carlos Jiménez Rojas', $textos, true)
-    && in_array('Se terminó y se entregó', $textos, true) && count(array_filter($textos, function ($t) { return strpos($t, 'La clienta pagó') === 0; })) >= 1,
+prueba('Trazabilidad del encargo N.º 17: registro, asignación, preparación, terminado, entrega y pago',
+    in_array('Se registró el encargo', $textos, true) && in_array('Se asignó a Carlos Jiménez Rojas', $textos, true)
+    && in_array('Se terminó', $textos, true) && in_array('Se entregó a la clienta', $textos, true)
+    && count(array_filter($textos, function ($t) { return strpos($t, 'La clienta pagó') === 0; })) >= 1,
     implode(' | ', $textos));
 $terminado = array_values(array_filter($traza['eventos'] ?? [], function ($e) { return $e['tipo'] === 'fin'; }))[0] ?? [];
 prueba('…cada paso con su responsable, y la entrega dice qué salió del inventario',
     ($terminado['responsable'] ?? '') === 'Carlos Jiménez Rojas' && strpos($terminado['detalle'] ?? '', 'Rosa rosada') !== false);
-prueba('…y cuánto tardó de principio a fin', ($traza['duracion'] ?? '') === '3 horas y 20 minutos', $traza['duracion'] ?? '');
+// Se registró el 08/10 y se entregó hoy (arriba, en las cuentas por cobrar): el tiempo cuenta hasta la entrega
+prueba('…y cuánto tardó de principio a fin (hasta que se entregó)', strpos($traza['duracion'] ?? '', 'días') !== false,
+    $traza['duracion'] ?? '');
 $traza = datos($propietario->get('reporte', 'trazabilidad', ['tipo' => 'pedido', 'id' => 1]));
 prueba('Trazabilidad del pedido N.º 1: se pidió, se confirmó de contado y se recibió',
     array_column($traza['eventos'] ?? [], 'texto') === ['Se hizo el pedido a Flores del Valle', 'El proveedor confirmó la compra', 'Se recibió la mercadería']
