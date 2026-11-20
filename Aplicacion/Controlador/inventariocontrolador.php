@@ -400,7 +400,7 @@ class inventariocontrolador
 
         $nuevo = $sentido === 'sumar' ? $stock + $cantidad : $stock - $cantidad;
         $mensaje = $sentido === 'sumar'
-            ? 'Se sumaron ' . $paquetes . ($paquetes === 1 ? ' paquete' : ' paquetes') . ' (' . $cantidad . ' unidades). Ahora hay ' . $nuevo . ' en stock.'
+            ? ($paquetes === 1 ? 'Se sumó 1 paquete' : 'Se sumaron ' . $paquetes . ' paquetes') . ' (' . $cantidad . ($cantidad === 1 ? ' unidad' : ' unidades') . '). Ahora hay ' . $nuevo . ' en stock.'
                 . ($pagado > 0 ? ' Los ' . historicocontrolador::monto($pagado) . ' quedaron como gasto de hoy.' : '')
             : 'Se rebajaron ' . $cantidad . ($cantidad === 1 ? ' unidad dañada' : ' unidades dañadas') . '. Ahora hay ' . $nuevo . ' en stock.';
 

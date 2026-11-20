@@ -471,7 +471,7 @@ async function descargarcatalogopdf(compartir = false) {
 
     try {
         const pdf = await generarcatalogopdf();
-        const nombre = `Catalogo_Floristica_${new Date().toISOString().slice(0, 10)}.pdf`;
+        const nombre = `Catalogo_Floristica_${new Date().toLocaleDateString('en-CA')}.pdf`;
         if (compartir && typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
             const archivo = new File([pdf.output('blob')], nombre, { type: 'application/pdf' });
             if (navigator.canShare({ files: [archivo] })) {

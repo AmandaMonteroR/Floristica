@@ -6,7 +6,6 @@
     <title>Encargos | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
-    <link rel="stylesheet" href="<?= recurso('css/encargo.css') ?>">
 </head>
 <body>
 <?php require __DIR__ . '/menu.php'; ?>
