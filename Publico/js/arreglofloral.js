@@ -510,11 +510,24 @@ async function cargarproductos() {
     dibujarregalos();
 }
 
+const regalosPorPagina = 5;
+let paginaRegalos = 1;
+
 function dibujarregalos() {
     const contenedor = document.getElementById('galeriaregalos');
+    const paginacion = document.getElementById('paginacionregalos');
+    // Las cintas se identifican con el mismo criterio usado por Exportar catálogo.
     const regalos = productos.filter((producto) =>
-        ['Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'].includes(producto.tbinventariocategoria));
-    contenedor.innerHTML = regalos.length ? regalos.map((producto) => `
+        ['Chocolate', 'Peluche', 'Tarjeta', 'Accesorio'].includes(producto.tbinventariocategoria)
+        || (producto.tbinventariocategoria === 'Envoltura'
+            && /cinta|frase|personalizad|moño|lazo/i.test(producto.tbinventarionombre)));
+
+    const totalPaginas = Math.max(1, Math.ceil(regalos.length / regalosPorPagina));
+    paginaRegalos = Math.min(Math.max(1, paginaRegalos), totalPaginas);
+    const inicio = (paginaRegalos - 1) * regalosPorPagina;
+    const visibles = regalos.slice(inicio, inicio + regalosPorPagina);
+
+    contenedor.innerHTML = regalos.length ? visibles.map((producto) => `
         <article class="tarjeta-seleccion-encargo">
             ${producto.tbinventariofoto
                 ? `<img src="${escapar(producto.tbinventariofoto)}" alt="${escapar(producto.tbinventarionombre)}" loading="lazy">`
@@ -522,8 +535,40 @@ function dibujarregalos() {
             <strong>${escapar(producto.tbinventarionombre)}</strong>
             <span>${formatearmonto(producto.tbinventariopreciovigente)}</span>
             <small>${escapar(producto.tbinventariocategoria)} · ${producto.tbinventariodisponible} disponibles</small>
-        </article>`).join('') : '<p class="nota">Los chocolates, peluches y regalos se agregan desde Inventario.</p>';
+        </article>`).join('') : '<p class="nota">No hay regalos ni complementos registrados.</p>';
+
+    paginacion.hidden = regalos.length <= regalosPorPagina;
+    if (paginacion.hidden) {
+        paginacion.replaceChildren();
+        return;
+    }
+
+    const paginaBoton = (numero, etiqueta = String(numero), deshabilitado = false) =>
+        `<button type="button" data-paginaregalo="${numero}" ${deshabilitado ? 'disabled' : ''}
+            ${numero === paginaRegalos && !deshabilitado ? 'aria-current="page"' : ''}
+            aria-label="${etiqueta === '‹' ? 'Página anterior' : etiqueta === '›' ? 'Página siguiente' : `Página ${numero}`}">${etiqueta}</button>`;
+    const numeros = new Set([1, totalPaginas]);
+    for (let pagina = Math.max(1, paginaRegalos - 1); pagina <= Math.min(totalPaginas, paginaRegalos + 1); pagina += 1) {
+        numeros.add(pagina);
+    }
+    const paginas = [...numeros].sort((a, b) => a - b);
+    let controles = paginaBoton(paginaRegalos - 1, '‹', paginaRegalos === 1);
+    paginas.forEach((pagina, indice) => {
+        if (indice && pagina - paginas[indice - 1] > 1) controles += '<span class="paginacion-puntos">…</span>';
+        controles += paginaBoton(pagina);
+    });
+    controles += paginaBoton(paginaRegalos + 1, '›', paginaRegalos === totalPaginas);
+
+    paginacion.innerHTML = `<span class="paginacion-resumen">${inicio + 1}–${Math.min(inicio + regalosPorPagina, regalos.length)} de ${regalos.length}</span>
+        <div class="paginacion-controles">${controles}</div>`;
 }
+
+document.getElementById('paginacionregalos').addEventListener('click', (evento) => {
+    const boton = evento.target.closest('button[data-paginaregalo]');
+    if (!boton || boton.disabled) return;
+    paginaRegalos = Number(boton.dataset.paginaregalo);
+    dibujarregalos();
+});
 
 function buscarproducto(id) {
     return productos.find((producto) => String(producto.tbinventarioid) === String(id));
