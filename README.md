@@ -83,7 +83,7 @@ Los datos de prueba también traen:
 - 6 insumos que también se le compran a otros proveedores (por ejemplo, la rosa roja a Vivero Orosi y a Floricultura Liberia);
 - abonos: un pedido a crédito con un abono; de las solicitudes, 9 pagadas completas, 3 con adelanto y 2 ventas a crédito con saldo;
 - el stock alcanza para todo lo apartado: ningún insumo tiene más apartado que en inventario (el Lirio rosado tiene 27 y 24 apartados, y sale en rojo por quedar debajo del mínimo);
-- 13 gastos de setiembre a noviembre (alquiler, luz, agua, internet, transporte, publicidad, un ayudante y mantenimiento), uno anulado.
+- 15 gastos de setiembre a noviembre: 13 registrados a mano (alquiler, luz, agua, internet, transporte, publicidad, un ayudante y mantenimiento), uno anulado, y 2 compras a proveedores que se registraron solas (el pedido N.º 1 de contado y el abono al pedido N.º 2).
 
 ## Configuración
 
@@ -170,6 +170,7 @@ Resumen según el rol:
 
 - **Propietario:** solicitudes abiertas y atrasadas, insumos con poco disponible (y cuántos faltan para las solicitudes abiertas) y pedidos sin recibir.
 - **Empleado:** sus solicitudes y las que puede tomar.
+- **Encargos para hoy:** al tocarlo abre Encargos con la fecha de entrega en **Hoy** y solo los abiertos.
 
 ### Proveedores
 
@@ -181,6 +182,7 @@ Resumen según el rol:
   - Internacional: código de país más 6 a 12 dígitos.
   - No puede repetirse.
 - **Correo:** opcional; si se ingresa, debe ser válido y no repetirse.
+- **WhatsApp:** en la lista y en **Ver**, el teléfono se puede tocar para escribirle por WhatsApp (los internacionales usan su código de país).
 - **Ubicación:** provincia, cantón y distrito deben corresponder entre sí, según `BaseDatos/DatosIniciales/ubicaciones.txt`.
 
 ### Inventario de insumos
@@ -247,6 +249,7 @@ Los **insumos** son lo que se le compra a los proveedores para armar los arreglo
 - **Dos precios:** cada tarjeta muestra el precio **normal** y el de **temporada alta**; el que se cobra ahora va resaltado.
 - **Ver:** foto, los dos precios y lo que incluye. El costo y la ganancia (normal y en temporada alta) están en **Costo y ganancia**, que solo ve el propietario y se abre con un clic.
 - **Costo y ganancia:** se calculan con el precio por unidad de cada producto. Solo el propietario los ve.
+- **Exportar catálogo:** vista previa para el cliente con los arreglos y regalos disponibles (foto completa, nombre, descripción y precio, 3 por fila). Se puede imprimir, compartir o **descargar en PDF**; las fotos van en alta resolución.
 
 ### Búsqueda por foto (algoritmo)
 
@@ -399,7 +402,7 @@ En **Finanzas → Gastos** (solo el propietario). Es todo lo que sale de la caja
 
 ### Reportes
 
-En **Finanzas → Reportes** (solo el propietario), con dos pestañas y un botón **Imprimir**:
+En **Finanzas → Reportes** (solo el propietario), con dos pestañas y un botón **Descargar PDF** (descarga la pestaña que se está viendo):
 
 - **Balance:** para el período elegido, vendido (encargos terminados) − gastos (con el detalle por categoría, incluidas las compras a proveedores) = **balance**, en verde si es positivo o en rojo si hubo pérdida, con el % de lo vendido. Es la misma cuenta de **Ventas y ganancias**. Al lado, una tabla con los últimos 6 meses para comparar.
 - **Trazabilidad:** se elige una solicitud de arreglo o un pedido al proveedor y se ve todo lo que pasó, en orden, con fecha, hora y **responsable**: registro, asignación, cuándo empezó a prepararse, cuándo se terminó (y qué salió del inventario), cancelación, cada pago de la clienta; en los pedidos, cuándo se pidió, se confirmó (contado o crédito), se recibió (qué entró al inventario) y cada abono al proveedor. Si se anuló un abono, aparece cuándo, quién y por qué. Arriba dice cuánto tardó de principio a fin. El enlace se puede compartir (`index.php?modulo=reporte&ver=trazabilidad&tipo=solicitud&id=17`).
@@ -416,6 +419,7 @@ En **Finanzas → Reportes** (solo el propietario), con dos pestañas y un botó
 
 - Si se cierra un formulario sin guardar, los datos quedan en el navegador. Al abrirlo de nuevo aparece "Se recuperaron datos que no se habían guardado", con la opción **Descartar**.
 - Editar, inactivar, cancelar o terminar algo siempre pide confirmación.
+- Todas las ventanas tienen una **X** arriba a la derecha que hace lo mismo que su botón Cancelar o Cerrar.
 - **Botones de las tablas:** Ver, Historial y Asignar en gris; Editar, Iniciar y Terminar con el color de la floristería; Inactivar y Cancelar en rojo; Reactivar en verde.
 - El botón principal de cada pantalla (Nuevo producto, Nueva solicitud…) va siempre a la derecha del encabezado.
 
