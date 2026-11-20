@@ -24,7 +24,7 @@
         #hojacatalogo .catalogo-productos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
         #hojacatalogo .catalogo-ficha { display: flex; flex-direction: column; border: 1px solid #ecd2dc;
             border-radius: 0.65rem; overflow: hidden; background: white; break-inside: avoid; }
-        #hojacatalogo .catalogo-imagen { position: relative; height: 150px; background: #fff0f5; }
+        #hojacatalogo .catalogo-imagen { position: relative; height: 330px; background: #fff0f5; }
         #hojacatalogo .catalogo-imagen img { display: block; position: absolute; inset: 0;
             width: 100%; height: 100%; object-fit: contain; }
         #hojacatalogo .catalogo-sinfoto { position: absolute; inset: 0; display: grid; place-content: center;
@@ -39,7 +39,7 @@
         @media (max-width: 650px) {
             #hojacatalogo { padding: 1rem; }
             #hojacatalogo .catalogo-productos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            #hojacatalogo .catalogo-imagen { height: 125px; }
+            #hojacatalogo .catalogo-imagen { height: 240px; }
             #hojacatalogo .catalogo-portada h3 { font-size: 1.1rem; }
         }
         @media print {
@@ -49,7 +49,7 @@
             #dialogoexportarcatalogo::backdrop, #dialogoexportarcatalogo .cabecera-modal-inventario,
             #dialogoexportarcatalogo .barra-proforma, #avisoexportarcatalogo { display: none !important; }
             #hojacatalogo { padding: 0; box-shadow: none; }
-            #hojacatalogo .catalogo-imagen { height: 115px; }
+            #hojacatalogo .catalogo-imagen { height: 260px; }
             #hojacatalogo .catalogo-ficha { page-break-inside: avoid; }
             @page { size: A4; margin: 12mm; }
         }

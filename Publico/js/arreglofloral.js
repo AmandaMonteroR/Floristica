@@ -311,8 +311,9 @@ async function generarcatalogopdf() {
     const alto = pdf.internal.pageSize.getHeight();
     const margen = 36;
     const separacion = 12;
-    const anchoFicha = (ancho - margen * 2 - separacion) / 2;
-    const altoFicha = 192;
+    const columnas = 3;
+    const anchoFicha = (ancho - margen * 2 - separacion * (columnas - 1)) / columnas;
+    const altoFicha = 288;
     let filaY = 99;
     let columna = 0;
     let pagina = 1;
@@ -355,6 +356,14 @@ async function generarcatalogopdf() {
         filaY += 22;
     }
 
+    function recortarlineas(lineas, maximo) {
+        if (maximo < 1) { return []; }
+        if (lineas.length <= maximo) { return lineas; }
+        const resultado = lineas.slice(0, maximo);
+        resultado[maximo - 1] = resultado[maximo - 1].replace(/\s*\S*$/, '') + '…';
+        return resultado;
+    }
+
     async function dibujarficha(producto) {
         if (columna === 0 && filaY + altoFicha > alto - 53) { nuevapagina(); }
         const x = margen + columna * (anchoFicha + separacion);
@@ -362,7 +371,7 @@ async function generarcatalogopdf() {
         const imagenX = x + 8;
         const imagenY = y + 8;
         const imagenAncho = anchoFicha - 16;
-        const imagenAlto = 115;
+        const imagenAlto = 200;
 
         pdf.setFillColor(255, 255, 255);
         pdf.setDrawColor(236, 210, 221);
@@ -374,9 +383,10 @@ async function generarcatalogopdf() {
         if (imagen) {
             try {
                 const lienzo = document.createElement('canvas');
-                lienzo.width = Math.round(imagenAncho * 2);
-                lienzo.height = Math.round(imagenAlto * 2);
+                lienzo.width = Math.round(imagenAncho * 4);
+                lienzo.height = Math.round(imagenAlto * 4);
                 const contexto = lienzo.getContext('2d');
+                contexto.imageSmoothingQuality = 'high';
                 const escala = Math.min(lienzo.width / imagen.naturalWidth, lienzo.height / imagen.naturalHeight);
                 const anchoReal = imagen.naturalWidth * escala;
                 const altoReal = imagen.naturalHeight * escala;
@@ -384,7 +394,7 @@ async function generarcatalogopdf() {
                 contexto.fillRect(0, 0, lienzo.width, lienzo.height);
                 contexto.drawImage(imagen, (lienzo.width - anchoReal) / 2, (lienzo.height - altoReal) / 2,
                     anchoReal, altoReal);
-                pdf.addImage(lienzo.toDataURL('image/jpeg', 0.7), 'JPEG', imagenX, imagenY, imagenAncho, imagenAlto);
+                pdf.addImage(lienzo.toDataURL('image/jpeg', 0.9), 'JPEG', imagenX, imagenY, imagenAncho, imagenAlto);
                 lienzo.width = 0;
                 lienzo.height = 0;
             } catch (error) {
@@ -397,24 +407,32 @@ async function generarcatalogopdf() {
         }
 
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(10);
+        pdf.setFontSize(9.5);
         pdf.setTextColor(55, 39, 49);
-        const lineasNombre = pdf.splitTextToSize(producto.nombre, anchoFicha - 20).slice(0, 2);
-        pdf.text(lineasNombre, x + 10, y + 140);
+        const lineasNombre = recortarlineas(pdf.splitTextToSize(producto.nombre, anchoFicha - 16), 2);
+        let lineaY = y + 222;
+        lineasNombre.forEach((linea) => {
+            pdf.text(linea, x + 8, lineaY);
+            lineaY += 11.5;
+        });
         if (producto.descripcion) {
             pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(8);
+            pdf.setFontSize(7.5);
             pdf.setTextColor(128, 100, 113);
-            const descripcion = pdf.splitTextToSize(producto.descripcion, anchoFicha - 20).slice(0, 1);
-            pdf.text(descripcion, x + 10, y + 162);
+            lineaY += 1;
+            const espacio = Math.floor((y + 262 - lineaY) / 9.5) + 1;
+            recortarlineas(pdf.splitTextToSize(producto.descripcion, anchoFicha - 16), espacio).forEach((linea) => {
+                pdf.text(linea, x + 8, lineaY);
+                lineaY += 9.5;
+            });
         }
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(12);
+        pdf.setFontSize(11);
         pdf.setTextColor(176, 33, 84);
-        pdf.text(producto.precio.replace('₡', 'CRC '), x + 10, y + 182);
+        pdf.text(producto.precio.replace('₡', 'CRC '), x + 8, y + 278);
 
-        if (columna === 0) { columna = 1; }
-        else { columna = 0; filaY += altoFicha + separacion; }
+        columna += 1;
+        if (columna === columnas) { columna = 0; filaY += altoFicha + separacion; }
     }
 
     cabecerapagina();
