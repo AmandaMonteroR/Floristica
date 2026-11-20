@@ -36,6 +36,18 @@
         #hojacatalogo .catalogo-precio { margin-top: auto; color: #b02154; font-size: 0.95rem; font-weight: 700; }
         #hojacatalogo .catalogo-pie { margin-top: 1.6rem; padding-top: 0.85rem; border-top: 1px solid #eccbd8;
             text-align: center; color: #826576; font-size: 0.76rem; }
+        /* Paginación de regalos: misma distribución que la galería de arreglos. */
+        .paginacion-catalogo-regalos { display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 0.75rem; margin: 0.85rem 0 1rem; }
+        .paginacion-catalogo-regalos[hidden] { display: none; }
+        .paginacion-catalogo-regalos .paginacion-resumen { color: #826576; font-size: 0.87rem; }
+        .paginacion-catalogo-regalos .paginacion-controles { display: flex; align-items: center; gap: 0.4rem; }
+        .paginacion-catalogo-regalos button { display: inline-flex; justify-content: center; align-items: center;
+            min-width: 35px; height: 35px; padding: 0 0.55rem; border: 1px solid #ecd2dc;
+            border-radius: 50%; background: #fff; color: #b02154; cursor: pointer; font: inherit; font-size: 0.86rem; }
+        .paginacion-catalogo-regalos button[aria-current="page"] { color: white; background: #bf295f; border-color: #bf295f; }
+        .paginacion-catalogo-regalos button:disabled { opacity: 0.45; cursor: default; }
+        .paginacion-catalogo-regalos .paginacion-puntos { color: #826576; padding: 0 0.15rem; }
         @media (max-width: 650px) {
             #hojacatalogo { padding: 1rem; }
             #hojacatalogo .catalogo-productos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -98,10 +110,10 @@
 
     <section class="catalogo-regalos">
         <h2 class="subtitulo-seccion">Regalos y complementos</h2>
-        <p class="nota">Chocolates, peluches, tarjetas y accesorios disponibles en Inventario, con su fotografía y precio de venta.</p>
         <div id="galeriaregalos" class="galeria-seleccion-encargo">
             <p class="nota">Cargando productos…</p>
         </div>
+        <nav id="paginacionregalos" class="paginacion-catalogo-regalos" aria-label="Páginas de regalos y complementos" hidden></nav>
     </section>
 </main>
 
