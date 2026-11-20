@@ -42,7 +42,96 @@ function mostrarerror(mensaje) {
     aviso.hidden = false;
 }
 
-document.getElementById('botonimprimir').addEventListener('click', () => window.print());
+function cortesseguros(contenido, escala) {
+    const inicio = contenido.getBoundingClientRect().top;
+    const cortes = [...contenido.querySelectorAll('li, tr, .linea-resultado, dt, h2, p, article')]
+        .map((elemento) => Math.round((elemento.getBoundingClientRect().bottom - inicio) * escala));
+    return [...new Set(cortes)].sort((a, b) => a - b);
+}
+
+async function descargarpdf() {
+    const boton = document.getElementById('botonpdf');
+    const esbalance = ver === 'ganancia';
+    const contenido = esbalance ? document.querySelector('.reporte-ganancia') : document.getElementById('traza');
+
+    if (!esbalance && !document.getElementById('registrotraza').value) {
+        mostrarerror('Elija un encargo o un pedido para descargar su trazabilidad.');
+        return;
+    }
+
+    const titulo = esbalance
+        ? `Balance ${document.getElementById('tituloperiodo').textContent.replace(/^Del/, 'del')}`
+        : `Trazabilidad: ${contenido.querySelector('h2')?.textContent || ''}`;
+
+    boton.disabled = true;
+    boton.textContent = 'Generando…';
+
+    try {
+        const escalalienzo = 2;
+        const lienzo = await window.html2canvas(contenido, { scale: escalalienzo, backgroundColor: '#ffffff', useCORS: true });
+        const cortes = cortesseguros(contenido, escalalienzo);
+        const pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter', compress: true });
+        const ancho = pdf.internal.pageSize.getWidth();
+        const alto = pdf.internal.pageSize.getHeight();
+        const margen = 36;
+        const util = ancho - margen * 2;
+        const escala = util / lienzo.width;
+
+        pdf.setFillColor(176, 33, 84);
+        pdf.rect(0, 0, ancho, 8, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(19);
+        pdf.setTextColor(164, 32, 82);
+        pdf.text('Floristica', margen, 42);
+        pdf.setFontSize(12);
+        pdf.setTextColor(60, 41, 52);
+        pdf.text(pdf.splitTextToSize(titulo, util), margen, 60);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(125, 95, 110);
+        pdf.text(`Generado el ${new Date().toLocaleDateString('es-CR')}`, ancho - margen, 42, { align: 'right' });
+
+        let y = 80;
+        let origen = 0;
+        while (origen < lienzo.height) {
+            const disponible = Math.floor((alto - margen - y) / escala);
+            let trozo = Math.min(disponible, lienzo.height - origen);
+            if (origen + trozo < lienzo.height) {
+                const corte = cortes.filter((valor) => valor > origen + 40 && valor <= origen + disponible).pop();
+                if (corte) {
+                    trozo = corte - origen;
+                }
+            }
+
+            const parte = document.createElement('canvas');
+            parte.width = lienzo.width;
+            parte.height = trozo;
+            const contexto = parte.getContext('2d');
+            contexto.fillStyle = '#ffffff';
+            contexto.fillRect(0, 0, parte.width, parte.height);
+            contexto.drawImage(lienzo, 0, origen, lienzo.width, trozo, 0, 0, lienzo.width, trozo);
+            pdf.addImage(parte.toDataURL('image/jpeg', 0.92), 'JPEG', margen, y, util, trozo * escala);
+
+            origen += trozo;
+            if (origen < lienzo.height) {
+                pdf.addPage();
+                y = margen;
+            }
+        }
+
+        const nombre = esbalance
+            ? titulo.replace(/\//g, '-')
+            : `Trazabilidad ${document.getElementById('tipotraza').value === 'pedido' ? 'pedido' : 'encargo'} ${document.getElementById('registrotraza').value}`;
+        pdf.save(`${nombre}.pdf`);
+    } catch (error) {
+        mostrarerror('No se pudo generar el PDF. Intente de nuevo.');
+    } finally {
+        boton.disabled = false;
+        boton.textContent = 'Descargar PDF';
+    }
+}
+
+document.getElementById('botonpdf').addEventListener('click', descargarpdf);
 
 if (ver === 'ganancia') {
     const campodesde = document.getElementById('desde');

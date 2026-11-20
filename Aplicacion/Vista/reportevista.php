@@ -18,7 +18,7 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
         <div>
             <h1>Reportes</h1>
         </div>
-        <button type="button" class="boton boton-claro" id="botonimprimir">Imprimir</button>
+        <button type="button" class="boton boton-claro" id="botonpdf">Descargar PDF</button>
     </header>
 
     <nav class="pestanas" aria-label="Reporte">
@@ -97,6 +97,8 @@ $verreporte = ($_GET['ver'] ?? '') === 'trazabilidad' ? 'trazabilidad' : 'gananc
 </main>
 
 <script src="<?= recurso('js/menu.js') ?>"></script>
+<script src="<?= recurso('js/librerias/html2canvas.min.js') ?>"></script>
+<script src="<?= recurso('js/librerias/jspdf.umd.min.js') ?>"></script>
 <script src="<?= recurso('js/reporte.js') ?>"></script>
 </body>
 </html>
