@@ -14,7 +14,6 @@ $dias = [
     'jueves', 'viernes', 'sábado'
 ];
 
-// Formatea la fecha para el encabezado.
 function fechalarga($fecha, $dias, $meses)
 {
     $tiempo = strtotime($fecha);
@@ -24,7 +23,6 @@ function fechalarga($fecha, $dias, $meses)
         . $meses[date('n', $tiempo) - 1];
 }
 
-// Identifica la fecha de entrega de un encargo.
 function textoentrega($fecha, $hoy)
 {
     if ($fecha < $hoy) {
@@ -45,7 +43,6 @@ $primernombre = explode(' ', trim($usuarioactual['nombre']))[0];
 $hoy = $resumen['hoy'];
 $idusuario = (int) $usuarioactual['id'];
 
-// Enlaces a los módulos y sus filtros.
 $enlaces = [
     'mios' => 'index.php?modulo=encargo&estado=abiertos&empleado=' . $idusuario,
     'sinasignar' => 'index.php?modulo=encargo&estado=abiertos&empleado=sinasignar',
@@ -54,15 +51,14 @@ $enlaces = [
     'stockbajo' => 'index.php?modulo=inventario&estado=1&stock=bajo',
     'abiertos' => 'index.php?modulo=encargo&estado=abiertos'
         . ($espropietario ? '' : '&empleado=' . $idusuario),
+    'hoy' => 'index.php?modulo=encargo&estado=abiertos&periodo=hoy'
+        . ($espropietario ? '' : '&empleado=' . $idusuario),
 ];
 
-// El propietario ve todos los encargos abiertos.
-// El empleado ve los que tiene asignados.
 $listaencargos = $espropietario
     ? $resumen['abiertos']
     : $resumen['mios'];
 
-// Separar los encargos por fecha.
 $encargoshoy = [];
 $encargosatrasados = [];
 $encargosproximos = [];
@@ -79,7 +75,6 @@ foreach ($listaencargos as $encargo) {
     }
 }
 
-// Ordenar los próximos encargos por fecha de entrega.
 usort($encargosproximos, function ($a, $b) {
     return strcmp(
         $a['tbsolicitudencargofechaentrega'],
@@ -87,7 +82,6 @@ usort($encargosproximos, function ($a, $b) {
     );
 });
 
-// Mostrar únicamente los accesos más utilizados.
 $accesos = [
     ['Nuevo encargo', 'encargo', true],
     ['Ver encargos', 'encargo', false],
@@ -95,7 +89,6 @@ $accesos = [
     ['Catálogo', 'catalogo', false],
 ];
 
-// Cantidades para los indicadores.
 $totalhoy = count($encargoshoy);
 $totalatrasados = count($encargosatrasados);
 $totalsinasignar = count($resumen['sinasignar']);
@@ -130,11 +123,10 @@ $totalstockbajo = $espropietario
         </div>
     </header>
 
-    <!-- Resumen de los encargos del día -->
     <section class="resumen-inicio" aria-label="Resumen de hoy">
 
         <a class="tarjeta-resumen"
-           href="<?= e($enlaces['abiertos']) ?>">
+           href="<?= e($enlaces['hoy']) ?>">
 
             <span class="numero"><?= $totalhoy ?></span>
             <span>Encargos para hoy</span>
@@ -169,7 +161,6 @@ $totalstockbajo = $espropietario
 
     </section>
 
-    <!-- Accesos rápidos -->
     <section class="accesos-inicio" aria-label="Accesos rápidos">
 
         <?php foreach ($accesos as [$texto, $destino, $nuevo]): ?>
@@ -186,7 +177,6 @@ $totalstockbajo = $espropietario
 
     </section>
 
-    <!-- Encargos para entregar hoy -->
     <div class="paneles-inicio">
 
         <section class="panel-inicio">
@@ -245,9 +235,9 @@ $totalstockbajo = $espropietario
 
                 <?php if ($totalhoy > 5): ?>
                     <a class="enlace-panel"
-                       href="<?= e($enlaces['abiertos']) ?>">
+                       href="<?= e($enlaces['hoy']) ?>">
 
-                        Ver todos los encargos
+                        Ver todos los encargos de hoy
                     </a>
                 <?php endif; ?>
 
@@ -255,7 +245,6 @@ $totalstockbajo = $espropietario
 
         </section>
 
-        <!-- Próximas entregas -->
         <section class="panel-inicio">
 
             <h2>Próximas entregas</h2>

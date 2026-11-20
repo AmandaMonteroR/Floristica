@@ -70,7 +70,6 @@ const titulodetalle = document.getElementById('titulodetalle');
 const listadetalle = document.getElementById('listadetalle');
 const cuerpocobro = document.getElementById('cuerpocobro');
 const cuerpodetalle = document.getElementById('cuerpodetalle');
-// La sección de materiales cambia según la etapa del encargo.
 const tablamateriales = cuerpodetalle.closest('.tabla-contenedor');
 const titulomateriales = tablamateriales.previousElementSibling;
 const encabezadomateriales = tablamateriales.querySelector('thead');
@@ -152,7 +151,6 @@ function buscar(lista, campo, id) {
     return lista.find((item) => String(item[campo]) === String(id));
 }
 
-/* ---------- Selección por fotos, con los mismos datos del catálogo e inventario ---------- */
 function fotoencargo(url, nombre) {
     return url
         ? `<img src="${escapar(url)}" alt="${escapar(nombre)}" loading="lazy">`
@@ -1168,7 +1166,6 @@ function accionesencargo(encargo) {
     return acciones.join(' ');
 }
 
-// En la tabla basta con "Ver"; todas las acciones están en el detalle.
 function accionesencargotabla(encargo) {
     return boton('ver', encargo.tbsolicitudencargoid, 'Ver');
 }
@@ -1179,8 +1176,6 @@ function textoentrega(encargo) {
         : 'Recoge en el local';
 }
 
-// El resumen siempre corresponde a los encargos programados para hoy,
-// independientemente de los filtros usados en la tabla.
 function actualizarresumenencargos(lista) {
     const deldia = lista.filter((encargo) =>
         encargo.tbsolicitudencargofechaentrega === hoy()
@@ -1231,7 +1226,6 @@ async function cargarencargos() {
         return;
     }
 
-    // El resumen consulta todos los estados; no depende de las opciones de la tabla.
     const sinfiltros = filtroestado.value === '' && filtroempleado.value === '' && filtrotipo.value === '';
     if (sinfiltros) {
         actualizarresumenencargos(respuesta.datos);
@@ -1340,7 +1334,6 @@ async function abrirnuevo(tipo = '') {
     tituloformulario.textContent = tipoactual === 'Predefinido' ? 'Nuevo encargo del catálogo'
         : tipoactual === 'Personalizado' ? 'Nuevo encargo personalizado' : 'Nuevo encargo';
 
-    // Al volver de registrar un cliente se recupera el borrador y se selecciona al nuevo.
     const parametros = new URLSearchParams(window.location.search);
     const idcliente = parametros.get('clientecreado');
     if (idcliente && /^\d+$/.test(idcliente)) {
@@ -1357,7 +1350,6 @@ async function abrirnuevo(tipo = '') {
     }
     botonguardar.textContent = 'Guardar encargo';
     dialogoformulario.showModal();
-    // Al escoger Catálogo, abre directamente las fotos para elegir el ramo.
     if (tipo === 'Predefinido' && !formulario.elements.tbarreglofloralid.value) {
         document.getElementById('buscararregloencargo').value = '';
         dibujarcatalogoencargo();
@@ -1453,8 +1445,6 @@ async function verdetalle(id) {
     figurareferencia.hidden = !referencia;
     fotoreferenciadetalle.src = referencia || '';
     columnafoto.hidden = !foto && !puedefoto && !referencia;
-    // Cuando la vista tenga un subtítulo propio, el encabezado muestra solo el número.
-    // Mientras tanto se conserva la descripción junto al título original.
     const descripciondetalle = document.getElementById('descripciondetalle');
     titulodetalle.textContent = descripciondetalle
         ? `Encargo N.º ${encargo.tbsolicitudencargoid}`
@@ -1497,8 +1487,6 @@ async function verdetalle(id) {
         </tr>`).join('')
         + `<tr class="fila-total"><td colspan="3">Total</td><td>${formatearmonto(encargo.tbsolicitudencargototal)}</td></tr>`;
 
-    // Los materiales devueltos por el servidor representan la receta actual y el
-    // stock actual. No se presentan como salidas históricas ya comprobadas.
     const estado = encargo.tbsolicitudencargoestado;
     const porpreparar = ['Pendiente', 'En proceso'].includes(estado);
     const cancelado = estado === 'Cancelado';
@@ -1524,8 +1512,6 @@ async function verdetalle(id) {
                         : `<span class="estado estado-bajo">Faltan ${material.necesarias - material.stock}</span>`}</td>
                 </tr>`).join('');
     } else if (!cancelado) {
-        // No repetimos la disponibilidad de stock después de terminar el ramo.
-        // Estas cantidades provienen de la composición del encargo, no del historial de movimientos.
         encabezadomateriales.innerHTML = '<tr><th>Producto</th><th>Cantidad prevista</th></tr>';
         cuerpodetalle.innerHTML = encargo.materiales.length === 0
             ? '<tr><td colspan="2" class="vacio">No hay materiales registrados.</td></tr>'
@@ -1926,10 +1912,8 @@ filtrofecha.addEventListener('change', cargarencargos);
 filtroestado.addEventListener('change', cargarencargos);
 filtrotipo.addEventListener('change', cargarencargos);
 filtroempleado.addEventListener('change', cargarencargos);
-// Conserva el borrador antes de ir a registrar un cliente.
 document.getElementById('enlaceregistrarcliente').addEventListener('click', guardarborrador);
 
-// Galería de arreglos: cambia únicamente el valor del select original.
 document.getElementById('botonelegirarreglo').addEventListener('click', () => {
     document.getElementById('buscararregloencargo').value = '';
     dibujarcatalogoencargo();
@@ -1947,7 +1931,6 @@ document.getElementById('galeriaarreglosencargo').addEventListener('click', (eve
 });
 document.getElementById('botoncerrarcatalogoencargo').addEventListener('click', () => dialogocatalogoencargo.close());
 
-// Los productos con foto son exactamente los de Inventario, incluidos los regalos.
 document.getElementById('botonbuscarproductoencargo').addEventListener('click', () => {
     document.getElementById('buscarproductoencargo').value = '';
     dibujarproductosencargo();
@@ -1985,7 +1968,6 @@ document.getElementById('galeriaproductosencargo').addEventListener('click', (ev
 });
 document.getElementById('botoncerrarproductosencargo').addEventListener('click', () => dialogoproductosencargo.close());
 
-// El botón Nuevo encargo muestra primero las dos opciones; no crea otro formulario.
 document.getElementById('botonnuevo').addEventListener('click', () => dialogoelegirencargo.showModal());
 document.getElementById('botoncancelareleccion').addEventListener('click', () => dialogoelegirencargo.close());
 document.getElementById('botoncerrarelegir').addEventListener('click', () => dialogoelegirencargo.close());
@@ -1999,7 +1981,6 @@ dialogoelegirencargo.addEventListener('click', async (evento) => {
     const borrador = leerborrador();
     dialogoelegirencargo.close();
 
-    // Evita sobrescribir sin aviso un borrador de la otra modalidad.
     if (borrador && borrador.tbsolicitudencargotipo && borrador.tbsolicitudencargotipo !== tipo) {
         const descartar = await confirmar({
             titulo: '¿Cambiar de tipo de encargo?',
@@ -2020,7 +2001,6 @@ document.getElementById('botoncancelar').addEventListener('click', () => dialogo
 document.getElementById('botoncerrarformulario').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncancelarasignar').addEventListener('click', () => dialogoasignar.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
-// Se activará cuando agreguemos la X al encabezado de encargovista.php.
 document.getElementById('botoncerrardetallearriba')?.addEventListener('click', () => dialogodetalle.close());
 botonfoto.addEventListener('click', () => campofoto.click());
 campofoto.addEventListener('change', subirfoto);
@@ -2031,7 +2011,6 @@ document.getElementById('botonquitarreferencia').addEventListener('click', () =>
     guardarborrador();
 });
 document.getElementById('botondescartarborrador').addEventListener('click', () => {
-    // Al crear uno nuevo, conservar la modalidad elegida antes de recuperar el borrador.
     const tipo = formulario.elements.tbsolicitudencargotipo.value;
     borrarborrador();
     llenarformulario(datosservidor);
@@ -2050,7 +2029,13 @@ const opcioneslistas = cargaropciones();
 opcioneslistas.finally(() => {
     filtrosdesdeurl({ estado: filtroestado, tipo: filtrotipo, empleado: filtroempleado });
     const parametrosiniciales = new URLSearchParams(window.location.search);
-    if (['estado', 'empleado', 'tipo'].some((campo) => parametrosiniciales.has(campo))) {
+    const periodoinicial = parametrosiniciales.get('periodo');
+    if (['hoy', 'todas'].includes(periodoinicial)) {
+        filtroperiodo.value = periodoinicial;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(periodoinicial ?? '')) {
+        filtroperiodo.value = 'personalizada';
+        filtrofecha.value = periodoinicial;
+    } else if (['estado', 'empleado', 'tipo'].some((campo) => parametrosiniciales.has(campo))) {
         filtroperiodo.value = 'todas';
     }
     actualizarfechaencargos();
