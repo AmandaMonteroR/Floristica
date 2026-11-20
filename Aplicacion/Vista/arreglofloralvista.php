@@ -6,7 +6,6 @@
     <title>Catálogo | Floristica</title>
     <link rel="icon" type="image/png" href="imagenes/logo.png">
     <link rel="stylesheet" href="<?= recurso('css/estilos.css') ?>">
-    <!-- Diseño propio de la vista previa para el cliente; no modifica los estilos de otras pantallas. -->
     <style>
         #dialogoexportarcatalogo { width: min(930px, calc(100% - 2rem)); }
         #dialogoexportarcatalogo .barra-proforma { align-items: center; margin: 0.75rem 0 1rem; }
@@ -27,7 +26,7 @@
             border-radius: 0.65rem; overflow: hidden; background: white; break-inside: avoid; }
         #hojacatalogo .catalogo-imagen { position: relative; height: 150px; background: #fff0f5; }
         #hojacatalogo .catalogo-imagen img { display: block; position: absolute; inset: 0;
-            width: 100%; height: 100%; object-fit: cover; }
+            width: 100%; height: 100%; object-fit: contain; }
         #hojacatalogo .catalogo-sinfoto { position: absolute; inset: 0; display: grid; place-content: center;
             gap: 0.25rem; text-align: center; color: #a54a70; font-size: 1.5rem; }
         #hojacatalogo .catalogo-sinfoto small { font-size: 0.7rem; }
@@ -106,7 +105,6 @@
     </section>
 </main>
 
-<!-- Vista previa y PDF del catálogo para clientes, dentro de Floristica. -->
 <dialog id="dialogoexportarcatalogo" class="dialogo dialogo-proforma" aria-labelledby="tituloexportarcatalogo">
     <header class="cabecera-modal-inventario">
         <h2 id="tituloexportarcatalogo">Catálogo para el cliente</h2>

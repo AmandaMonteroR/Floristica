@@ -45,12 +45,8 @@ const botonaceptarconfirmacion = document.getElementById('botonaceptarconfirmaci
 const botoncancelarconfirmacion = document.getElementById('botoncancelarconfirmacion');
 const camposformulario = ['tbarreglofloralnombre', 'tbarreglofloraldescripcion', 'tbarreglofloralprecio'];
 
-// usuarioactual viene de menu.php. Los empleados también crean y editan arreglos (con el costo
-// de los productos para ponerle precio), pero inactivarlos o reactivarlos es solo del propietario.
 const espropietario = usuarioactual.rol === 'Propietario';
 let categoriaelegida = '';
-// Mientras sea true, el precio de venta sigue al precio sugerido (arreglo nuevo, o al cambiar el %).
-// Si la persona escribe otro precio, se respeta.
 let precioautomatico = true;
 
 let temporizadorbusqueda;
@@ -137,13 +133,10 @@ function confirmar({ titulo, mensaje, textoaceptar, peligro = false }) {
     });
 }
 
-/* ---------- Catálogo en PDF para clientes ---------- */
-
 const dialogoexportarcatalogo = document.getElementById('dialogoexportarcatalogo');
 const hojacatalogo = document.getElementById('hojacatalogo');
 const avisoexportarcatalogo = document.getElementById('avisoexportarcatalogo');
 
-// Usa las mismas rutas que las fotografías de la galería de Catálogo.
 function fotocatalogo(ruta) {
     if (!ruta) {
         return '';
@@ -234,7 +227,6 @@ function documentocatalogo(arreglos, adicionales) {
             ¡Gracias por preferirnos!</footer>`;
 }
 
-// La foto se oculta si ya no existe en el servidor y se ve el indicador Sin fotografía.
 function revisarfotosexportacion() {
     hojacatalogo.querySelectorAll('.catalogo-imagen img').forEach((imagen) => {
         imagen.addEventListener('error', () => { imagen.remove(); }, { once: true });
@@ -273,8 +265,6 @@ async function exportarcatalogo() {
     dialogoexportarcatalogo.scrollTop = 0;
 }
 
-// Generación segura: reutiliza jsPDF (como la proforma), sin capturar el catálogo entero.
-// Las fotografías se reducen individualmente; nunca se crea un lienzo de varias páginas.
 function imagenparapdf(url) {
     return new Promise((resolver) => {
         if (!url) { resolver(null); return; }
@@ -383,12 +373,11 @@ async function generarcatalogopdf() {
         const imagen = await imagenparapdf(producto.foto);
         if (imagen) {
             try {
-                // Máximo 360 × 190 píxeles por fotografía; se libera tras agregarla al PDF.
                 const lienzo = document.createElement('canvas');
-                lienzo.width = 360;
-                lienzo.height = 190;
+                lienzo.width = Math.round(imagenAncho * 2);
+                lienzo.height = Math.round(imagenAlto * 2);
                 const contexto = lienzo.getContext('2d');
-                const escala = Math.max(lienzo.width / imagen.naturalWidth, lienzo.height / imagen.naturalHeight);
+                const escala = Math.min(lienzo.width / imagen.naturalWidth, lienzo.height / imagen.naturalHeight);
                 const anchoReal = imagen.naturalWidth * escala;
                 const altoReal = imagen.naturalHeight * escala;
                 contexto.fillStyle = '#fff0f5';
@@ -399,13 +388,12 @@ async function generarcatalogopdf() {
                 lienzo.width = 0;
                 lienzo.height = 0;
             } catch (error) {
-                // Una foto dañada no impide exportar los demás productos.
             }
         } else {
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
             pdf.setTextColor(160, 80, 112);
-            pdf.text('Sin fotografía', x + anchoFicha / 2, imagenY + 61, { align: 'center' });
+            pdf.text('Sin fotografía', x + anchoFicha / 2, imagenY + imagenAlto / 2, { align: 'center' });
         }
 
         pdf.setFont('helvetica', 'bold');
@@ -435,7 +423,6 @@ async function generarcatalogopdf() {
         escribirtitulo(seccion.titulo);
         for (const producto of seccion.productos) {
             await dibujarficha(producto);
-            // Permite que el navegador siga respondiendo durante catálogos grandes.
             await new Promise((resolver) => setTimeout(resolver, 0));
         }
     }
@@ -499,15 +486,12 @@ function imprimircatalogo() {
     window.print();
 }
 
-/* ---------- Productos del inventario ---------- */
-
 async function cargarproductos() {
     const respuesta = await consultar('productos');
     productos = respuesta.exito ? respuesta.datos : [];
     dibujarregalos();
 }
 
-// Productos que se venden como regalos: se consultan del mismo Inventario.
 function dibujarregalos() {
     const contenedor = document.getElementById('galeriaregalos');
     const regalos = productos.filter((producto) =>
@@ -526,8 +510,6 @@ function dibujarregalos() {
 function buscarproducto(id) {
     return productos.find((producto) => String(producto.tbinventarioid) === String(id));
 }
-
-/* ---------- Foto ---------- */
 
 function mostrarfoto(url) {
     if (urlvistaprevia) {
@@ -572,8 +554,6 @@ function revisarfoto() {
     textofoto.hidden = true;
 }
 
-/* ---------- Líneas del arreglo ---------- */
-
 function lineavacia() {
     return {
         tbinventarioid: '',
@@ -592,13 +572,11 @@ function subtotal(linea) {
     return (parseInt(linea.tbarreglofloralinsumocantidad, 10) || 0) * costounidad(linea);
 }
 
-// % de ganancia elegido (0 a 500)
 function porcentajeganancia() {
     const valor = parseInt(porcentajearreglo.value, 10);
     return Number.isNaN(valor) ? 0 : Math.min(500, Math.max(0, valor));
 }
 
-// Precio sugerido: el costo de los productos más el %, redondeado hacia arriba a ₡100
 function preciosugerido(costo) {
     return costo > 0 ? Math.ceil((costo * (1 + porcentajeganancia() / 100)) / 100) * 100 : 0;
 }
@@ -642,7 +620,6 @@ function cambiarporcentaje(valor) {
     guardarborrador();
 }
 
-// Unidades que hay en inventario del producto de la línea (null si ya no está activo)
 function stocklinea(linea) {
     const producto = buscarproducto(linea.tbinventarioid);
     return producto ? Number(producto.tbinventariostock) : null;
@@ -698,8 +675,6 @@ function actualizarfila(fila, linea) {
     actualizartotales();
     guardarborrador();
 }
-
-/* ---------- Borrador ---------- */
 
 function claveborrador() {
     const id = formulario.elements.tbarreglofloralid.value;
@@ -798,14 +773,10 @@ function descartarborrador() {
     avisoborrador.hidden = true;
 }
 
-/* ---------- Galería ---------- */
-
-// Monto sin decimales cuando no hacen falta: ₡12 000
 function montocorto(monto) {
     return '₡' + Number(monto).toLocaleString('es-CR', { maximumFractionDigits: 2 });
 }
 
-// Precio normal y de temporada alta; el que se cobra ahora va resaltado
 function dosprecios(arreglo) {
     const alta = arreglo.altaencendida;
     return `
@@ -842,7 +813,6 @@ async function cargararreglos() {
         const botonestado = activo
             ? `<button type="button" class="enlace enlace-peligro" data-accion="inactivar" data-id="${id}">Inactivar</button>`
             : `<button type="button" class="enlace" data-accion="reactivar" data-id="${id}">Reactivar</button>`;
-        // Editar lo pueden hacer todos; inactivar o reactivar, solo el propietario
         const botonespropietario = `<button type="button" class="enlace" data-accion="editar" data-id="${id}">Editar</button>
                         ${espropietario ? botonestado : ''}`;
 
@@ -864,8 +834,6 @@ async function cargararreglos() {
             </article>`;
     }).join('');
 }
-
-/* ---------- Errores ---------- */
 
 function limpiarerrores() {
     formulario.querySelectorAll('[data-error]').forEach((error) => {
@@ -894,8 +862,6 @@ function mostrarerrores(errores) {
     }
 }
 
-/* ---------- Abrir formulario y detalle ---------- */
-
 async function abrirnuevo() {
     await cargarproductos();
     datosservidor = {};
@@ -904,7 +870,6 @@ async function abrirnuevo() {
     llenarformulario(datosservidor);
     limpiarerrores();
     aplicarborrador();
-    // Arreglo nuevo: el precio sigue al sugerido, salvo que el borrador traiga otro precio
     const precio = formulario.elements.tbarreglofloralprecio.value;
     precioautomatico = precio === '' || Number(precio) === preciosugerido(costoproductos());
     actualizartotales();
@@ -923,7 +888,6 @@ async function abrireditar(id) {
     }
 
     datosservidor = respuesta.datos;
-    // Al editar se respeta el precio que tiene; el % que se muestra es el que da ese precio
     precioautomatico = false;
     llenarformulario(datosservidor);
     limpiarerrores();
@@ -971,7 +935,6 @@ async function verdetalle(id) {
     incluyedetalle.innerHTML = arreglo.detalles.map((detalle) => `
         <li><strong>${detalle.tbarreglofloralinsumocantidad}</strong> ${escapar(detalle.tbinventarionombre)}</li>`).join('');
 
-    // El costo y la ganancia solo los ve el propietario, y quedan cerrados hasta que los abra
     if (espropietario && resumencostos) {
         const fila = (titulo, precio, costo) => `
             <div>
@@ -1023,10 +986,6 @@ async function cambiarestado(accion, id, nombre) {
         cargararreglos();
     }
 }
-
-/* ---------- Eventos ---------- */
-
-/* ---------- Ventana para elegir productos ---------- */
 
 function lineade(id) {
     return lineas.find((linea) => String(linea.tbinventarioid) === String(id));
@@ -1116,7 +1075,6 @@ listaproductos.addEventListener('click', (evento) => {
 });
 document.getElementById('botonlistoproductos').addEventListener('click', () => dialogoproductos.close());
 
-// % de ganancia: botones − y +, y los porcentajes rápidos
 formulario.addEventListener('click', (evento) => {
     const paso = evento.target.closest('[data-pasoporcentaje]');
     const chip = evento.target.closest('[data-porcentaje]');
@@ -1279,7 +1237,6 @@ document.getElementById('botonagregarlinea').addEventListener('click', agregarli
 document.getElementById('botoncancelar').addEventListener('click', () => dialogoformulario.close());
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 
-// "Ver historial" del arreglo que está abierto en el detalle (solo existe para el propietario)
 let iddetalle = null;
 const botonverhistorial = document.getElementById('botonverhistorial');
 if (botonverhistorial) {
