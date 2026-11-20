@@ -24,7 +24,6 @@
         <a href="index.php?modulo=encargo" class="activa" aria-current="page">Encargos</a>
     </nav>
 
-    <!-- Resumen operativo de los encargos programados para hoy. -->
     <section aria-labelledby="tituloresumenencargos">
         <div class="encargos-seccion-encabezado">
             <h2 id="tituloresumenencargos">Resumen de hoy</h2>
@@ -119,8 +118,6 @@
     </div>
 </main>
 
-
-<!-- Elección inicial: se utiliza el mismo formulario de encargos. -->
 <dialog id="dialogoelegirencargo" class="dialogo" aria-labelledby="tituloelegirencargo">
     <div class="cabecera-modal-encargo">
         <h2 id="tituloelegirencargo">Nuevo encargo</h2>
@@ -167,7 +164,6 @@
                 <small class="nota-campo texto-suave">¿No aparece? <a id="enlaceregistrarcliente" href="index.php?modulo=cliente&amp;nuevo=1&amp;volver=encargo">Registrar cliente</a> y continuar el encargo.</small>
                 <small class="error" data-error="tbclienteid"></small>
             </label>
-            <!-- El tipo se elige en la ventana anterior y se envía al controlador. -->
             <input type="hidden" name="tbsolicitudencargotipo">
             <small class="error" data-error="tbsolicitudencargotipo"></small>
         </div>
@@ -243,7 +239,7 @@
                 <div class="asistente-encabezado">
                     <div>
                         <strong><span aria-hidden="true">&#10047;</span> <span id="tituloasistente">Asistente de presupuesto</span></strong>
-                        <p class="nota" id="explicacionasistente">Propone arreglos que caben en el presupuesto con este % de ganancia, a partir de las recetas del catálogo y del stock. Si ya eligió productos (por ejemplo 5 rosas), se mantienen.</p>
+                        <p class="nota" id="explicacionasistente">Propone arreglos dentro del presupuesto con este % de ganancia. Respeta los productos ya elegidos.</p>
                     </div>
                     <button type="button" class="boton" id="botonsugerir">Sugerir arreglos</button>
                 </div>
@@ -368,7 +364,6 @@
     </form>
 </dialog>
 
-<!-- Galería visual de los mismos arreglos existentes en Catálogo. -->
 <dialog id="dialogocatalogoencargo" class="dialogo dialogo-ancho" aria-labelledby="titulocatalogoencargo">
     <div class="cabecera-modal-encargo">
         <h2 id="titulocatalogoencargo">Elegir arreglo del catálogo</h2>
@@ -380,7 +375,6 @@
     <div id="galeriaarreglosencargo" class="galeria-seleccion-encargo"></div>
 </dialog>
 
-<!-- Regalos y otros productos del mismo Inventario, sin duplicar sus registros. -->
 <dialog id="dialogoproductosencargo" class="dialogo dialogo-ancho" aria-labelledby="tituloproductosencargo">
     <div class="cabecera-modal-encargo">
         <h2 id="tituloproductosencargo">Elegir producto</h2>
@@ -393,7 +387,6 @@
     <div id="galeriaproductosencargo" class="galeria-seleccion-encargo"></div>
 </dialog>
 
-<!-- Proforma para el cliente: se descarga en PDF -->
 <dialog id="dialogoproforma" class="dialogo dialogo-proforma" aria-labelledby="tituloproforma">
     <div class="barra-proforma">
         <div>

@@ -80,13 +80,24 @@ function formatearnumero(valor, internacional) {
         : formateartelefono(valor);
 }
 
-// Para mostrar en la tabla, el detalle y el historial
 function mostrartelefono(valor) {
     const texto = String(valor ?? '');
     return texto.startsWith('+') ? texto : formateartelefono(texto);
 }
 
-// Convierte "+57 3001234567" en los tres campos del formulario
+function enlacewhatsapp(telefono) {
+    const texto = String(telefono ?? '');
+    const digitos = texto.replace(/\D/g, '');
+    return `https://wa.me/${texto.startsWith('+') ? '' : '506'}${digitos}`;
+}
+
+function telefonowhatsapp(telefono) {
+    if (!telefono) {
+        return '<span class="texto-suave">No registrado</span>';
+    }
+    return `<a class="enlace-telefono" href="${enlacewhatsapp(telefono)}" target="_blank" rel="noopener" title="Escribirle por WhatsApp">${escapar(mostrartelefono(telefono))}</a>`;
+}
+
 function separartelefono(datos) {
     const coincidencia = String(datos.tbproveedortelefono ?? '').match(/^\+(\d{1,3}) (\d+)$/);
 
@@ -117,8 +128,6 @@ function valorcampo(campo) {
     return elemento.value;
 }
 
-// Un proveedor con número internacional es de otro país: no lleva provincia,
-// cantón ni distrito, y la dirección se escribe libre (ciudad, país…)
 function actualizartipotelefono() {
     const internacional = casillainternacional.checked;
 
@@ -138,9 +147,6 @@ function actualizartipotelefono() {
     }
 }
 
-/* ---------- Buscador de país ---------- */
-
-// Quita tildes y mayúsculas para comparar: "mexi" encuentra "México"
 function sintildes(texto) {
     return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -170,7 +176,6 @@ function marcaropcion(opcion) {
     }
 }
 
-// Si escribe letras busca por nombre ("mexi"); si escribe números, por código ("57" o "+57")
 function filtrarpaises() {
     const texto = sintildes(buscarpais.value);
     const escodigo = /^\+?\d+$/.test(texto);
@@ -208,7 +213,6 @@ opcionespais.forEach((opcion, indice) => {
 });
 
 buscarpais.addEventListener('input', () => {
-    // Mientras escribe, el país todavía no está elegido
     campocodigopais.value = '';
     filtrarpaises();
 });
@@ -229,7 +233,6 @@ buscarpais.addEventListener('keydown', (evento) => {
         const siguiente = Math.min(visibles.length - 1, Math.max(0, actual + paso));
         marcaropcion(visibles[siguiente]);
     } else if (evento.key === 'Enter' && !listapaises.hidden) {
-        // Enter elige el país marcado y no envía el formulario
         evento.preventDefault();
         if (visibles[actual]) {
             elegirpais(visibles[actual]);
@@ -241,7 +244,6 @@ buscarpais.addEventListener('keydown', (evento) => {
     }
 });
 
-// mousedown en lugar de click, para que el campo no pierda el foco antes de elegir
 listapaises.addEventListener('mousedown', (evento) => {
     evento.preventDefault();
     const opcion = evento.target.closest('[data-codigo]');
@@ -250,7 +252,6 @@ listapaises.addEventListener('mousedown', (evento) => {
     }
 });
 
-// Al salir del campo: si escribió el nombre completo de un país, se toma; si no, queda sin elegir
 buscarpais.addEventListener('blur', () => {
     cerrarlistapaises();
     if (campocodigopais.value === '') {
@@ -478,7 +479,7 @@ async function cargarproveedores() {
             <tr class="${activo ? '' : 'fila-inactiva'}">
                 <td>${escapar(proveedor.tbproveedornombreempresa)}</td>
                 <td>${escapar(proveedor.tbproveedornombrecontacto)}</td>
-                <td>${escapar(mostrartelefono(proveedor.tbproveedortelefono))}</td>
+                <td>${telefonowhatsapp(proveedor.tbproveedortelefono)}</td>
                 <td><span class="estado ${activo ? 'estado-activo' : 'estado-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
                 <td class="columna-acciones">
                     <button type="button" class="enlace" data-accion="ver" data-id="${proveedor.tbproveedorid}">Ver</button>
@@ -505,7 +506,6 @@ function mostrarerrores(errores) {
         if (error) {
             error.textContent = mensaje;
         }
-        // El error del país se marca en el campo donde se escribe
         const elemento = campo === 'tbproveedorcodigopais' ? buscarpais : formulario.elements[campo];
         if (elemento) {
             elemento.setAttribute('aria-invalid', 'true');
@@ -572,17 +572,19 @@ async function verdetalle(id) {
             .join(', ');
     const filas = [
         ['Contacto', proveedor.tbproveedornombrecontacto],
-        ['Teléfono', mostrartelefono(proveedor.tbproveedortelefono)],
+        ['Teléfono', proveedor.tbproveedortelefono, true],
         ['Correo', proveedor.tbproveedorcorreo],
         ['Ubicación', ubicacion],
-        [extranjero ? 'Dirección' : 'Dirección exacta', proveedor.tbproveedordireccion],        ['Productos que ofrece', proveedor.tbproveedordescripcion],
+        [extranjero ? 'Dirección' : 'Dirección exacta', proveedor.tbproveedordireccion],
+        ['Productos que ofrece', proveedor.tbproveedordescripcion],
         ['Estado', proveedor.tbproveedorestado === 1 ? 'Activo' : 'Inactivo'],
         ['Fecha de registro', formatearfecha(proveedor.tbproveedorfecharegistro)],
     ];
 
     titulodetalle.textContent = proveedor.tbproveedornombreempresa;
     listadetalle.innerHTML = filas
-        .map(([etiqueta, valor]) => `<dt>${etiqueta}</dt><dd>${valor ? escapar(valor) : 'No registrado'}</dd>`)
+        .map(([etiqueta, valor, telefono]) => `<dt>${etiqueta}</dt><dd>${telefono ? telefonowhatsapp(valor)
+            : valor ? escapar(valor) : 'No registrado'}</dd>`)
         .join('');
     dialogodetalle.showModal();
 }
@@ -634,7 +636,6 @@ selectprovincia.addEventListener('change', () => {
     actualizardistritos(selectprovincia.value, '');
     guardarborrador();
 });
-
 
 selectcanton.addEventListener('change', () => {
     actualizardistritos(selectprovincia.value, selectcanton.value);
@@ -725,7 +726,6 @@ document.getElementById('botoncancelar').addEventListener('click', () => dialogo
 document.getElementById('botoncerrardetalle').addEventListener('click', () => dialogodetalle.close());
 document.getElementById('botondescartarborrador').addEventListener('click', descartarborrador);
 
-// Historial: la misma ventana que los demás módulos (historial.js); el teléfono se muestra con guion
 function verhistorial() {
     ventanahistorial.mostrar('proveedor', iddetalle, titulodetalle.textContent, {
         formatear: (campo, valor) => (campo === 'telefono' ? mostrartelefono(valor) : valor),
@@ -737,6 +737,4 @@ document.getElementById('botonverhistorial').addEventListener('click', verhistor
 const ubicacioneslistas = cargarubicaciones();
 cargarproveedores();
 
-
-// Si se entró desde "Agregar nuevo ..." del menú, abre el formulario
 abrirformulariosipide(abrirnuevo);

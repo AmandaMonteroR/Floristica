@@ -475,7 +475,7 @@ h1 {
     overflow-wrap: anywhere;
 }
 
-#dialogodetalle #botoncerrardetalle {
+#dialogodetalle #botoncerrardetalle:not(.boton-principal) {
     display: grid;
     place-items: center;
     flex: none;
@@ -491,7 +491,7 @@ h1 {
     border-radius: 50%;
 }
 
-#dialogodetalle #botoncerrardetalle:hover {
+#dialogodetalle #botoncerrardetalle:not(.boton-principal):hover {
     background: var(--principal);
     color: #ffffff;
 }
@@ -4534,4 +4534,41 @@ img[data-lupa] {
 
 .seccion-balance {
     margin-bottom: 1.5rem;
+}
+
+.cerrar-dialogo {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    padding: 0;
+    font-size: 1.6rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--principal-oscuro);
+    background: var(--rosa-claro);
+    border: 1px solid var(--borde);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.cerrar-dialogo:hover {
+    color: #fff;
+    background: var(--principal);
+}
+
+dialog:has(> .cerrar-dialogo) > h2:first-of-type,
+dialog:has(> .cerrar-dialogo) > form > h2:first-of-type,
+dialog:has(> .cerrar-dialogo) > div:first-of-type > h2:first-child {
+    padding-right: 3rem;
+}
+
+@media print {
+    .cerrar-dialogo {
+        display: none;
+    }
 }

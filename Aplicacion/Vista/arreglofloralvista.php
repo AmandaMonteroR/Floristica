@@ -210,9 +210,6 @@
             <button type="button" class="boton" id="botonagregarlinea">+ Agregar productos</button>
         </div>
 
-        <p class="nota nota-temporada">✿ En temporada (San Valentín, Día de la Madre…) el precio del arreglo se calcula solo:
-            sube igual que el costo de sus flores, con el mismo porcentaje de ganancia. Lo puede ver en "Ver".</p>
-
         <div class="acciones-dialogo">
             <button type="button" class="boton" id="botoncancelar">Cancelar</button>
             <button type="submit" class="boton boton-principal" id="botonguardar">Guardar arreglo</button>
@@ -299,7 +296,6 @@
 
 <dialog id="dialogobuscarfoto" class="dialogo dialogo-ancho" aria-labelledby="titulobuscarfoto">
     <h2 id="titulobuscarfoto">Buscar arreglos por foto</h2>
-    <p class="nota">Suba la foto que mandó la clienta. El sistema la compara con las fotos del catálogo por sus colores y su forma, y muestra los arreglos más parecidos. Si ninguno se parece, puede valorar el ramo de la foto.</p>
     <div class="busqueda-foto">
         <div class="columna-buscada">
             <label class="zona-foto" id="zonabuscarfoto">

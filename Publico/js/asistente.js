@@ -1,10 +1,3 @@
-// Asistente de arreglos (solicitud personalizada).
-// Con presupuesto: pide al servidor hasta 3 propuestas que caben en el presupuesto con el % de ganancia.
-// Libre: pide hasta 3 propuestas del tamaño de las recetas del catálogo, para cotizarlas.
-// En los dos, a partir de las recetas del catálogo; los productos que ya se eligieron se mantienen.
-// Usa formulario, lineas, dibujarlineas(), actualizarsecciones(), calcular(), presupuesto(), porcentaje(),
-// espropietario, escapar(), formatearmonto(), montocorto(), guardarborrador() y enviar() de encargo.js.
-// La foto de cada propuesta se agranda con la lupa (lupa.js) y queda como foto de referencia al usarla.
 (() => {
     const caja = document.getElementById('asistente');
     const boton = document.getElementById('botonsugerir');
@@ -17,10 +10,8 @@
     let propuestas = [];
     let modo = '';
 
-    // Libre si el personalizado no tiene presupuesto
     const eslibre = () => campopresupuesto.hidden;
 
-    // Se muestra en los personalizados, con presupuesto o libres; si cambia la modalidad, se limpian las propuestas
     function revisarvisible() {
         caja.hidden = seccionpersonalizado.hidden;
         const nuevo = caja.hidden ? '' : (eslibre() ? 'libre' : 'presupuesto');
@@ -30,8 +21,8 @@
         }
         titulo.textContent = eslibre() ? 'Asistente de arreglos' : 'Asistente de presupuesto';
         explicacion.textContent = eslibre()
-            ? 'Propone arreglos del tamaño de las recetas del catálogo, con el stock que hay y este % de ganancia, para cotizarle a la clienta. Si ya eligió productos (por ejemplo 5 rosas), se mantienen y van primero las recetas que los llevan.'
-            : 'Propone arreglos que caben en el presupuesto con este % de ganancia, a partir de las recetas del catálogo y del stock. Si ya eligió productos (por ejemplo 5 rosas), se mantienen.';
+            ? 'Propone arreglos con el stock disponible y este % de ganancia. Respeta los productos ya elegidos.'
+            : 'Propone arreglos dentro del presupuesto con este % de ganancia. Respeta los productos ya elegidos.';
     }
 
     function limpiar() {
@@ -124,14 +115,12 @@
             return;
         }
 
-        // Los productos de la propuesta reemplazan a los de la tabla (incluye los que ya se habían elegido)
         lineas = propuesta.lineas.map((linea) => ({
             tbinventarioid: String(linea.tbinventarioid),
             cantidad: String(linea.cantidad),
             nombre: linea.nombre,
             precioguardado: null,
         }));
-        // La foto del arreglo del catálogo queda como foto de referencia de la solicitud
         formulario.elements.tbsolicitudencargoreferencia.value = propuesta.tbarreglofloralfoto || '';
         actualizarsecciones();
         guardarborrador();
@@ -153,8 +142,6 @@
     document.getElementById('dialogoformulario').addEventListener('close', limpiar);
     revisarvisible();
 
-    // Desde "Valorar este ramo" del catálogo: abre una solicitud personalizada (libre) con los
-    // productos de la valoración, su % de ganancia y la foto de la clienta como referencia
     const parametros = new URLSearchParams(window.location.search);
     let valoracion = null;
     try {
@@ -189,11 +176,9 @@
         });
     }
 
-    // Desde "Buscar por foto" del catálogo: abre una solicitud nueva con ese arreglo ya elegido
     const arreglopedido = parametros.get('arreglo');
     if (arreglopedido) {
         history.replaceState(null, '', 'index.php?modulo=encargo');
-        // Una solicitud nueva y limpia: no se recupera un borrador viejo
         borrarborrador();
         abrirnuevo().then(() => {
             const tipo = formulario.elements.tbsolicitudencargotipo;

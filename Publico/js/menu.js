@@ -1,4 +1,3 @@
-// Si la sesión terminó (por ejemplo, el propietario inactivó la cuenta), vuelve al login
 const fetchoriginal = window.fetch.bind(window);
 window.fetch = async (...argumentos) => {
     const respuesta = await fetchoriginal(...argumentos);
@@ -28,7 +27,6 @@ function cerrarmenu() {
     botonmenu.focus();
 }
 
-// Abre o cierra un submenú
 function alternargrupo(grupo, abrir) {
     grupo.classList.toggle('abierto', abrir);
     grupo.querySelector(':scope > .menu-grupo-boton').setAttribute('aria-expanded', String(abrir));
@@ -38,7 +36,6 @@ function alternargrupo(grupo, abrir) {
     }
 }
 
-// Cierra todos los submenús dentro de un elemento
 function cerrargrupos(contenedor) {
     contenedor.querySelectorAll('.menu-grupo.abierto').forEach((grupo) => {
         grupo.classList.remove('abierto');
@@ -46,7 +43,6 @@ function cerrargrupos(contenedor) {
     });
 }
 
-// Con mouse: el submenú se abre al pasar por encima (solo en pantallas grandes)
 const conmouse = window.matchMedia('(hover: hover) and (min-width: 768px)');
 
 gruposmenu.forEach((grupo) => {
@@ -55,7 +51,6 @@ gruposmenu.forEach((grupo) => {
     boton.addEventListener('click', () => {
         const abrir = !grupo.classList.contains('abierto');
 
-        // Al abrir uno, se cierran sus hermanos
         grupo.parentElement.querySelectorAll(':scope > .menu-grupo.abierto').forEach((hermano) => {
             if (hermano !== grupo) {
                 alternargrupo(hermano, false);
@@ -92,7 +87,6 @@ document.addEventListener('keydown', (evento) => {
         return;
     }
 
-    // Escape cierra primero el submenú abierto más profundo; si no hay, cierra el menú
     const abiertos = menulateral.querySelectorAll('.menu-grupo.abierto');
     if (abiertos.length > 0) {
         const ultimo = abiertos[abiertos.length - 1];
@@ -103,8 +97,6 @@ document.addEventListener('keydown', (evento) => {
     }
 });
 
-// En el celular las listas se ven como tarjetas: cada celda guarda el nombre
-// de su columna (data-etiqueta) para mostrarlo a la izquierda del dato.
 document.querySelectorAll('.contenedor > .tabla-contenedor .tabla').forEach((tabla) => {
     const titulos = Array.from(tabla.querySelectorAll('thead th')).map((th) => th.textContent.trim());
     const cuerpo = tabla.tBodies[0];
@@ -127,8 +119,6 @@ document.querySelectorAll('.contenedor > .tabla-contenedor .tabla').forEach((tab
     new MutationObserver(etiquetar).observe(cuerpo, { childList: true });
 });
 
-// Pone en los filtros los valores que vienen en la dirección, por ejemplo
-// Al cambiar un filtro, la dirección se actualiza para que al recargar se mantenga.
 function filtrosdesdeurl(filtros) {
     const parametros = new URLSearchParams(window.location.search);
 
@@ -153,8 +143,6 @@ function filtrosdesdeurl(filtros) {
     });
 }
 
-
-// "Agregar nuevo ..." del menú: abre el formulario de la página automáticamente
 function abrirformulariosipide(abrirnuevo) {
     const parametros = new URLSearchParams(window.location.search);
 
@@ -167,7 +155,6 @@ function abrirformulariosipide(abrirnuevo) {
     abrirnuevo();
 }
 
-/* ---------- Cambiar la contraseña propia ---------- */
 const dialogoclave = document.getElementById('dialogoclave');
 const formularioclave = document.getElementById('formularioclave');
 const avisoclave = document.getElementById('avisoclave');
@@ -198,7 +185,6 @@ document.getElementById('botoncambiarclave').addEventListener('click', () => {
 
 document.getElementById('botoncancelarclave').addEventListener('click', () => dialogoclave.close());
 
-// Al escribir en un campo se borra su error
 formularioclave.addEventListener('input', (evento) => {
     const error = formularioclave.querySelector(`[data-error="${evento.target.name}"]`);
     if (error) {
@@ -228,7 +214,6 @@ formularioclave.addEventListener('submit', async (evento) => {
     if (respuesta.exito) {
         formularioclave.reset();
         mostraravisoclave(respuesta.mensaje, true);
-        // Se cierra sola después de un momento para que se alcance a leer el mensaje
         setTimeout(() => dialogoclave.close(), 1800);
         return;
     }
@@ -249,8 +234,6 @@ formularioclave.addEventListener('submit', async (evento) => {
     }
 });
 
-
-/* ---------- Paginación de las listas ----------*/
 function paginar(lista, contenedor, esregistro, minimofilas) {
     const controles = document.createElement('nav');
     controles.className = 'paginacion';
@@ -262,7 +245,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
 
     const registros = () => Array.from(lista.children).filter(esregistro);
 
-    // Cuántos registros caben en el espacio que queda debajo de la lista
     function porpagina(todos) {
         todos.forEach((registro) => {
             registro.hidden = false;
@@ -284,7 +266,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
         return { cantidad: filas * porfila, porfila, minimo: minimofilas * porfila };
     }
 
-    // La página se pasa del alto de la ventana (por ejemplo, una fila más alta que las otras)
     function sobrepasa() {
         return document.documentElement.scrollHeight > window.innerHeight + 1;
     }
@@ -294,7 +275,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             + ` aria-label="${etiqueta}"${actual ? ' aria-current="page"' : ''}>${texto}</button>`;
     }
 
-    // Números que se muestran: la primera, la última y las vecinas de la actual
     function numeros(total) {
         const salida = [];
         for (let numero = 1; numero <= total; numero++) {
@@ -306,7 +286,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
         }
         return salida;
     }
-    // La barra siempre se ve, aunque todo quepa en una sola página
     function pintarcontroles(total, desde, hasta, cantidadtotal) {
 
         const botones = numeros(total).map((numero) => (numero === '…'
@@ -338,7 +317,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
         const tope = Math.ceil(todos.length / medida.porfila) * medida.porfila;
         let cantidad = Math.min(Math.max(medida.cantidad, medida.minimo), tope);
 
-        // Muestra los primeros "cantidad" registros, solo para medir si caben
         const probar = (prueba) => {
             todos.forEach((registro, indice) => {
                 registro.hidden = indice >= prueba;
@@ -347,14 +325,12 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             return !sobrepasa();
         };
 
-        // Agrega filas mientras quepan sin que aparezca scroll
         if (probar(cantidad)) {
             while (cantidad < tope && probar(cantidad + medida.porfila)) {
                 cantidad += medida.porfila;
             }
         }
 
-        // Muestra una página con "cantidad" registros por página
         const mostrarpagina = (numero, tamano) => {
             const total = Math.ceil(todos.length / tamano);
             const desde = (numero - 1) * tamano;
@@ -366,10 +342,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             pintarcontroles(total, desde, hasta, todos.length);
         };
 
-        // Todas las páginas llevan la misma cantidad: si alguna página (por ejemplo, con filas
-        // más altas) hace aparecer scroll, se quita una fila a todas y se prueba de nuevo.
-        // Antes se ajustaba solo la página que se veía y se perdía el número de página pedido,
-        // así que la última página no se podía abrir.
         const cabentodas = (tamano) => {
             const total = Math.ceil(todos.length / tamano);
             for (let numero = 1; numero <= total; numero++) {
@@ -392,7 +364,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
         estirarfotos(medida.porfila);
     }
 
-    // Catálogo: si sobra espacio debajo de las tarjetas, las fotos se hacen más altas para llenarlo
     function quitarestirado() {
         lista.querySelectorAll('img[data-estirada]').forEach((foto) => {
             foto.style.height = '';
@@ -420,7 +391,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
                 return;
             }
             const caja = foto.getBoundingClientRect();
-            // Sin pasarse de una foto un poco más alta que ancha
             const alto = Math.min(caja.height + sobra / filas, caja.width * 1.15);
             if (alto > caja.height) {
                 foto.style.height = `${Math.floor(alto)}px`;
@@ -428,7 +398,6 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
             }
         });
 
-        // Si por redondeos apareció scroll, se vuelve al tamaño normal
         if (sobrepasa()) {
             quitarestirado();
         }
@@ -442,10 +411,8 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
         }
     });
 
-    // Cuando cambia la lista (cargó, se filtró, se editó algo) se vuelve a dibujar
     new MutationObserver(dibujar).observe(lista, { childList: true });
 
-    // Si cambia un filtro, se vuelve a la primera página
     const filtros = document.querySelector('.filtros');
     if (filtros) {
         ['input', 'change'].forEach((tipo) => filtros.addEventListener(tipo, () => {
@@ -464,13 +431,63 @@ function paginar(lista, contenedor, esregistro, minimofilas) {
 
 document.querySelectorAll('.contenedor > .tabla-contenedor .tabla').forEach((tabla) => {
     if (tabla.tBodies[0]) {
-        // Al menos 3 filas por página, aunque la pantalla sea muy pequeña
         paginar(tabla.tBodies[0], tabla.closest('.tabla-contenedor'), (fila) => !fila.querySelector('.vacio'), 3);
     }
 });
 
 const galeriapaginada = document.querySelector('.contenedor > .galeria');
 if (galeriapaginada) {
-    // En el catálogo, al menos una fila de tarjetas por página
     paginar(galeriapaginada, galeriapaginada, (tarjeta) => !tarjeta.classList.contains('vacio-galeria'), 1);
 }
+
+(() => {
+    const cerrarexistente = '.cerrar-modal-inventario, .cerrar-modal-encargo, .cerrar-dialogo';
+
+    function visible(boton) {
+        return !boton.disabled && !boton.hidden && boton.getClientRects().length > 0;
+    }
+
+    function cerrardialogo(dialogo) {
+        const cancelar = [...dialogo.querySelectorAll('button')].find((boton) =>
+            !boton.dataset.accion
+            && ['Cancelar', 'Cerrar'].includes(boton.textContent.trim())
+            && boton.closest('dialog') === dialogo
+            && visible(boton));
+
+        if (cancelar) {
+            cancelar.click();
+            return;
+        }
+
+        if (dialogo.dispatchEvent(new Event('cancel', { cancelable: true }))) {
+            dialogo.close();
+        }
+    }
+
+    function agregarcerrar(dialogo) {
+        const yatiene = dialogo.querySelector(cerrarexistente)
+            || [...dialogo.querySelectorAll('button')].some((boton) =>
+                boton.textContent.trim() === '×' && boton.closest('dialog') === dialogo);
+        if (yatiene) {
+            return;
+        }
+
+        const boton = document.createElement('button');
+        boton.type = 'button';
+        boton.className = 'cerrar-dialogo';
+        boton.setAttribute('aria-label', 'Cerrar');
+        boton.textContent = '×';
+        boton.addEventListener('click', () => cerrardialogo(dialogo));
+        dialogo.prepend(boton);
+    }
+
+    ['showModal', 'show'].forEach((metodo) => {
+        const original = HTMLDialogElement.prototype[metodo];
+        HTMLDialogElement.prototype[metodo] = function (...argumentos) {
+            agregarcerrar(this);
+            return original.apply(this, argumentos);
+        };
+    });
+
+    document.querySelectorAll('dialog').forEach(agregarcerrar);
+})();
